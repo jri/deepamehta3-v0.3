@@ -6,7 +6,7 @@ Developed in the scope of DeepaMehta 3 to make experiences with base technologie
 DeepaMehta is a platform for collaboration and knowledge management (www.deepamehta.de).
 DeepaMehta 3 will be a complete rewrite.
 
-<h2>"Technotes" Requirements<h2>
+<h2>"Technotes" Requirements</h2>
 
 <ul>
     <li>CouchDB (tested with 0.9)
