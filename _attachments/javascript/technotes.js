@@ -12,19 +12,14 @@ db.fulltext_search = function(text) {
 // var result = db.view("technotes/bytag", {key: "Ruby"});
 // alert("total_rows=" + result.total_rows + ", result size=" + result.rows.length);
 
-var canvas;
-var canvas_topics = [];
-var canvas_width = 500;
-var canvas_height = 700;
-
 var search_field;
 var detail_panel;
 var current_doc;        // document being displayed
-var topic_radius = 10;
+var canvas;
 
 function init() {
-    canvas = document.getElementById("canvas");
-    canvas.onclick = canvas_clicked;
+    canvas = new Canvas()
+    // alert("canvas.canvas=" + canvas.canvas)
     //
     search_field = document.getElementById("search_field");
     //
@@ -39,70 +34,11 @@ function init() {
     //
     detail_panel = document.getElementById("detail_panel");
     // dummy content
-    add_document_to_canvas("a13c6b38244dc7414579b87929a1aec5", 80, 50);
-    add_document_to_canvas("b15ac875916cf91507b3a3d1ff59d4cb", 200, 150);
-    add_document_to_canvas("5c475253a3598e03c33db7078514b3aa", 350, 80);
+    canvas.add_document("a13c6b38244dc7414579b87929a1aec5", 80, 50);
+    canvas.add_document("b15ac875916cf91507b3a3d1ff59d4cb", 200, 150);
+    canvas.add_document("5c475253a3598e03c33db7078514b3aa", 350, 80);
     //
-    draw_canvas();
-}
-
-function canvas_clicked(event) {
-    cx = event.pageX - canvas.offsetLeft;
-    cy = event.pageY - canvas.offsetTop;
-    for (var i in canvas_topics) {
-        ct = canvas_topics[i];
-        if (cx >= ct.x - topic_radius && cx < ct.x + topic_radius &&
-            cy >= ct.y - topic_radius && cy < ct.y + topic_radius) {
-            show_document(ct.doc_id)
-            draw_canvas()
-        }
-    }
-}
-
-function draw_canvas() {
-    var ctx = canvas.getContext("2d");
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "red";
-    ctx.fillStyle = "gray";
-    ctx.clearRect(0, 0, canvas_width, canvas_height)
-    for (var i in canvas_topics) {
-        ct = canvas_topics[i];
-        ctx.beginPath()
-        // alert("draw topic=" + JSON.stringify(ct))
-        ctx.arc(ct.x, ct.y, topic_radius, 0, 2 * Math.PI, true);
-        ctx.fill();
-        // highlight
-        if (current_doc && current_doc._id == ct.doc_id) {
-            ctx.beginPath()
-            ctx.arc(ct.x, ct.y, 1.5 * topic_radius, 0, 2 * Math.PI, true);
-            ctx.stroke();
-        }
-    }
-}
-
-function canvas_contains(doc_id) {
-    for (var i in canvas_topics) {
-        ct = canvas_topics[i];
-        if (ct.doc_id == doc_id) {
-            return true
-        }
-    }
-    return false;
-}
-
-function add_document_to_canvas(doc_id, x, y) {
-    // alert("add x=" + x + " y=" + y)
-    if (x == undefined && y == undefined) {
-        x = canvas_width * Math.random()
-        y = canvas_height * Math.random()
-    }
-    canvas_topics.push(new CanvasTopic(doc_id, x, y))
-}
-
-function CanvasTopic(doc_id, x, y) {
-    this.doc_id = doc_id;
-    this.x = x;
-    this.y = y;
+    canvas.refresh();
 }
 
 function search() {
@@ -119,18 +55,18 @@ function search() {
     db.save(topic)
     // alert("ID of result topic=" + topic._id)
     //
-    add_document_to_canvas(topic._id)
+    canvas.add_document(topic._id)
     show_document(topic._id)
-    draw_canvas()
+    canvas.refresh()
     return false
 }
 
 function reveal_document(doc_id) {
-    if (!canvas_contains(doc_id)) {
-        add_document_to_canvas(doc_id)
+    if (!canvas.contains(doc_id)) {
+        canvas.add_document(doc_id)
     }
     show_document(doc_id)
-    draw_canvas()
+    canvas.refresh()
 }
 
 // Fetches the document and displays it on the content panel.
