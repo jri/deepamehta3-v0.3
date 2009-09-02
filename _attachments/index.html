@@ -9,12 +9,16 @@
         <script src="/_utils/script/jquery.couch.js?0.9.0"></script>
         <script src="javascript/technotes.js"></script>
         <script src="javascript/canvas.js"></script>
+        <script src="javascript/types.js"></script>
     </head>
     <body onload="init()">
         <div id="search_panel">
             <form id="search_form">
                 <input id="search_field" type="text">
+                <input type="submit" value="Search">
             </form>
+            <div id="type_select_placeholder"></div>
+            <input id="create_button" type="button" value="Create">
         </div>
         <div id="upper_document_controls">
             <input id="edit_button" type="button" value="Edit">

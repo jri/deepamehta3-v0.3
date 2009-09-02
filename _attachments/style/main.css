@@ -7,6 +7,11 @@ body {
     float: left;
 }
 
+#search_form {
+    float: left;
+    margin-right: 3em;
+}
+
 #context_panel {
     float: left;
 }

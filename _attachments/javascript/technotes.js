@@ -13,23 +13,30 @@ db.fulltext_search = function(text) {
 // alert("total_rows=" + result.total_rows + ", result size=" + result.rows.length);
 
 var search_field;
+var type_select;
 var detail_panel;
 var current_doc;        // document being displayed
 var canvas;
 
 function init() {
     canvas = new Canvas()
-    // alert("canvas.canvas=" + canvas.canvas)
     //
     search_field = document.getElementById("search_field");
     //
     var search_form = document.getElementById("search_form");
     search_form.onsubmit = search;
-    var edit_button = document.getElementById("edit_button");
-    edit_button.onclick = edit_document;
-    var save_button = document.getElementById("save_button");
-    save_button.onclick = save_document;
+    // type menu
+    var tmp = document.getElementById("type_select_placeholder")
+    tmp.parentNode.replaceChild(create_type_select(), tmp)
+    type_select = document.getElementById("type_select")
+    //
+    var create_button = document.getElementById("create_button");
+    var edit_button   = document.getElementById("edit_button");
+    var save_button   = document.getElementById("save_button");
     var cancel_button = document.getElementById("cancel_button");
+    create_button.onclick = create_document;
+    edit_button.onclick   = edit_document;
+    save_button.onclick   = update_document;
     cancel_button.onclick = cancel_editing;
     //
     detail_panel = document.getElementById("detail_panel");
@@ -79,7 +86,7 @@ function show_document(doc_id) {
             // field name
             var namediv = document.createElement("div");
             namediv.setAttribute("class", "field_name");
-            namediv.appendChild(document.createTextNode(field.label));
+            namediv.appendChild(document.createTextNode(field.id));
             // field value
             var valuediv = render_text(field.content);
             valuediv.setAttribute("class", "field_value");
@@ -104,27 +111,37 @@ function show_document(doc_id) {
     }
 }
 
+function create_document() {
+    current_doc = clone(types[type_select.value])
+    save_document(current_doc)
+    //
+    canvas.add_document(current_doc._id)
+    canvas.refresh()
+    // alert("saved document: " + JSON.stringify(current_doc));
+    edit_document()
+}
+
 function edit_document() {
     clear_detail_panel();
     for (var i = 0, field; field = current_doc.fields[i]; i++) {
         // field name
         var namediv = document.createElement("div");
         namediv.setAttribute("class", "field_name");
-        namediv.appendChild(document.createTextNode(field.label));
+        namediv.appendChild(document.createTextNode(field.id));
         // field value
         var valuediv = document.createElement("div");
         valuediv.setAttribute("class", "field_value");
         switch (field.type) {
         case "single line":
             var input = document.createElement("input");
-            input.id = "field_" + field.label
+            input.id = "field_" + field.id
             input.value = field.content     // doesn't show up in DOM inspector but works
             input.size = 80
             valuediv.appendChild(input)
             break
         case "multi line":
             var textarea = document.createElement("textarea")
-            textarea.id = "field_" + field.label
+            textarea.id = "field_" + field.id
             textarea.rows = 40
             textarea.cols = 80
             textarea.appendChild(document.createTextNode(field.content))
@@ -139,10 +156,15 @@ function edit_document() {
     }
 }
 
-function save_document() {
+function update_document() {
     for (var i = 0, field; field = current_doc.fields[i]; i++) {
-        field.content = document.getElementById("field_" + field.label).value;
+        field.content = document.getElementById("field_" + field.id).value;
     }
+    save_document(current_doc)
+    show_document(current_doc._id)
+}
+
+function save_document(doc) {
     // alert("save document: " + JSON.stringify(current_doc));
     try {
         result = db.save(current_doc);
@@ -150,7 +172,6 @@ function save_document() {
     } catch (e) {
         alert("error while saving: " + JSON.stringify(e))
     }
-    show_document(current_doc._id)
 }
 
 function cancel_editing() {
@@ -195,4 +216,8 @@ function render_object(object) {
         table.appendChild(tr)
     }
     return table;
+}
+
+function clone(obj) {
+    return JSON.parse(JSON.stringify(obj))
 }
