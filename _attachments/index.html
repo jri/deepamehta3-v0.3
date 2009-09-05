@@ -5,11 +5,16 @@
         <link rel="stylesheet" href="style/main.css" type="text/css">
         <script src="/_utils/script/couch.js"></script>
         <script src="/_utils/script/json2.js"></script>
-        <script src="/_utils/script/jquery.js?1.3.1"></script>
-        <script src="/_utils/script/jquery.couch.js?0.9.0"></script>
+        <!-- <script src="/_utils/script/jquery.js?1.3.1"></script>
+        <script src="/_utils/script/jquery.dialog.js?1.3.1"></script>
+        <script src="/_utils/script/jquery.couch.js?0.9.0"></script> -->
         <script src="javascript/technotes.js"></script>
         <script src="javascript/canvas.js"></script>
         <script src="javascript/types.js"></script>
+        <!-- jQuery -->
+        <script src="vendor/jquery/js/jquery-1.3.2.min.js"></script>
+        <script src="vendor/jquery/js/jquery-ui-1.7.2.custom.min.js"></script>
+        <link rel="stylesheet" href="vendor/jquery/css/smoothness/jquery-ui-1.7.2.custom.css" type="text/css">
     </head>
     <body onload="init()">
         <div id="search_panel">
@@ -20,16 +25,24 @@
             <div id="type_select_placeholder"></div>
             <input id="create_button" type="button" value="Create">
         </div>
-        <div id="upper_document_controls">
-            <input id="edit_button" type="button" value="Edit">
-        </div>
         <div id="context_panel">
             <canvas id="canvas" width="500" height="700"></canvas>
         </div>
         <div id="detail_panel"></div>
         <div id="lower_document_controls">
+            <input id="edit_button" type="button" value="Edit">
             <input id="save_button" type="button" value="Save">
             <input id="cancel_button" type="button" value="Cancel">
+            <input id="attach_button" type="button" value="Upload Attachment">
         </div>
+        <div id="attachment_dialog" title="Upload Attachment">
+            File:
+            <form id="attachment_form" method="post" enctype="multipart/form-data" target="upload_target">
+                <input type="file" name="_attachments">
+                <input type="hidden" name="_rev" id="attachment_form_rev">
+                <input type="submit" value="Upload">
+            </form>
+        </div>
+        <iframe id="upload_target" name="upload_target"></iframe>
     </body>
 </html>

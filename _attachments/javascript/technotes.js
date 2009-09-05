@@ -17,6 +17,8 @@ var type_select;
 var detail_panel;
 var current_doc;        // document being displayed
 var canvas;
+var attachment_form;
+var attachment_form_rev;
 
 function init() {
     canvas = new Canvas()
@@ -30,16 +32,19 @@ function init() {
     tmp.parentNode.replaceChild(create_type_select(), tmp)
     type_select = document.getElementById("type_select")
     //
-    var create_button = document.getElementById("create_button");
-    var edit_button   = document.getElementById("edit_button");
-    var save_button   = document.getElementById("save_button");
-    var cancel_button = document.getElementById("cancel_button");
-    create_button.onclick = create_document;
-    edit_button.onclick   = edit_document;
-    save_button.onclick   = update_document;
-    cancel_button.onclick = cancel_editing;
+    var create_button = document.getElementById("create_button").onclick = create_document
+    var edit_button   = document.getElementById("edit_button").onclick   = edit_document
+    var save_button   = document.getElementById("save_button").onclick   = update_document
+    var cancel_button = document.getElementById("cancel_button").onclick = cancel_editing
+    var attach_button = document.getElementById("attach_button").onclick = attach_file
     //
     detail_panel = document.getElementById("detail_panel");
+    // upload form
+    $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 350})
+    attachment_form = document.getElementById("attachment_form")
+    attachment_form_rev = document.getElementById("attachment_form_rev")
+    document.getElementById("upload_target").onload = upload_complete
+    //
     // dummy content
     canvas.add_document("a13c6b38244dc7414579b87929a1aec5", 80, 50);
     canvas.add_document("b15ac875916cf91507b3a3d1ff59d4cb", 200, 150);
@@ -49,22 +54,26 @@ function init() {
 }
 
 function search() {
-    var text = search_field.value
-    result = db.fulltext_search(text)
-    // alert("search=" + text + "\nresult=" + JSON.stringify(result))
-    //
-    // transform search result into result topic
-    topic = {"items": []}
-    for (var i = 0, row; row = result.rows[i]; i++) {
-        topic.items.push({"id": row.id})
+    try {
+        var text = search_field.value
+        result = db.fulltext_search(text)
+        // alert("search=" + text + "\nresult=" + JSON.stringify(result))
+        //
+        // transform search result into result topic
+        topic = {"items": []}
+        for (var i = 0, row; row = result.rows[i]; i++) {
+            topic.items.push({"id": row.id})
+        }
+        //
+        db.save(topic)
+        // alert("ID of result topic=" + topic._id)
+        //
+        canvas.add_document(topic._id)
+        show_document(topic._id)
+        canvas.refresh()
+    } catch (e) {
+        alert("error while searching: " + JSON.stringify(e))
     }
-    //
-    db.save(topic)
-    // alert("ID of result topic=" + topic._id)
-    //
-    canvas.add_document(topic._id)
-    show_document(topic._id)
-    canvas.refresh()
     return false
 }
 
@@ -108,6 +117,21 @@ function show_document(doc_id) {
     // fallback
     } else {
         detail_panel.appendChild(render_object(current_doc))
+    }
+    // attachments
+    if (current_doc._attachments) {
+        var namediv = document.createElement("div");
+        namediv.setAttribute("class", "field_name");
+        namediv.appendChild(document.createTextNode("Attachments"));
+        detail_panel.appendChild(namediv);
+        for (var attach in current_doc._attachments) {
+            var a = document.createElement("a")
+            a.href = db.uri + current_doc._id + "/" + attach
+            a.appendChild(document.createTextNode(attach))
+            var p = document.createElement("p")
+            p.appendChild(a)
+            detail_panel.appendChild(p)
+        }
     }
 }
 
@@ -178,10 +202,20 @@ function cancel_editing() {
     show_document(current_doc._id)
 }
 
+function attach_file() {
+    attachment_form.setAttribute("action", db.uri + current_doc._id)
+    attachment_form_rev.setAttribute("value", current_doc._rev)
+    $("#attachment_dialog").dialog("open")
+}
+
+function upload_complete() {
+    $("#attachment_dialog").dialog("close")
+}
+
 function clear_detail_panel() {
     var child;
     while (child = detail_panel.firstChild) {
-        detail_panel.removeChild(child);
+        detail_panel.removeChild(child)
     }
 }
 

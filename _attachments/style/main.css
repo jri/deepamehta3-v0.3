@@ -4,7 +4,6 @@ body {
 
 #search_panel {
     width: 500px;
-    float: left;
 }
 
 #search_form {
@@ -30,4 +29,8 @@ body {
 }
 
 .field_value {
+}
+
+#upload_target {
+    display: none;
 }
