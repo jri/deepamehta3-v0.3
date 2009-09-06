@@ -1,20 +1,20 @@
 var types = {
-    "note": {
+    "Note": {
         "fields": [
             {
-                "id": "title",
+                "id": "Title",
                 "show_label": true,
                 "type": "single line",
                 "content": ""
             },
             {
-                "id": "body",
+                "id": "Body",
                 "show_label": false,
                 "type": "multi line",
                 "content": ""
             },
             {
-                "id": "tags",
+                "id": "Tags",
                 "show_label": true,
                 "type": "single line",
                 "content": ""
@@ -24,12 +24,9 @@ var types = {
 }
 
 function create_type_select() {
-    var select = document.createElement("select")
-    select.id = "type_select"
+    var select = $("<select>").attr("id", "type_select")
     for (var type in types) {
-        var option = document.createElement("option")
-        option.appendChild(document.createTextNode(type))
-        select.appendChild(option)
+        select.append($("<option>").text(type))
     }
     return select
 }

@@ -1,61 +1,42 @@
-var db = new CouchDB("technotes-db");
+var db = new CouchDB("technotes-db")
 
 db.fulltext_search = function(text) {
-    var viewPath = this.uri + "_fti/technotes/search?q=" + text;
-    this.last_req = this.request("GET", viewPath);      
+    var viewPath = this.uri + "_fti/technotes/search?q=" + text
+    this.last_req = this.request("GET", viewPath)      
     if (this.last_req.status == 404)
-        return null;
-    CouchDB.maybeThrowError(this.last_req);
-    return JSON.parse(this.last_req.responseText);
+        return null
+    CouchDB.maybeThrowError(this.last_req)
+    return JSON.parse(this.last_req.responseText)
 }
 
-// var result = db.view("technotes/bytag", {key: "Ruby"});
-// alert("total_rows=" + result.total_rows + ", result size=" + result.rows.length);
+// var result = db.view("technotes/bytag", {key: "Ruby"})
+// alert("total_rows=" + result.total_rows + ", result size=" + result.rows.length)
 
-var search_field;
-var type_select;
-var detail_panel;
-var current_doc;        // document being displayed
-var canvas;
-var attachment_form;
-var attachment_form_rev;
+var current_doc        // document being displayed
+var canvas
 
 function init() {
     canvas = new Canvas()
-    //
-    search_field = document.getElementById("search_field");
-    //
-    var search_form = document.getElementById("search_form");
-    search_form.onsubmit = search;
-    // type menu
-    var tmp = document.getElementById("type_select_placeholder")
-    tmp.parentNode.replaceChild(create_type_select(), tmp)
-    type_select = document.getElementById("type_select")
-    //
-    var create_button = document.getElementById("create_button").onclick = create_document
-    var edit_button   = document.getElementById("edit_button").onclick   = edit_document
-    var save_button   = document.getElementById("save_button").onclick   = update_document
-    var cancel_button = document.getElementById("cancel_button").onclick = cancel_editing
-    var attach_button = document.getElementById("attach_button").onclick = attach_file
-    //
-    detail_panel = document.getElementById("detail_panel");
+    // search form
+    $("#search_form").submit(search)
+    // type select
+    $("#type_select_placeholder").replaceWith(create_type_select())
+    // buttons
+    $("#create_button").click(create_document)
+    $("#edit_button").click(edit_document)
+    $("#save_button").click(update_document)
+    $("#cancel_button").click(cancel_editing)
+    $("#attach_button").click(attach_file)
     // upload form
     $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 350})
-    attachment_form = document.getElementById("attachment_form")
-    attachment_form_rev = document.getElementById("attachment_form_rev")
-    document.getElementById("upload_target").onload = upload_complete
+    $("#upload_target").load(upload_complete)
     //
-    // dummy content
-    canvas.add_document("a13c6b38244dc7414579b87929a1aec5", 80, 50);
-    canvas.add_document("b15ac875916cf91507b3a3d1ff59d4cb", 200, 150);
-    canvas.add_document("5c475253a3598e03c33db7078514b3aa", 350, 80);
-    //
-    canvas.refresh();
+    canvas.refresh()
 }
 
 function search() {
     try {
-        var text = search_field.value
+        var text = $("#search_field").val()
         result = db.fulltext_search(text)
         // alert("search=" + text + "\nresult=" + JSON.stringify(result))
         //
@@ -87,169 +68,131 @@ function reveal_document(doc_id) {
 
 // Fetches the document and displays it on the content panel.
 function show_document(doc_id) {
-    clear_detail_panel();
-    current_doc = db.open(doc_id);
+    if (doc_id == undefined) {
+        doc_id = current_doc._id
+    }
+    empty_detail_panel()
+    current_doc = db.open(doc_id)
     // single document
     if (current_doc.fields) {
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
             // field name
-            var namediv = document.createElement("div");
-            namediv.setAttribute("class", "field_name");
-            namediv.appendChild(document.createTextNode(field.id));
+            $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
             // field value
-            var valuediv = render_text(field.content);
-            valuediv.setAttribute("class", "field_value");
-            //
-            detail_panel.appendChild(namediv);
-            detail_panel.appendChild(valuediv);
+            $("#detail_panel").append($(render_text(field.content)).addClass("field_value"))
         }
     // search result
     } else if (current_doc.items) {
         for (var i = 0, item; item = current_doc.items[i]; i++) {
-            var a = document.createElement("a")
-            a.href = ""
-            a.setAttribute("onclick", "reveal_document('" + item.id + "'); return false") 
-            a.appendChild(document.createTextNode(item.id));
-            var p = document.createElement("p")
-            p.appendChild(a)
-            detail_panel.appendChild(p)
+            var a = $("<a>").attr({href: "", onclick: "reveal_document('" + item.id + "'); return false"}).text(item.id)
+            $("#detail_panel").append($("<p>").append(a))
         }
     // fallback
     } else {
-        detail_panel.appendChild(render_object(current_doc))
+        $("#detail_panel").append(render_object(current_doc))
     }
     // attachments
     if (current_doc._attachments) {
-        var namediv = document.createElement("div");
-        namediv.setAttribute("class", "field_name");
-        namediv.appendChild(document.createTextNode("Attachments"));
-        detail_panel.appendChild(namediv);
+        $("#detail_panel").append("<div class=\"field_name\">Attachments</div>")
         for (var attach in current_doc._attachments) {
-            var a = document.createElement("a")
-            a.href = db.uri + current_doc._id + "/" + attach
-            a.appendChild(document.createTextNode(attach))
-            var p = document.createElement("p")
-            p.appendChild(a)
-            detail_panel.appendChild(p)
+            var a = $("<a>").attr("href", db.uri + current_doc._id + "/" + attach).text(attach)
+            $("#detail_panel").append(a).append("<br>")
         }
     }
 }
 
 function create_document() {
-    current_doc = clone(types[type_select.value])
+    current_doc = clone(types[$("#type_select").val()])
     save_document(current_doc)
     //
     canvas.add_document(current_doc._id)
     canvas.refresh()
-    // alert("saved document: " + JSON.stringify(current_doc));
+    // alert("saved document: " + JSON.stringify(current_doc))
     edit_document()
 }
 
 function edit_document() {
-    clear_detail_panel();
+    empty_detail_panel()
     for (var i = 0, field; field = current_doc.fields[i]; i++) {
         // field name
-        var namediv = document.createElement("div");
-        namediv.setAttribute("class", "field_name");
-        namediv.appendChild(document.createTextNode(field.id));
+        $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
         // field value
-        var valuediv = document.createElement("div");
-        valuediv.setAttribute("class", "field_value");
+        var valuediv = $("<div>").addClass("field_value")
         switch (field.type) {
         case "single line":
-            var input = document.createElement("input");
-            input.id = "field_" + field.id
-            input.value = field.content     // doesn't show up in DOM inspector but works
-            input.size = 80
-            valuediv.appendChild(input)
+            valuediv.append($("<input>").attr({id: "field_" + field.id, value: field.content, size: 80}))
             break
         case "multi line":
-            var textarea = document.createElement("textarea")
-            textarea.id = "field_" + field.id
-            textarea.rows = 40
-            textarea.cols = 80
-            textarea.appendChild(document.createTextNode(field.content))
-            valuediv.appendChild(textarea)
+            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: 40, cols: 80}).text(field.content))
             break
         default:
             alert("unexpected field type: \"" + field.type + "\"")
         }
-        //
-        detail_panel.appendChild(namediv);
-        detail_panel.appendChild(valuediv);
+        $("#detail_panel").append(valuediv)
     }
 }
 
 function update_document() {
     for (var i = 0, field; field = current_doc.fields[i]; i++) {
-        field.content = document.getElementById("field_" + field.id).value;
+        field.content = $("#field_" + field.id).val()
     }
     save_document(current_doc)
-    show_document(current_doc._id)
+    show_document()
 }
 
 function save_document(doc) {
-    // alert("save document: " + JSON.stringify(current_doc));
+    // alert("save document: " + JSON.stringify(current_doc))
     try {
-        result = db.save(current_doc);
-        // alert("result=" + JSON.stringify(result));
+        result = db.save(current_doc)
+        // alert("result=" + JSON.stringify(result))
     } catch (e) {
         alert("error while saving: " + JSON.stringify(e))
     }
 }
 
 function cancel_editing() {
-    show_document(current_doc._id)
+    show_document()
 }
 
 function attach_file() {
-    attachment_form.setAttribute("action", db.uri + current_doc._id)
-    attachment_form_rev.setAttribute("value", current_doc._rev)
+    $("#attachment_form").attr("action", db.uri + current_doc._id)
+    $("#attachment_form_rev").attr("value", current_doc._rev)
     $("#attachment_dialog").dialog("open")
 }
 
 function upload_complete() {
     $("#attachment_dialog").dialog("close")
+    show_document()
 }
 
-function clear_detail_panel() {
-    var child;
-    while (child = detail_panel.firstChild) {
-        detail_panel.removeChild(child)
-    }
+function empty_detail_panel() {
+    $("#detail_panel").empty()
 }
 
 // Creates a div-element holding the text.
 // Conversion performed: linefeed characters (\n) are replaced by br-elements.
 function render_text(text) {
-    var div = document.createElement("div");
-    var pos = 0;
+    var div = $("<div>")
+    var pos = 0
     do {
-        var i = text.indexOf("\n", pos);
+        var i = text.indexOf("\n", pos)
         if (i >= 0) {
-            div.appendChild(document.createTextNode(text.substring(pos, i)));
-            div.appendChild(document.createElement("br"));
-            pos = i + 1;
+            div.append(text.substring(pos, i)).append("<br>")
+            pos = i + 1
         }
-    } while (i >= 0);
-    // alert("text=\"" + text + "\"\nlength=" + text.length + "\ntype=" + typeof text);
-    div.appendChild(document.createTextNode(text.substring(pos)));
-    return div;
+    } while (i >= 0)
+    div.append(text.substring(pos))
+    return div
 }
 
 function render_object(object) {
-    var table = document.createElement("table")
+    var table = $("<table>")
     for (var name in object) {
-        var tr = document.createElement("tr")
-        var td1 = document.createElement("td")
-        td1.appendChild(document.createTextNode(name))
-        var td2 = document.createElement("td")
-        td2.appendChild(document.createTextNode(object[name]))
-        tr.appendChild(td1)
-        tr.appendChild(td2)
-        table.appendChild(tr)
+        var td1 = $("<td>").append(name)
+        var td2 = $("<td>").append(object[name])
+        table.append($("<tr>").append(td1).append(td2))
     }
-    return table;
+    return table
 }
 
 function clone(obj) {
