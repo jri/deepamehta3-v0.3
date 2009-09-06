@@ -12,7 +12,7 @@ db.fulltext_search = function(text) {
 // var result = db.view("technotes/bytag", {key: "Ruby"})
 // alert("total_rows=" + result.total_rows + ", result size=" + result.rows.length)
 
-var current_doc        // document being displayed
+var current_doc        // document being displayed, or null if no one is currently displayed
 var canvas
 
 function init() {
@@ -27,31 +27,30 @@ function init() {
     $("#save_button").click(update_document)
     $("#cancel_button").click(cancel_editing)
     $("#attach_button").click(attach_file)
-    // upload form
-    $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 350})
+    $("#delete_button").click(confirm_delete)
+    // upload dialog
+    $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 550})
     $("#upload_target").load(upload_complete)
+    // delete dialog
+    $("#delete_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 350,
+        buttons: {"Delete": delete_document}})
     //
     canvas.refresh()
 }
 
 function search() {
     try {
-        var text = $("#search_field").val()
-        result = db.fulltext_search(text)
-        // alert("search=" + text + "\nresult=" + JSON.stringify(result))
-        //
-        // transform search result into result topic
-        topic = {"items": []}
+        var result = db.fulltext_search($("#search_field").val())
+        // build result document
+        result_doc = {"items": []}
         for (var i = 0, row; row = result.rows[i]; i++) {
-            topic.items.push({"id": row.id})
+            result_doc.items.push({"id": row.id})
         }
         //
-        db.save(topic)
-        // alert("ID of result topic=" + topic._id)
+        db.save(result_doc)
         //
-        canvas.add_document(topic._id)
-        show_document(topic._id)
-        canvas.refresh()
+        show_document(result_doc._id)
+        canvas.add_document(result_doc._id, true)
     } catch (e) {
         alert("error while searching: " + JSON.stringify(e))
     }
@@ -59,20 +58,37 @@ function search() {
 }
 
 function reveal_document(doc_id) {
-    if (!canvas.contains(doc_id)) {
-        canvas.add_document(doc_id)
+    if (show_document(doc_id)) {
+        if (!canvas.contains(doc_id)) {
+            canvas.add_document(doc_id)
+        }
+        canvas.refresh()    // highlight
     }
-    show_document(doc_id)
-    canvas.refresh()
 }
 
-// Fetches the document and displays it on the content panel.
+// Fetches the document and displays it on the content panel. Updates global state (current_doc), provided the document could
+// be fetched successfully. Returns true id the document could be fetched successfully, false otherwise.
+// If no document is specified, the current document is re-fetched. If there is no current document the content panel is emptied.
 function show_document(doc_id) {
     if (doc_id == undefined) {
-        doc_id = current_doc._id
+        if (current_doc) {
+            doc_id = current_doc._id
+        } else {
+            empty_detail_panel()
+            return false
+        }
     }
+    // fetch
+    var result = db.open(doc_id)
+    //
+    if (result == null) {
+        alert(doc_id + " doesn't exist")
+        return false
+    }
+    // update global state
+    current_doc = result
+    //
     empty_detail_panel()
-    current_doc = db.open(doc_id)
     // single document
     if (current_doc.fields) {
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
@@ -93,20 +109,20 @@ function show_document(doc_id) {
     }
     // attachments
     if (current_doc._attachments) {
-        $("#detail_panel").append("<div class=\"field_name\">Attachments</div>")
+        $("#detail_panel").append($("<div>").addClass("field_name").text("Attachments"))
         for (var attach in current_doc._attachments) {
             var a = $("<a>").attr("href", db.uri + current_doc._id + "/" + attach).text(attach)
             $("#detail_panel").append(a).append("<br>")
         }
     }
+    return true
 }
 
 function create_document() {
     current_doc = clone(types[$("#type_select").val()])
     save_document(current_doc)
     //
-    canvas.add_document(current_doc._id)
-    canvas.refresh()
+    canvas.add_document(current_doc._id, true)
     // alert("saved document: " + JSON.stringify(current_doc))
     edit_document()
 }
@@ -143,7 +159,7 @@ function update_document() {
 function save_document(doc) {
     // alert("save document: " + JSON.stringify(current_doc))
     try {
-        result = db.save(current_doc)
+        var result = db.save(current_doc)
         // alert("result=" + JSON.stringify(result))
     } catch (e) {
         alert("error while saving: " + JSON.stringify(e))
@@ -153,6 +169,8 @@ function save_document(doc) {
 function cancel_editing() {
     show_document()
 }
+
+/* Attachments */
 
 function attach_file() {
     $("#attachment_form").attr("action", db.uri + current_doc._id)
@@ -164,6 +182,22 @@ function upload_complete() {
     $("#attachment_dialog").dialog("close")
     show_document()
 }
+
+/* Delete */
+
+function confirm_delete() {
+    $("#delete_dialog").dialog("open")
+}
+
+function delete_document() {
+    $("#delete_dialog").dialog("close")
+    var result = db.deleteDoc(current_doc)
+    // alert("Deleted!\nresult=" + JSON.stringify(result))
+    canvas.remove_document(current_doc._id, true)
+    show_document()
+}
+
+/* Helper */
 
 function empty_detail_panel() {
     $("#detail_panel").empty()
