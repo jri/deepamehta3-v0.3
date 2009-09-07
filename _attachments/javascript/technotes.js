@@ -44,7 +44,7 @@ function search() {
         // build result document
         result_doc = {"items": []}
         for (var i = 0, row; row = result.rows[i]; i++) {
-            result_doc.items.push({"id": row.id})
+            result_doc.items.push({"id": row.id, "title": row.fields ? row.fields["Title"] : "?"})
         }
         //
         db.save(result_doc)
@@ -99,8 +99,9 @@ function show_document(doc_id) {
         }
     // search result
     } else if (current_doc.items) {
+        $("#detail_panel").append($("<p>").text("Search Result (" + current_doc.items.length + " docments)"))
         for (var i = 0, item; item = current_doc.items[i]; i++) {
-            var a = $("<a>").attr({href: "", onclick: "reveal_document('" + item.id + "'); return false"}).text(item.id)
+            var a = $("<a>").attr({href: "", onclick: "reveal_document('" + item.id + "'); return false"}).text(item.title)
             $("#detail_panel").append($("<p>").append(a))
         }
     // fallback
