@@ -40,9 +40,10 @@ function init() {
 
 function search() {
     try {
-        var result = db.fulltext_search($("#search_field").val())
+        var searchterm = $("#search_field").val()
+        var result = db.fulltext_search(searchterm)
         // build result document
-        result_doc = {"items": []}
+        result_doc = {fields: [{id: "Title", content: '"' + searchterm + '"'}], items: []}
         for (var i = 0, row; row = result.rows[i]; i++) {
             result_doc.items.push({"id": row.id, "title": row.fields ? row.fields["Title"] : "?"})
         }
@@ -50,7 +51,7 @@ function search() {
         db.save(result_doc)
         //
         show_document(result_doc._id)
-        canvas.add_document(result_doc._id, true)
+        canvas.add_document(current_doc, true)
     } catch (e) {
         alert("error while searching: " + JSON.stringify(e))
     }
@@ -60,7 +61,7 @@ function search() {
 function reveal_document(doc_id) {
     if (show_document(doc_id)) {
         if (!canvas.contains(doc_id)) {
-            canvas.add_document(doc_id)
+            canvas.add_document(current_doc)
         }
         canvas.refresh()    // highlight
     }
@@ -89,20 +90,21 @@ function show_document(doc_id) {
     current_doc = result
     //
     empty_detail_panel()
+    // search result
+    if (current_doc.items) {
+        var heading = "Search Result " + current_doc.fields[0].content + " (" + current_doc.items.length + " docments)"
+        $("#detail_panel").append($("<p>").text(heading))
+        for (var i = 0, item; item = current_doc.items[i]; i++) {
+            var a = $("<a>").attr({href: "", onclick: "reveal_document('" + item.id + "'); return false"}).text(item.title)
+            $("#detail_panel").append($("<p>").append(a))
+        }
     // single document
-    if (current_doc.fields) {
+    } else if (current_doc.fields) {
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
             // field name
             $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
             // field value
             $("#detail_panel").append($(render_text(field.content)).addClass("field_value"))
-        }
-    // search result
-    } else if (current_doc.items) {
-        $("#detail_panel").append($("<p>").text("Search Result (" + current_doc.items.length + " docments)"))
-        for (var i = 0, item; item = current_doc.items[i]; i++) {
-            var a = $("<a>").attr({href: "", onclick: "reveal_document('" + item.id + "'); return false"}).text(item.title)
-            $("#detail_panel").append($("<p>").append(a))
         }
     // fallback
     } else {
@@ -123,7 +125,7 @@ function create_document() {
     current_doc = clone(types[$("#type_select").val()])
     save_document(current_doc)
     //
-    canvas.add_document(current_doc._id, true)
+    canvas.add_document(current_doc, true)
     // alert("saved document: " + JSON.stringify(current_doc))
     edit_document()
 }
@@ -140,7 +142,7 @@ function edit_document() {
             valuediv.append($("<input>").attr({id: "field_" + field.id, value: field.content, size: 80}))
             break
         case "multi line":
-            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: 40, cols: 80}).text(field.content))
+            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: 35, cols: 80}).text(field.content))
             break
         default:
             alert("unexpected field type: \"" + field.type + "\"")
@@ -154,6 +156,8 @@ function update_document() {
         field.content = $("#field_" + field.id).val()
     }
     save_document(current_doc)
+    //
+    canvas.update_document(current_doc)
     show_document()
 }
 
