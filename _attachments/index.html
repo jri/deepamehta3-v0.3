@@ -5,12 +5,12 @@
         <link rel="stylesheet" href="style/main.css" type="text/css">
         <script src="/_utils/script/couch.js"></script>
         <script src="/_utils/script/json2.js"></script>
-        <!-- <script src="/_utils/script/jquery.js?1.3.1"></script>
-        <script src="/_utils/script/jquery.dialog.js?1.3.1"></script>
-        <script src="/_utils/script/jquery.couch.js?0.9.0"></script> -->
         <script src="javascript/technotes.js"></script>
         <script src="javascript/canvas.js"></script>
         <script src="javascript/types.js"></script>
+        <script src="javascript/implementations.js"></script>
+        <script src="javascript/plain_document.js"></script>
+        <script src="javascript/search_result.js"></script>
         <!-- jQuery -->
         <script src="vendor/jquery/js/jquery-1.3.2.min.js"></script>
         <script src="vendor/jquery/js/jquery-ui-1.7.2.custom.min.js"></script>
@@ -29,13 +29,7 @@
             <canvas id="canvas" width="500" height="600"></canvas>
         </div>
         <div id="detail_panel"></div>
-        <div id="lower_document_controls">
-            <input id="edit_button" type="button" value="Edit">
-            <input id="save_button" type="button" value="Save">
-            <input id="cancel_button" type="button" value="Cancel">
-            <input id="attach_button" type="button" value="Upload Attachment">
-            <input id="delete_button" type="button" value="Delete">
-        </div>
+        <div id="lower_document_controls"></div>
         <div id="attachment_dialog" title="Upload Attachment">
             File:
             <form id="attachment_form" method="post" enctype="multipart/form-data" target="upload_target">

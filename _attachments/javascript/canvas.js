@@ -148,6 +148,7 @@ function Canvas() {
     /* CanvasTopic */
 
     function CanvasTopic(doc, x, y) {
+
         this.doc_id = doc._id;
         this.x = x;
         this.y = y;

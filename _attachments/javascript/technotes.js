@@ -14,6 +14,7 @@ db.fulltext_search = function(text) {
 
 var current_doc        // document being displayed, or null if no one is currently displayed
 var canvas
+var implementations = {}
 
 function init() {
     canvas = new Canvas()
@@ -21,21 +22,12 @@ function init() {
     $("#search_form").submit(search)
     // type select
     $("#type_select_placeholder").replaceWith(create_type_select())
-    // buttons
+    // create button
     $("#create_button").click(create_document)
-    $("#edit_button").click(edit_document)
-    $("#save_button").click(update_document)
-    $("#cancel_button").click(cancel_editing)
-    $("#attach_button").click(attach_file)
-    $("#delete_button").click(confirm_delete)
-    // upload dialog
-    $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 550})
-    $("#upload_target").load(upload_complete)
-    // delete dialog
-    $("#delete_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 350,
-        buttons: {"Delete": delete_document}})
     //
-    canvas.refresh()
+    for (var i = 0, implementation_class; implementation_class = implementation_classes[i]; i++) {
+        implementations[implementation_class] = eval("new " + implementation_class)
+    }
 }
 
 function search() {
@@ -43,7 +35,7 @@ function search() {
         var searchterm = $("#search_field").val()
         var result = db.fulltext_search(searchterm)
         // build result document
-        result_doc = {fields: [{id: "Title", content: '"' + searchterm + '"'}], items: []}
+        result_doc = {fields: [{id: "Title", content: '"' + searchterm + '"'}], implementation: "SearchResult", items: []}
         for (var i = 0, row; row = result.rows[i]; i++) {
             result_doc.items.push({"id": row.id, "title": row.fields ? row.fields["Title"] : "?"})
         }
@@ -90,33 +82,14 @@ function show_document(doc_id) {
     current_doc = result
     //
     empty_detail_panel()
-    // search result
-    if (current_doc.items) {
-        var heading = "Search Result " + current_doc.fields[0].content + " (" + current_doc.items.length + " docments)"
-        $("#detail_panel").append($("<p>").text(heading))
-        for (var i = 0, item; item = current_doc.items[i]; i++) {
-            var a = $("<a>").attr({href: "", onclick: "reveal_document('" + item.id + "'); return false"}).text(item.title)
-            $("#detail_panel").append($("<p>").append(a))
-        }
-    // single document
-    } else if (current_doc.fields) {
-        for (var i = 0, field; field = current_doc.fields[i]; i++) {
-            // field name
-            $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
-            // field value
-            $("#detail_panel").append($(render_text(field.content)).addClass("field_value"))
-        }
+    //
+    var impl = implementations[current_doc.implementation]
+    if (impl) {
+        impl.render_document(current_doc)
     // fallback
     } else {
+        alert("show_document: fallback")
         $("#detail_panel").append(render_object(current_doc))
-    }
-    // attachments
-    if (current_doc._attachments) {
-        $("#detail_panel").append($("<div>").addClass("field_name").text("Attachments"))
-        for (var attach in current_doc._attachments) {
-            var a = $("<a>").attr("href", db.uri + current_doc._id + "/" + attach).text(attach)
-            $("#detail_panel").append(a).append("<br>")
-        }
     }
     return true
 }
@@ -130,68 +103,14 @@ function create_document() {
     edit_document()
 }
 
-function edit_document() {
-    empty_detail_panel()
-    for (var i = 0, field; field = current_doc.fields[i]; i++) {
-        // field name
-        $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
-        // field value
-        var valuediv = $("<div>").addClass("field_value")
-        switch (field.type) {
-        case "single line":
-            valuediv.append($("<input>").attr({id: "field_" + field.id, value: field.content, size: 80}))
-            break
-        case "multi line":
-            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: 35, cols: 80}).text(field.content))
-            break
-        default:
-            alert("unexpected field type: \"" + field.type + "\"")
-        }
-        $("#detail_panel").append(valuediv)
-    }
-}
-
-function update_document() {
-    for (var i = 0, field; field = current_doc.fields[i]; i++) {
-        field.content = $("#field_" + field.id).val()
-    }
-    save_document(current_doc)
-    //
-    canvas.update_document(current_doc)
-    show_document()
-}
-
 function save_document(doc) {
     // alert("save document: " + JSON.stringify(current_doc))
     try {
-        var result = db.save(current_doc)
+        var result = db.save(doc)
         // alert("result=" + JSON.stringify(result))
     } catch (e) {
         alert("error while saving: " + JSON.stringify(e))
     }
-}
-
-function cancel_editing() {
-    show_document()
-}
-
-/* Attachments */
-
-function attach_file() {
-    $("#attachment_form").attr("action", db.uri + current_doc._id)
-    $("#attachment_form_rev").attr("value", current_doc._rev)
-    $("#attachment_dialog").dialog("open")
-}
-
-function upload_complete() {
-    $("#attachment_dialog").dialog("close")
-    show_document()
-}
-
-/* Delete */
-
-function confirm_delete() {
-    $("#delete_dialog").dialog("open")
 }
 
 function delete_document() {
@@ -206,22 +125,7 @@ function delete_document() {
 
 function empty_detail_panel() {
     $("#detail_panel").empty()
-}
-
-// Creates a div-element holding the text.
-// Conversion performed: linefeed characters (\n) are replaced by br-elements.
-function render_text(text) {
-    var div = $("<div>")
-    var pos = 0
-    do {
-        var i = text.indexOf("\n", pos)
-        if (i >= 0) {
-            div.append(text.substring(pos, i)).append("<br>")
-            pos = i + 1
-        }
-    } while (i >= 0)
-    div.append(text.substring(pos))
-    return div
+    $("#lower_document_controls").empty()
 }
 
 function render_object(object) {

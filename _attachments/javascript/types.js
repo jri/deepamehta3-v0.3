@@ -19,7 +19,8 @@ var types = {
                 "type": "single line",
                 "content": ""
             }
-        ]
+        ],
+        "implementation": "PlainDocument"
     }
 }
 
