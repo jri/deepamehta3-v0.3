@@ -8,4 +8,16 @@ function SearchResult() {
             $("#detail_panel").append($("<p>").append(a))
         }
     }
+
+    this.context_menu_items = function() {
+        return [
+            {label: "Remove", function: "remove"}
+        ]
+    }
+
+    /* Context Menu Commands */
+
+    this.remove = function() {
+        delete_document()
+    }
 }

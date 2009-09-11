@@ -34,3 +34,27 @@ body {
 #upload_target {
     display: none;
 }
+
+.contextmenu {
+    background: white;
+    border: 1px solid darkgray;
+    font-weight: bold;
+    font-size: 85%;
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+}
+
+.contextmenu a {
+    color: black;
+    text-decoration: none;
+    display: block;
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    padding-left: 1.5em;
+    padding-right: 1.5em;
+}
+
+.contextmenu a:hover {
+    color: white;
+    background: #555;
+}

@@ -5,15 +5,13 @@ function PlainDocument() {
     $("#upload_target").load(upload_complete)
     // delete dialog
     $("#delete_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 350,
-        buttons: {"Delete": delete_document}})
+        buttons: {"Delete": do_delete}})
 
     this.render_document = function(doc) {
         // fields
         for (var i = 0, field; field = doc.fields[i]; i++) {
-            // field name
-            $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
-            // field value
-            $("#detail_panel").append($(render_text(field.content)).addClass("field_value"))
+            $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))         // field name
+            $("#detail_panel").append($(render_text(field.content)).addClass("field_value"))    // field value
         }
         // attachments
         if (doc._attachments) {
@@ -23,16 +21,25 @@ function PlainDocument() {
                 $("#detail_panel").append(a).append("<br>")
             }
         }
+        // relations
+        if (doc.related_ids) {
+            var rels = relations(doc._id)
+            $("#detail_panel").append($("<div>").addClass("field_name").text("Relations (" + rels.rows.length + ")"))
+            for (var i = 0, row; row = rels.rows[i]; i++) {
+                var a = $("<a>").attr({href: "", onclick: "reveal_document('" + row.id + "'); return false"}).text(row.value)
+                $("#detail_panel").append(a).append("<br>")
+            }
+        }
         // buttons
         $("#lower_document_controls").append($("<input>").attr({type: "button", id: "edit_button", value: "Edit"}))
         $("#lower_document_controls").append($("<input>").attr({type: "button", id: "attach_button", value: "Upload Attachment"}))
         $("#lower_document_controls").append($("<input>").attr({type: "button", id: "delete_button", value: "Delete"}))
-        $("#edit_button").click(edit_document)
+        $("#edit_button").click(this.edit_document)
         $("#attach_button").click(attach_file)
         $("#delete_button").click(confirm_delete)
     }
 
-    function edit_document() {
+    this.edit_document = function() {
         empty_detail_panel()
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
             // field name
@@ -57,6 +64,21 @@ function PlainDocument() {
         $("#save_button").click(update_document)
         $("#cancel_button").click(cancel_editing)
     }
+
+    this.context_menu_items = function() {
+        return [
+            {label: "Hide", function: "hide"},
+            {label: "Relate", function: "relate"}
+        ]
+    }
+
+    /* Context Menu Commands */
+
+    this.relate = function() {
+        canvas.begin_relation(current_doc._id)
+    }
+
+    /* --- Private Methods --- */
 
     function update_document() {
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
@@ -85,10 +107,29 @@ function PlainDocument() {
         show_document()
     }
 
+    /* Relations */
+
+    function relations(doc_id) {
+        return db.view("technotes/relations", {key: doc_id})
+    }
+
     /* Delete */
 
     function confirm_delete() {
         $("#delete_dialog").dialog("open")
+    }
+
+    function do_delete() {
+        $("#delete_dialog").dialog("close")
+        delete_document()
+    }
+
+    /* Context Menu */
+
+    function hide() {
+    }
+
+    function relate() {
     }
 
     /* Helper */

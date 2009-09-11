@@ -9,9 +9,6 @@ db.fulltext_search = function(text) {
     return JSON.parse(this.last_req.responseText)
 }
 
-// var result = db.view("technotes/bytag", {key: "Ruby"})
-// alert("total_rows=" + result.total_rows + ", result size=" + result.rows.length)
-
 var current_doc        // document being displayed, or null if no one is currently displayed
 var canvas
 var implementations = {}
@@ -59,8 +56,13 @@ function reveal_document(doc_id) {
     }
 }
 
+function select_document(doc_id) {
+    show_document(doc_id)
+    canvas.refresh()
+}
+
 // Fetches the document and displays it on the content panel. Updates global state (current_doc), provided the document could
-// be fetched successfully. Returns true id the document could be fetched successfully, false otherwise.
+// be fetched successfully. Returns true if the document could be fetched successfully, false otherwise.
 // If no document is specified, the current document is re-fetched. If there is no current document the content panel is emptied.
 function show_document(doc_id) {
     if (doc_id == undefined) {
@@ -75,7 +77,7 @@ function show_document(doc_id) {
     var result = db.open(doc_id)
     //
     if (result == null) {
-        alert(doc_id + " doesn't exist")
+        alert("Document " + doc_id + " doesn't exist.\nPossibly it has been deleted.")
         return false
     }
     // update global state
@@ -97,28 +99,58 @@ function show_document(doc_id) {
 function create_document() {
     current_doc = clone(types[$("#type_select").val()])
     save_document(current_doc)
-    //
+    // update GUI
     canvas.add_document(current_doc, true)
-    // alert("saved document: " + JSON.stringify(current_doc))
-    edit_document()
+    // initiate editing
+    var impl = implementations[current_doc.implementation]
+    impl.edit_document()
 }
 
 function save_document(doc) {
-    // alert("save document: " + JSON.stringify(current_doc))
+    // alert("save document: " + JSON.stringify(doc))
     try {
         var result = db.save(doc)
         // alert("result=" + JSON.stringify(result))
+        // alert("saved document: " + JSON.stringify(doc))
     } catch (e) {
         alert("error while saving: " + JSON.stringify(e))
     }
 }
 
 function delete_document() {
-    $("#delete_dialog").dialog("close")
     var result = db.deleteDoc(current_doc)
     // alert("Deleted!\nresult=" + JSON.stringify(result))
+    // update GUI
     canvas.remove_document(current_doc._id, true)
     show_document()
+}
+
+//
+
+function create_relation(doc_id) {
+    // add to current topic
+    if (!current_doc.related_ids) {
+        current_doc.related_ids = []
+    }
+    current_doc.related_ids.push(doc_id)
+    save_document(current_doc)
+    // add to related topic
+    related_doc = db.open(doc_id)
+    if (!related_doc.related_ids) {
+        related_doc.related_ids = []
+    }
+    related_doc.related_ids.push(current_doc._id)
+    save_document(related_doc)
+    // update GUI
+    select_document(current_doc._id)
+}
+
+//
+
+function handle_context_command(function_name) {
+    // alert("handle_context_command: function_name=" + function_name)
+    var impl = implementations[current_doc.implementation]
+    eval("impl." + function_name + "()")
 }
 
 /* Helper */

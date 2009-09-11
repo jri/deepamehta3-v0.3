@@ -12,12 +12,6 @@ var types = {
                 "show_label": false,
                 "type": "multi line",
                 "content": ""
-            },
-            {
-                "id": "Tags",
-                "show_label": true,
-                "type": "single line",
-                "content": ""
             }
         ],
         "implementation": "PlainDocument"
