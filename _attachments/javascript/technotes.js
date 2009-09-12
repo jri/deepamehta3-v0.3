@@ -109,19 +109,19 @@ function create_document() {
 }
 
 function save_document(doc) {
-    // alert("save document: " + JSON.stringify(doc))
     try {
         var result = db.save(doc)
-        // alert("result=" + JSON.stringify(result))
-        // alert("saved document: " + JSON.stringify(doc))
     } catch (e) {
         alert("error while saving: " + JSON.stringify(e))
     }
 }
 
 function delete_document() {
+    // 1) delete relations
+    delete_relations(current_doc)
+    // 2) delete document
+    // update DB
     var result = db.deleteDoc(current_doc)
-    // alert("Deleted!\nresult=" + JSON.stringify(result))
     // update GUI
     canvas.remove_document(current_doc._id, true)
     show_document()
@@ -149,30 +149,32 @@ function create_relation(doc_id) {
 }
 
 function delete_relation() {
-    var doc1 = db.open(current_rel.doc1_id)
-    var doc2 = db.open(current_rel.doc2_id)
-    // assertion
-    if (!doc1.related_ids || !doc2.related_ids) {
-        alert("delete_relation: missing relation in document")
-        return
-    }
-    //
-    var c1 = remove_element(doc1.related_ids, doc2._id)
-    var c2 = remove_element(doc2.related_ids, doc1._id)
+    // update DB
+    var c1 = remove_related_id(current_rel.doc1_id, current_rel.doc2_id)
+    var c2 = remove_related_id(current_rel.doc2_id, current_rel.doc1_id)
     // assertion
     if (c1 != c2) {
         alert("delete_relation: " + c1 + " vs. " + c2)
         return
     }
-    // update DB
-    save_document(doc1)
-    save_document(doc2)
     // update GUI
     canvas.remove_relation(current_rel.id, true)
     show_document()
 }
 
-//
+function delete_relations(doc) {
+    var rel_ids = doc.related_ids
+    if (rel_ids) {
+        for (var i = 0, rel_id; rel_id = rel_ids[i]; i++) {
+            // update DB
+            remove_related_id(rel_id, doc._id)
+            // update GUI
+            canvas.remove_relation_by_topics(rel_id, doc._id)
+        }
+    }
+}
+
+/* ---------------------------------------- Helper ---------------------------------------- */
 
 function call_document_function(function_name) {
     // alert("call_document_function: " + function_name)
@@ -188,7 +190,7 @@ function call_relation_function(function_name) {
     }
 }
 
-/* Helper */
+//
 
 function empty_detail_panel() {
     $("#detail_panel").empty()
@@ -203,6 +205,21 @@ function render_object(object) {
         table.append($("<tr>").append(td1).append(td2))
     }
     return table
+}
+
+//
+
+function remove_related_id(doc_id, related_id) {
+    var doc = db.open(doc_id)
+    // assertion
+    if (!doc.related_ids) {
+        alert("remove_related_id: document has no relations")
+        return
+    }
+    //
+    var count = remove_element(doc.related_ids, related_id)
+    save_document(doc)
+    return count
 }
 
 // Removes all occurrences of the element in the array.

@@ -62,15 +62,15 @@ function Canvas() {
         if (i == -1) {
             throw "remove_document: document not found on canvas (" + doc_id + ")"
         }
-        // remove from GUI
+        // update GUI (DOM tree)
         canvas_topics[i].text_div.remove()
-        // remove from model
+        // update model
         canvas_topics.splice(i, 1)
         //
         if (current_doc._id == doc_id) {
             current_doc = null
         }
-        //
+        // update GUI (canvas)
         if (refresh_canvas) {
             this.refresh()
         }
@@ -82,15 +82,23 @@ function Canvas() {
         if (i == -1) {
             throw "remove_relation: association not found on canvas (" + assoc_id + ")"
         }
-        // remove from model
+        // update model
         canvas_assocs.splice(i, 1)
         //
         if (current_rel.id == assoc_id) {
             current_rel = null
         }
-        //
+        // update GUI
         if (refresh_canvas) {
             this.refresh()
+        }
+    }
+
+    this.remove_relation_by_topics = function(topic1_id, topic2_id) {
+        var i = assoc_index_by_topics(topic1_id, topic2_id)
+        if (i >= 0) {
+            // update model
+            canvas_assocs.splice(i, 1)
         }
     }
 
@@ -115,7 +123,7 @@ function Canvas() {
         current_topic = doc_by_id(doc_id)
     }
 
-    /* --- Private Methods --- */
+    /* ---------------------------------------- Private Methods ---------------------------------------- */
 
     /* Drawing */
 
@@ -268,7 +276,7 @@ function Canvas() {
         $(".contextmenu").remove()
     }
 
-    /* Helper */
+    /* ---------------------------------------- Helper ---------------------------------------- */
 
     function doc_index(doc_id) {
         for (var i = 0, ct; ct = canvas_topics[i]; i++) {
@@ -282,6 +290,16 @@ function Canvas() {
     function assoc_index(assoc_id) {
         for (var i = 0, ca; ca = canvas_assocs[i]; i++) {
             if (ca.id == assoc_id) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    function assoc_index_by_topics(topic1_id, topic2_id) {
+        for (var i = 0, ca; ca = canvas_assocs[i]; i++) {
+            if (ca.doc1_id == topic1_id && ca.doc2_id == topic2_id ||
+                ca.doc1_id == topic2_id && ca.doc2_id == topic1_id) {
                 return i
             }
         }
