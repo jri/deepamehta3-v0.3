@@ -74,6 +74,10 @@ function PlainDocument() {
 
     /* Context Menu Commands */
 
+    this.hide = function() {
+        alert("Hide: TODO")
+    }
+
     this.relate = function() {
         canvas.begin_relation(current_doc._id)
     }
@@ -122,14 +126,6 @@ function PlainDocument() {
     function do_delete() {
         $("#delete_dialog").dialog("close")
         delete_document()
-    }
-
-    /* Context Menu */
-
-    function hide() {
-    }
-
-    function relate() {
     }
 
     /* Helper */

@@ -9,22 +9,24 @@ db.fulltext_search = function(text) {
     return JSON.parse(this.last_req.responseText)
 }
 
-var current_doc        // document being displayed, or null if no one is currently displayed
+var current_doc         // document being displayed, or null if no one is currently displayed
+var current_rel         // relation being activated (CanvasAssoc object)
 var canvas
 var implementations = {}
+var debug_window
 
 function init() {
     canvas = new Canvas()
-    // search form
-    $("#search_form").submit(search)
-    // type select
-    $("#type_select_placeholder").replaceWith(create_type_select())
-    // create button
-    $("#create_button").click(create_document)
+    //
+    $("#search_form").submit(search)                                    // search form
+    $("#type_select_placeholder").replaceWith(create_type_select())     // type select
+    $("#create_button").click(create_document)                          // create button
     //
     for (var i = 0, implementation_class; implementation_class = implementation_classes[i]; i++) {
         implementations[implementation_class] = eval("new " + implementation_class)
     }
+    // debug window
+    // debug_window = window.open()
 }
 
 function search() {
@@ -73,7 +75,7 @@ function show_document(doc_id) {
             return false
         }
     }
-    // fetch
+    // fetch document
     var result = db.open(doc_id)
     //
     if (result == null) {
@@ -135,22 +137,55 @@ function create_relation(doc_id) {
     current_doc.related_ids.push(doc_id)
     save_document(current_doc)
     // add to related topic
-    related_doc = db.open(doc_id)
+    var related_doc = db.open(doc_id)
     if (!related_doc.related_ids) {
         related_doc.related_ids = []
     }
     related_doc.related_ids.push(current_doc._id)
     save_document(related_doc)
     // update GUI
+    canvas.add_relation(current_doc._id, doc_id)
     select_document(current_doc._id)
+}
+
+function delete_relation() {
+    var doc1 = db.open(current_rel.doc1_id)
+    var doc2 = db.open(current_rel.doc2_id)
+    // assertion
+    if (!doc1.related_ids || !doc2.related_ids) {
+        alert("delete_relation: missing relation in document")
+        return
+    }
+    //
+    var c1 = remove_element(doc1.related_ids, doc2._id)
+    var c2 = remove_element(doc2.related_ids, doc1._id)
+    // assertion
+    if (c1 != c2) {
+        alert("delete_relation: " + c1 + " vs. " + c2)
+        return
+    }
+    // update DB
+    save_document(doc1)
+    save_document(doc2)
+    // update GUI
+    canvas.remove_relation(current_rel.id, true)
+    show_document()
 }
 
 //
 
-function handle_context_command(function_name) {
-    // alert("handle_context_command: function_name=" + function_name)
+function call_document_function(function_name) {
+    // alert("call_document_function: " + function_name)
     var impl = implementations[current_doc.implementation]
     eval("impl." + function_name + "()")
+}
+
+function call_relation_function(function_name) {
+    if (function_name == "delete_relation") {
+        delete_relation()
+    } else {
+        alert("call_relation_function: function \"" + function_name + "\" not implemented")
+    }
 }
 
 /* Helper */
@@ -170,6 +205,44 @@ function render_object(object) {
     return table
 }
 
+// Removes all occurrences of the element in the array.
+// Returns the number of removed elements.
+function remove_element(array, elem) {
+    var i = 0, count = 0, e
+    while (e = array[i]) {
+        if (e == elem) {
+            array.splice(i, 1)
+            count++
+            continue
+        }
+        i++
+    }
+    return count
+}
+
+// FIXME: currently not used
+/* function remove_element(array, elem) {
+    var i = element_index(array, elem)
+    if (i == -1) {
+        alert("remove_element: " + elem + " not found in " + array)
+    }
+    array.splice(i, 1)
+} */
+
+// FIXME: currently not used
+/* function element_index(array, elem) {
+    for (var i = 0, e; e = array[i]; i++) {
+        if (e == elem) {
+            return i
+        }
+    }
+    return -1
+} */
+
 function clone(obj) {
     return JSON.parse(JSON.stringify(obj))
+}
+
+function log(text) {
+    debug_window.document.writeln(text + "<br>")
 }
