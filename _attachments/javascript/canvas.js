@@ -14,7 +14,8 @@ function Canvas() {
     // Model
     var canvas_topics = []
     var canvas_assocs = []
-    var next_assoc_id = 1       // ID generator
+    var next_assoc_id = 1           // ID generator
+    var trans_x = 0, trans_y = 0    // canvas translation
     
     // View (Canvas)
     var canvas_elem = document.getElementById("canvas")
@@ -28,10 +29,11 @@ function Canvas() {
     canvas_elem.oncontextmenu = contextmenu
 
     // Short-term Interaction State
-    var move_in_progress        // true while topic move is in progress
-    var relation_in_progress    // true while relation is pulled
-    var current_topic           // topic being moved / related
-    var rel_x, rel_y            // end point of relation in progress
+    var topic_move_in_progress      // true while topic move is in progress
+    var assoc_create_in_progress    // true while new association is pulled
+    var canvas_move_in_progress     // true while canvas translation is in progress
+    var action_topic                // topic being moved / related
+    var tmp_x, tmp_y                // coordinates while association in progress and while canvas translation
 
     this.add_document = function(doc, refresh_canvas, x, y) {
         // init geometry
@@ -67,7 +69,7 @@ function Canvas() {
             throw "remove_document: document not found on canvas (" + doc_id + ")"
         }
         // update GUI (DOM tree)
-        canvas_topics[i].text_div.remove()
+        canvas_topics[i].label_div.remove()
         // update model
         canvas_topics.splice(i, 1)
         //
@@ -119,8 +121,8 @@ function Canvas() {
     }
 
     this.begin_relation = function(doc_id) {
-        relation_in_progress = true
-        current_topic = doc_by_id(doc_id)
+        assoc_create_in_progress = true
+        action_topic = doc_by_id(doc_id)
     }
 
     /* ---------------------------------------- Private Methods ---------------------------------------- */
@@ -128,7 +130,7 @@ function Canvas() {
     /* Drawing */
 
     function draw() {
-        ctx.clearRect(0, 0, canvas_width, canvas_height)
+        ctx.clearRect(-trans_x, -trans_y, canvas_width, canvas_height)
         // 1) assocs
         for (var i in canvas_assocs) {
             ca = canvas_assocs[i]
@@ -142,8 +144,8 @@ function Canvas() {
             draw_line(ct1.x, ct1.y, ct2.x, ct2.y, assoc_width, assoc_color)
         }
         // 2) relation in progress
-        if (relation_in_progress) {
-            draw_line(current_topic.x, current_topic.y, rel_x, rel_y, assoc_width, active_color)
+        if (assoc_create_in_progress) {
+            draw_line(action_topic.x, action_topic.y, tmp_x, tmp_y, assoc_width, active_color)
         }
         // 3) topics
         ctx.lineWidth = active_topic_width
@@ -180,9 +182,9 @@ function Canvas() {
         //
         var ct = doc_by_position(event)
         // alert("clicked: ct=" + ct + "\nwhich=" + event.which)
-        if (relation_in_progress) {
+        if (assoc_create_in_progress) {
             // end relation in progress
-            relation_in_progress = false
+            assoc_create_in_progress = false
             //
             if (ct) {
                 create_relation(current_doc, ct.doc_id)
@@ -190,14 +192,17 @@ function Canvas() {
             } else {
                 draw()
             }
-        } else if (move_in_progress) {
+        } else if (topic_move_in_progress) {
             // end move
-            move_in_progress = false
+            topic_move_in_progress = false
+        } else if (canvas_move_in_progress) {
+            // end translation
+            canvas_move_in_progress = false
         } else if (ct) {
             select_document(ct.doc_id)
         }
         // remove topic activation
-        current_topic = null
+        action_topic = null
         // remove assoc activation
         if (current_rel) {
             current_rel = null
@@ -207,22 +212,40 @@ function Canvas() {
 
     function mousedown(event) {
         if (event.which == 1) {
+            tmp_x = cx(event)
+            tmp_y = cy(event)
+            //
             var ct = doc_by_position(event)
             // alert("mousedown: which=" + event.which + "\nct=" + ct + "\nca=" + ca)
             if (ct) {
-                current_topic = ct
+                action_topic = ct
+            } else {
+                canvas_move_in_progress = true
             }
         }
     }
 
     function mousemove(event) {
-        if (current_topic) {
-            if (relation_in_progress) {
-                rel_x = cx(event)
-                rel_y = cy(event)
+        if (action_topic || canvas_move_in_progress) {
+            if (assoc_create_in_progress) {
+                tmp_x = cx(event)
+                tmp_y = cy(event)
+            } else if (canvas_move_in_progress) {
+                var x = cx(event)
+                var y = cy(event)
+                var tx = x - tmp_x
+                var ty = y - tmp_y
+                //
+                ctx.translate(tx, ty)
+                move_topic_labels_by(tx, ty)
+                //
+                trans_x += tx
+                trans_y += ty
+                tmp_x = x
+                tmp_y = y
             } else {
-                move_in_progress = true
-                current_topic.move_to(event)
+                topic_move_in_progress = true
+                action_topic.move_to(event)
             }
             draw()
         }
@@ -320,8 +343,8 @@ function Canvas() {
     }
 
     function doc_by_position(event) {
-        var x = cx(event)
-        var y = cy(event)
+        var x = cx(event, true)
+        var y = cy(event, true)
         for (var i in canvas_topics) {
             ct = canvas_topics[i]
             if (x >= ct.x - topic_radius && x < ct.x + topic_radius &&
@@ -334,8 +357,8 @@ function Canvas() {
     }
 
     function assoc_by_position(event) {
-        var x = cx(event)
-        var y = cy(event)
+        var x = cx(event, true)
+        var y = cy(event, true)
         for (var i in canvas_assocs) {
             var ca = canvas_assocs[i]
             var ct1 = doc_by_id(ca.doc1_id)
@@ -360,14 +383,20 @@ function Canvas() {
         return null
     }
 
-    //
-
-    function cx(event) {
-        return event.pageX - canvas_elem.offsetLeft
+    function move_topic_labels_by(tx, ty) {
+        for (var i = 0, ct; ct = canvas_topics[i]; i++) {
+            ct.move_label_by(tx, ty)
+        }
     }
 
-    function cy(event) {
-        return event.pageY - canvas_elem.offsetTop
+    //
+
+    function cx(event, consider_translation) {
+        return event.pageX - canvas_elem.offsetLeft - (consider_translation ? trans_x : 0)
+    }
+
+    function cy(event, consider_translation) {
+        return event.pageY - canvas_elem.offsetTop - (consider_translation ? trans_y : 0)
     }
 
     /* CanvasTopic */
@@ -375,24 +404,31 @@ function Canvas() {
     function CanvasTopic(doc, x, y) {
 
         this.doc_id = doc._id
-        this.x = x;
-        this.y = y;
-        var screen_x = x + canvas_elem.offsetLeft - topic_radius
-        var screen_y = y + canvas_elem.offsetTop + 1.5 * topic_radius
-        var label = topic_label(doc)
-        this.text_div = $("<div>").css({position: "absolute", top: screen_y + "px", left: screen_x + "px", width: "100px"}).text(label)
-        $("#context_panel").append(this.text_div)
+        this.x = x - trans_x;
+        this.y = y - trans_y;
+        this.label_x = x + canvas_elem.offsetLeft - topic_radius
+        this.label_y = y + canvas_elem.offsetTop + 1.5 * topic_radius
+        this.label_div = $("<div>").text(topic_label(doc)).css({
+            position: "absolute", "max-width": "100px", top: this.label_y + "px", left: this.label_x + "px"
+        })
+        $("#context_panel").append(this.label_div)
 
         this.move_to = function(event) {
-            this.x = cx(event)
-            this.y = cy(event)
-            var screen_x = event.pageX - topic_radius
-            var screen_y = event.pageY + 1.5 * topic_radius
-            this.text_div.css({top: screen_y + "px", left: screen_x + "px"})
+            this.x = cx(event, true)
+            this.y = cy(event, true)
+            this.label_x = event.pageX - topic_radius
+            this.label_y = event.pageY + 1.5 * topic_radius
+            this.label_div.css({top: this.label_y + "px", left: this.label_x + "px"})
+        }
+
+        this.move_label_by = function(tx, ty) {
+            this.label_x += tx
+            this.label_y += ty
+            this.label_div.css({top: this.label_y + "px", left: this.label_x + "px"})
         }
         
         this.update = function(doc) {
-            this.text_div.text(topic_label(doc))
+            this.label_div.text(topic_label(doc))
         }
 
         function topic_label(doc) {
