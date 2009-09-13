@@ -75,14 +75,14 @@ function PlainDocument() {
     /* Context Menu Commands */
 
     this.hide = function() {
-        alert("Hide: TODO")
+        remove_document(false)
     }
 
     this.relate = function() {
         canvas.begin_relation(current_doc._id)
     }
 
-    /* --- Private Methods --- */
+    /* ---------------------------------------- Private Methods ---------------------------------------- */
 
     function update_document() {
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
@@ -125,7 +125,7 @@ function PlainDocument() {
 
     function do_delete() {
         $("#delete_dialog").dialog("close")
-        delete_document()
+        remove_document(true)
     }
 
     /* Helper */

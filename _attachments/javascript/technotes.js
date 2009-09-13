@@ -50,11 +50,17 @@ function search() {
 }
 
 function reveal_document(doc_id) {
-    if (show_document(doc_id)) {
-        if (!canvas.contains(doc_id)) {
-            canvas.add_document(current_doc)
+    if (document_exists(doc_id)) {
+        if (!relation_exists(current_doc, doc_id)) {
+            create_relation(current_doc, doc_id)
+        } else {
+            canvas.add_relation(current_doc._id, doc_id)
         }
-        canvas.refresh()    // highlight
+        // update GUI
+        show_document(doc_id)
+        canvas.add_document(current_doc, true)
+    } else {
+        alert("Document " + doc_id + " doesn't exist. Possibly it has been deleted.")
     }
 }
 
@@ -63,9 +69,14 @@ function select_document(doc_id) {
     canvas.refresh()
 }
 
-// Fetches the document and displays it on the content panel. Updates global state (current_doc), provided the document could
-// be fetched successfully. Returns true if the document could be fetched successfully, false otherwise.
-// If no document is specified, the current document is re-fetched. If there is no current document the content panel is emptied.
+/**
+ * Fetches the document and displays it on the content panel. Updates global state (current_doc),
+ * provided the document could be fetched successfully.
+ * If no document is specified, the current document is re-fetched.
+ * If there is no current document the content panel is emptied.
+ *
+ * @return  true if the document could be fetched successfully, false otherwise.
+ */
 function show_document(doc_id) {
     if (doc_id == undefined) {
         if (current_doc) {
@@ -79,7 +90,6 @@ function show_document(doc_id) {
     var result = db.open(doc_id)
     //
     if (result == null) {
-        alert("Document " + doc_id + " doesn't exist.\nPossibly it has been deleted.")
         return false
     }
     // update global state
@@ -110,18 +120,24 @@ function create_document() {
 
 function save_document(doc) {
     try {
-        var result = db.save(doc)
+        db.save(doc)
     } catch (e) {
         alert("error while saving: " + JSON.stringify(e))
     }
 }
 
-function delete_document() {
+/**
+ * @param   delete_from_db  If true, the document (including its relations) is deleted permanently.
+ *                          If false, the document (including its relations) is just removed from the view.
+ */
+function remove_document(delete_from_db) {
     // 1) delete relations
-    delete_relations(current_doc)
+    remove_relations(current_doc, delete_from_db)
     // 2) delete document
     // update DB
-    var result = db.deleteDoc(current_doc)
+    if (delete_from_db) {
+        db.deleteDoc(current_doc)
+    }
     // update GUI
     canvas.remove_document(current_doc._id, true)
     show_document()
@@ -129,23 +145,26 @@ function delete_document() {
 
 //
 
-function create_relation(doc_id) {
+/**
+ * Creates a relation between the 2 documents.
+ */
+function create_relation(doc, rel_doc_id) {
+    // 1) update DB
     // add to current topic
-    if (!current_doc.related_ids) {
-        current_doc.related_ids = []
+    if (!doc.related_ids) {
+        doc.related_ids = []
     }
-    current_doc.related_ids.push(doc_id)
-    save_document(current_doc)
+    doc.related_ids.push(rel_doc_id)
+    save_document(doc)
     // add to related topic
-    var related_doc = db.open(doc_id)
+    var related_doc = db.open(rel_doc_id)
     if (!related_doc.related_ids) {
         related_doc.related_ids = []
     }
-    related_doc.related_ids.push(current_doc._id)
+    related_doc.related_ids.push(doc._id)
     save_document(related_doc)
-    // update GUI
-    canvas.add_relation(current_doc._id, doc_id)
-    select_document(current_doc._id)
+    // 2) update GUI
+    canvas.add_relation(doc._id, rel_doc_id)
 }
 
 function delete_relation() {
@@ -162,12 +181,14 @@ function delete_relation() {
     show_document()
 }
 
-function delete_relations(doc) {
+function remove_relations(doc, delete_from_db) {
     var rel_ids = doc.related_ids
     if (rel_ids) {
         for (var i = 0, rel_id; rel_id = rel_ids[i]; i++) {
             // update DB
-            remove_related_id(rel_id, doc._id)
+            if (delete_from_db) {
+                remove_related_id(rel_id, doc._id)
+            }
             // update GUI
             canvas.remove_relation_by_topics(rel_id, doc._id)
         }
@@ -209,6 +230,16 @@ function render_object(object) {
 
 //
 
+function document_exists(doc_id) {
+    return db.open(doc_id) != null
+}
+
+function relation_exists(doc, rel_doc_id) {
+    return element_index(doc.related_ids, rel_doc_id) >= 0
+}
+
+//
+
 function remove_related_id(doc_id, related_id) {
     var doc = db.open(doc_id)
     // assertion
@@ -218,6 +249,7 @@ function remove_related_id(doc_id, related_id) {
     }
     //
     var count = remove_element(doc.related_ids, related_id)
+    // update DB
     save_document(doc)
     return count
 }
@@ -246,15 +278,18 @@ function remove_element(array, elem) {
     array.splice(i, 1)
 } */
 
-// FIXME: currently not used
-/* function element_index(array, elem) {
+function element_index(array, elem) {
+    if (!array) {
+        return -1
+    }
+    //
     for (var i = 0, e; e = array[i]; i++) {
         if (e == elem) {
             return i
         }
     }
     return -1
-} */
+}
 
 function clone(obj) {
     return JSON.parse(JSON.stringify(obj))

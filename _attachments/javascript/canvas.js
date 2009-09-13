@@ -40,7 +40,9 @@ function Canvas() {
             y = canvas_height * Math.random()
         }
         // add to canvas
-        canvas_topics.push(new CanvasTopic(doc, x, y))
+        if (!topic_exists(doc._id)) {
+            canvas_topics.push(new CanvasTopic(doc, x, y))
+        }
         //
         if (refresh_canvas) {
             this.refresh()
@@ -49,7 +51,9 @@ function Canvas() {
 
     this.add_relation = function(doc1_id, doc2_id, refresh_canvas) {
         // add to canvas
-        canvas_assocs.push(new CanvasAssoc(doc1_id, doc2_id))
+        if (!assoc_exists(doc1_id, doc2_id)) {
+            canvas_assocs.push(new CanvasAssoc(doc1_id, doc2_id))
+        }
         //
         if (refresh_canvas) {
             this.refresh()
@@ -57,7 +61,7 @@ function Canvas() {
     }
 
     this.remove_document = function(doc_id, refresh_canvas) {
-        var i = doc_index(doc_id)
+        var i = topic_index(doc_id)
         // assertion
         if (i == -1) {
             throw "remove_document: document not found on canvas (" + doc_id + ")"
@@ -104,10 +108,6 @@ function Canvas() {
 
     this.update_document = function(doc) {
         doc_by_id(doc._id).update(doc)
-    }
-
-    this.contains = function(doc_id) {
-        return doc_index(doc_id) >= 0;
     }
 
     this.refresh = function() {
@@ -185,7 +185,8 @@ function Canvas() {
             relation_in_progress = false
             //
             if (ct) {
-                create_relation(ct.doc_id)
+                create_relation(current_doc, ct.doc_id)
+                select_document(current_doc._id)
             } else {
                 draw()
             }
@@ -278,13 +279,17 @@ function Canvas() {
 
     /* ---------------------------------------- Helper ---------------------------------------- */
 
-    function doc_index(doc_id) {
+    function topic_index(doc_id) {
         for (var i = 0, ct; ct = canvas_topics[i]; i++) {
             if (ct.doc_id == doc_id) {
                 return i
             }
         }
         return -1
+    }
+
+    function topic_exists(doc_id) {
+        return topic_index(doc_id) >= 0;
     }
 
     function assoc_index(assoc_id) {
@@ -294,6 +299,10 @@ function Canvas() {
             }
         }
         return -1
+    }
+
+    function assoc_exists(topic1_id, topic2_id) {
+        return assoc_index_by_topics(topic1_id, topic2_id) >= 0
     }
 
     function assoc_index_by_topics(topic1_id, topic2_id) {
@@ -307,7 +316,7 @@ function Canvas() {
     }
 
     function doc_by_id(doc_id) {
-        return canvas_topics[doc_index(doc_id)]
+        return canvas_topics[topic_index(doc_id)]
     }
 
     function doc_by_position(event) {

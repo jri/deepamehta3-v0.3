@@ -18,6 +18,6 @@ function SearchResult() {
     /* Context Menu Commands */
 
     this.remove = function() {
-        delete_document()
+        remove_document(true)
     }
 }
