@@ -59,6 +59,7 @@ function reveal_document(doc_id) {
         // update GUI
         show_document(doc_id)
         canvas.add_document(current_doc, true)
+        canvas.focus_topic(doc_id)
     } else {
         alert("Document " + doc_id + " doesn't exist. Possibly it has been deleted.")
     }

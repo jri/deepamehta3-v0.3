@@ -10,6 +10,8 @@ function Canvas() {
     var active_assoc_width = 10
     var assoc_color = "gray"
     var assoc_width = 4
+    var assoc_click_tolerance = 0.3
+    var canvas_animation_steps = 30
 
     // Model
     var canvas_topics = []
@@ -34,6 +36,8 @@ function Canvas() {
     var canvas_move_in_progress     // true while canvas translation is in progress
     var action_topic                // topic being moved / related
     var tmp_x, tmp_y                // coordinates while association in progress and while canvas translation
+    var animation
+    var animation_count
 
     this.add_document = function(doc, refresh_canvas, x, y) {
         // init geometry
@@ -109,7 +113,26 @@ function Canvas() {
     }
 
     this.update_document = function(doc) {
-        doc_by_id(doc._id).update(doc)
+        topic_by_id(doc._id).update(doc)
+    }
+
+    this.focus_topic = function(topic_id) {
+        var ct = topic_by_id(topic_id)
+        if (ct.x + trans_x < 0 || ct.x + trans_x >= canvas_width || ct.y + trans_y < 0 || ct.y + trans_y >= canvas_height) {
+            var dx = (canvas_width / 2 - ct.x - trans_x) / canvas_animation_steps
+            var dy = (canvas_height / 2 - ct.y - trans_y) / canvas_animation_steps
+            // alert("topic out of sight\ntrans_x=" + trans_x + " trans_y=" + trans_y + "\nct.x=" + ct.x + " ct.y=" + ct.y + "\ndx=" + dx + " dy=" + dy)
+            animation_count = 0;
+            animation = setInterval("canvas.animation(" + dx + ", " + dy + ")", 0)
+        }
+    }
+
+    this.animation = function(dx, dy) {
+        translate(dx, dy)
+        draw()
+        if (++animation_count == canvas_animation_steps) {
+            clearInterval(animation)
+        }
     }
 
     this.refresh = function() {
@@ -122,7 +145,7 @@ function Canvas() {
 
     this.begin_relation = function(doc_id) {
         assoc_create_in_progress = true
-        action_topic = doc_by_id(doc_id)
+        action_topic = topic_by_id(doc_id)
     }
 
     /* ---------------------------------------- Private Methods ---------------------------------------- */
@@ -134,8 +157,8 @@ function Canvas() {
         // 1) assocs
         for (var i in canvas_assocs) {
             ca = canvas_assocs[i]
-            ct1 = doc_by_id(ca.doc1_id)
-            ct2 = doc_by_id(ca.doc2_id)
+            ct1 = topic_by_id(ca.doc1_id)
+            ct2 = topic_by_id(ca.doc2_id)
             // hightlight
             if (current_rel && current_rel.id == ca.id) {
                 draw_line(ct1.x, ct1.y, ct2.x, ct2.y, active_assoc_width, active_color)
@@ -145,7 +168,7 @@ function Canvas() {
         }
         // 2) relation in progress
         if (assoc_create_in_progress) {
-            draw_line(action_topic.x, action_topic.y, tmp_x, tmp_y, assoc_width, active_color)
+            draw_line(action_topic.x, action_topic.y, tmp_x - trans_x, tmp_y - trans_y, assoc_width, active_color)
         }
         // 3) topics
         ctx.lineWidth = active_topic_width
@@ -176,50 +199,15 @@ function Canvas() {
 
     /* Event Handling */
 
-    function clicked(event) {
-        //
-        close_context_menu()
-        //
-        var ct = doc_by_position(event)
-        // alert("clicked: ct=" + ct + "\nwhich=" + event.which)
-        if (assoc_create_in_progress) {
-            // end relation in progress
-            assoc_create_in_progress = false
-            //
-            if (ct) {
-                create_relation(current_doc, ct.doc_id)
-                select_document(current_doc._id)
-            } else {
-                draw()
-            }
-        } else if (topic_move_in_progress) {
-            // end move
-            topic_move_in_progress = false
-        } else if (canvas_move_in_progress) {
-            // end translation
-            canvas_move_in_progress = false
-        } else if (ct) {
-            select_document(ct.doc_id)
-        }
-        // remove topic activation
-        action_topic = null
-        // remove assoc activation
-        if (current_rel) {
-            current_rel = null
-            draw()
-        }
-    }
-
     function mousedown(event) {
         if (event.which == 1) {
             tmp_x = cx(event)
             tmp_y = cy(event)
             //
             var ct = doc_by_position(event)
-            // alert("mousedown: which=" + event.which + "\nct=" + ct + "\nca=" + ca)
             if (ct) {
                 action_topic = ct
-            } else {
+            } else if (!assoc_create_in_progress) {
                 canvas_move_in_progress = true
             }
         }
@@ -233,20 +221,49 @@ function Canvas() {
             } else if (canvas_move_in_progress) {
                 var x = cx(event)
                 var y = cy(event)
-                var tx = x - tmp_x
-                var ty = y - tmp_y
-                //
-                ctx.translate(tx, ty)
-                move_topic_labels_by(tx, ty)
-                //
-                trans_x += tx
-                trans_y += ty
+                translate(x - tmp_x, y - tmp_y)
                 tmp_x = x
                 tmp_y = y
             } else {
                 topic_move_in_progress = true
                 action_topic.move_to(event)
             }
+            draw()
+        }
+    }
+
+    function clicked(event) {
+        //
+        close_context_menu()
+        //
+        if (assoc_create_in_progress) {
+            // end relation in progress
+            assoc_create_in_progress = false
+            //
+            var ct = doc_by_position(event)
+            if (ct) {
+                create_relation(current_doc, ct.doc_id)
+                select_document(current_doc._id)
+            } else {
+                draw()
+            }
+        } else if (topic_move_in_progress) {
+            // end move
+            topic_move_in_progress = false
+        } else if (canvas_move_in_progress) {
+            // end translation
+            canvas_move_in_progress = false
+        } else {
+            var ct = doc_by_position(event)
+            if (ct) {
+                select_document(ct.doc_id)
+            }
+        }
+        // remove topic activation
+        action_topic = null
+        // remove assoc activation
+        if (current_rel) {
+            current_rel = null
             draw()
         }
     }
@@ -338,7 +355,7 @@ function Canvas() {
         return -1
     }
 
-    function doc_by_id(doc_id) {
+    function topic_by_id(doc_id) {
         return canvas_topics[topic_index(doc_id)]
     }
 
@@ -361,13 +378,14 @@ function Canvas() {
         var y = cy(event, true)
         for (var i in canvas_assocs) {
             var ca = canvas_assocs[i]
-            var ct1 = doc_by_id(ca.doc1_id)
-            var ct2 = doc_by_id(ca.doc2_id)
+            var ct1 = topic_by_id(ca.doc1_id)
+            var ct2 = topic_by_id(ca.doc2_id)
             // bounding rectangle
-            var bx1 = Math.min(ct1.x, ct2.x)
-            var bx2 = Math.max(ct1.x, ct2.x)
-            var by1 = Math.min(ct1.y, ct2.y)
-            var by2 = Math.max(ct1.y, ct2.y)
+            var aw2 = assoc_width / 2   // buffer to make orthogonal associations selectable
+            var bx1 = Math.min(ct1.x, ct2.x) - aw2
+            var bx2 = Math.max(ct1.x, ct2.x) + aw2
+            var by1 = Math.min(ct1.y, ct2.y) - aw2
+            var by2 = Math.max(ct1.y, ct2.y) + aw2
             var in_bounding = x > bx1 && x < bx2 && y > by1 && y < by2
             if (!in_bounding) {
                 continue
@@ -375,21 +393,29 @@ function Canvas() {
             // gradient
             var g1 = (y - ct1.y) / (x - ct1.x)
             var g2 = (y - ct2.y) / (x - ct2.x)
+            // log(g1 + " " + g2 + " -> " + Math.abs(g1 - g2))
             //
-            if (Math.abs(g1 - g2) < 0.1) {
+            if (Math.abs(g1 - g2) < assoc_click_tolerance) {
                 return ca
             }
         }
         return null
     }
 
-    function move_topic_labels_by(tx, ty) {
-        for (var i = 0, ct; ct = canvas_topics[i]; i++) {
-            ct.move_label_by(tx, ty)
-        }
+    /* GUI Helper */
+
+    function translate(tx, ty) {
+        ctx.translate(tx, ty)
+        move_topic_labels_by(tx, ty)
+        trans_x += tx
+        trans_y += ty
     }
 
-    //
+    function move_topic_labels_by(tx, ty) {
+         for (var i = 0, ct; ct = canvas_topics[i]; i++) {
+             ct.move_label_by(tx, ty)
+         }
+     }
 
     function cx(event, consider_translation) {
         return event.pageX - canvas_elem.offsetLeft - (consider_translation ? trans_x : 0)
