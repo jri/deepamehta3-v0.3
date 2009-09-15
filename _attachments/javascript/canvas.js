@@ -21,6 +21,8 @@ function Canvas() {
     
     // View (Canvas)
     var canvas_elem = document.getElementById("canvas")
+    var ox = $(canvas_elem).offset().left
+    var oy = $(canvas_elem).offset().top
     var ctx = canvas_elem.getContext("2d")
     ctx.fillStyle = topic_color
 
@@ -418,11 +420,11 @@ function Canvas() {
      }
 
     function cx(event, consider_translation) {
-        return event.pageX - canvas_elem.offsetLeft - (consider_translation ? trans_x : 0)
+        return event.pageX - ox - (consider_translation ? trans_x : 0)
     }
 
     function cy(event, consider_translation) {
-        return event.pageY - canvas_elem.offsetTop - (consider_translation ? trans_y : 0)
+        return event.pageY - oy - (consider_translation ? trans_y : 0)
     }
 
     /* CanvasTopic */
@@ -432,11 +434,15 @@ function Canvas() {
         this.doc_id = doc._id
         this.x = x - trans_x;
         this.y = y - trans_y;
-        this.label_x = x + canvas_elem.offsetLeft - topic_radius
-        this.label_y = y + canvas_elem.offsetTop + 1.5 * topic_radius
-        this.label_div = $("<div>").text(topic_label(doc)).css({
-            position: "absolute", "max-width": "100px", top: this.label_y + "px", left: this.label_x + "px"
-        })
+
+        // label
+        this.label_x = x + ox - topic_radius
+        this.label_y = y + oy + 1.5 * topic_radius
+        this.label_div = $("<div>").text(label_text(doc))
+        var label_css = label_position_css(this)
+        label_css.position = "absolute"
+        label_css["max-width"] = "100px"
+        this.label_div.css(label_css)
         $("#context_panel").append(this.label_div)
 
         this.move_to = function(event) {
@@ -444,21 +450,50 @@ function Canvas() {
             this.y = cy(event, true)
             this.label_x = event.pageX - topic_radius
             this.label_y = event.pageY + 1.5 * topic_radius
-            this.label_div.css({top: this.label_y + "px", left: this.label_x + "px"})
+            this.label_div.css(label_position_css(this))
         }
 
         this.move_label_by = function(tx, ty) {
             this.label_x += tx
             this.label_y += ty
-            this.label_div.css({top: this.label_y + "px", left: this.label_x + "px"})
+            this.label_div.css(label_position_css(this))
         }
         
         this.update = function(doc) {
-            this.label_div.text(topic_label(doc))
+            this.label_div.text(label_text(doc))
         }
 
-        function topic_label(doc) {
+        function label_text(doc) {
             return doc.fields[0].content
+        }
+
+        function label_position_css(ct) {
+            // 1) Positioning
+            var css = {top: ct.label_y + "px", left: ct.label_x + "px"}
+            // 2) Clipping
+            // Note: we do clip each label div instead of "overflow: hidden" for the context panel
+            // because "overflow: hidden" only works with absolute positioning the context panel
+            // which in turn has a lot of consequences, e.g. the context menu items doesn't
+            // occupy the entire context menu width anymore and I don't know how to fix it.
+            var lx = ct.label_x - ox;
+            var ly = ct.label_y - oy;
+            // Note: if the label div is completely out of sight we must set it to "display: none".
+            // Otherwise the document would grow and produce window scrollbars.
+            if (lx > canvas_width || ly > canvas_height) {
+                css.display = "none"
+            } else {
+                var lw = ct.label_div.width()
+                var lh = ct.label_div.height()
+                var top = ly < 0 ? -ly + "px" : "auto"
+                var bottom = ly + lh > canvas_height ? canvas_height - ly + "px" : "auto"
+                var left = lx < 0 ? -lx + "px" : "auto"
+                var right = lx + lw > canvas_width ? canvas_width - lx + "px" : "auto"
+                css.clip = "rect(" + top + ", " + right + ", " + bottom + ", " + left + ")"
+                css.display = "block"
+            }
+            // alert("css=" + JSON.stringify(css))
+            //
+            return css
         }
     }
 

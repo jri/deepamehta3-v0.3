@@ -13,9 +13,15 @@ var current_doc         // document being displayed, or null if no one is curren
 var current_rel         // relation being activated (CanvasAssoc object)
 var canvas
 var implementations = {}
+var debug = false
 var debug_window
 
 function init() {
+    // debug window
+    if (debug) {
+        debug_window = window.open()
+    }
+    //
     canvas = new Canvas()
     //
     $("#search_form").submit(search)                                    // search form
@@ -25,8 +31,6 @@ function init() {
     for (var i = 0, implementation_class; implementation_class = implementation_classes[i]; i++) {
         implementations[implementation_class] = eval("new " + implementation_class)
     }
-    // debug window
-    // debug_window = window.open()
 }
 
 function search() {
@@ -297,5 +301,7 @@ function clone(obj) {
 }
 
 function log(text) {
-    debug_window.document.writeln(text + "<br>")
+    if (debug) {
+        debug_window.document.writeln(text + "<br>")
+    }
 }
