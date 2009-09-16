@@ -1,37 +1,58 @@
-<h1>"Technotes"</h1>
 
-An experimental web application based on CouchDB, Lucene, and HTML Canvas.
+DeepaMehta 3
+============
 
-Developed in the scope of DeepaMehta 3 to make experiences with base technologies.
-DeepaMehta is a platform for collaboration and knowledge management (www.deepamehta.de).
-DeepaMehta 3 will be a complete rewrite.
+DeepaMehta is a platform for collaboration and knowledge management.  
+DeepaMehta 3 is a AJAX-driven web application based on CouchDB, Lucene, and HTML Canvas.  
+DeepaMehta 3 will become a complete rewrite of DeepaMehta 2 (which is Java-based).
 
-<h2>"Technotes" Requirements</h2>
+<www.deepamehta.de>
 
-<ul>
-    <li>CouchDB (tested with 0.9)
 
-        http://couchdb.apache.org/
+Requirements
+------------
 
-    <li>couchdb-lucene (tested with 0.4)
-        
-        http://github.com/rnewson/couchdb-lucene/
-</ul>
+* CouchDB (tested with 0.9)
+
+    <http://couchdb.apache.org/>
+
+* couchdb-lucene (tested with 0.4)
+
+    <http://github.com/rnewson/couchdb-lucene/>
 
 For Mac OS X 10.3.9 ("Panther") and JDK 1.4:
 
-<ul>
-    <li>CouchDB on "Panther" installation notes
-        
-        http://triumphofthenerds.blogspot.com/
+* CouchDB on "Panther" installation notes
 
-    <li>couchdb-lucene 0.4 backport to JDK 1.4
-        
-        http://github.com/jri/couchdb-lucene-jdk14/
-        
-        There, in the Downloads section, you'll find also the Tika 0.4 backport to JDK 1.4
-</ul>
+    <http://triumphofthenerds.blogspot.com/>
 
-Jörg Richter
+* couchdb-lucene 0.4 backport to JDK 1.4
 
-31.8.2009
+    <http://github.com/jri/couchdb-lucene-jdk14/>
+
+  There, in the Downloads section, you'll find also the Tika 0.4 backport to JDK 1.4
+
+
+Installation
+------------
+
+
+1.  Install CouchDB
+2.  Install couchdb-lucene
+3.  Install couchapp
+4.  Install git
+5.  Clone DeepaMehta 3 git repository to your computer
+        mkdir deepamehta3
+        cd deepamehta3
+        git clone git://github.com/jri/deepamehta3.git
+6. Start CouchDB
+        sudo -u couchdb couchdb
+7. Upload DeepaMehta 3 to CouchDB
+        couchapp push --atomic http://localhost:5984/deepamehta3-db
+8. Visit DeepaMehta 3 in your webbrowser
+        http://localhost:5984/deepamehta3-db/_design/deepamehta3/index.html
+
+
+------------
+Jörg Richter  
+15.9.2009

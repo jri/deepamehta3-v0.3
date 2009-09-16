@@ -1,7 +1,7 @@
-var db = new CouchDB("technotes-db")
+var db = new CouchDB("deepamehta3-db")
 
 db.fulltext_search = function(text) {
-    var viewPath = this.uri + "_fti/technotes/search?q=" + text
+    var viewPath = this.uri + "_fti/dm3/search?q=" + text
     this.last_req = this.request("GET", viewPath)      
     if (this.last_req.status == 404)
         return null

@@ -114,7 +114,7 @@ function PlainDocument() {
     /* Relations */
 
     function relations(doc_id) {
-        return db.view("technotes/relations", {key: doc_id})
+        return db.view("dm3/relations", {key: doc_id})
     }
 
     /* Delete */
