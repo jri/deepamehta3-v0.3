@@ -2,8 +2,9 @@ body {
     font-family: "Lucida Grande";
 }
 
-#search_panel {
+#upper_toolbar {
     width: 500px;
+    margin-bottom: 0.4em;
 }
 
 #search_form {
@@ -11,7 +12,7 @@ body {
     margin-right: 3em;
 }
 
-#context_panel {
+#canvas_panel {
     float: left;
 }
 
@@ -20,6 +21,7 @@ body {
 }
 
 #detail_panel {
+    margin-left: 1em;
     height: 600px;
     overflow: auto;
 }

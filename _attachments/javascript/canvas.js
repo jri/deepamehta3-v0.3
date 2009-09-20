@@ -276,7 +276,7 @@ function Canvas() {
             //
             select_document(ct.doc_id)
             //
-            var impl = implementations[current_doc.implementation]
+            var impl = loaded_doctype_impls[current_doc.implementation]
             var items = impl.context_menu_items()
             open_context_menu(items, "topic", event)
         } else {
@@ -311,7 +311,7 @@ function Canvas() {
             var a = $("<a>").attr({href: "", onclick: onclick}).text(item.label)
             contextmenu.append(a)
         }
-        $("#context_panel").append(contextmenu)
+        $("#canvas_panel").append(contextmenu)
     }
 
     function close_context_menu() {
@@ -319,7 +319,7 @@ function Canvas() {
         $(".contextmenu").remove()
     }
 
-    /* ---------------------------------------- Helper ---------------------------------------- */
+    /**************************************** Helper ****************************************/
 
     function topic_index(doc_id) {
         for (var i = 0, ct; ct = canvas_topics[i]; i++) {
@@ -443,7 +443,7 @@ function Canvas() {
         label_css.position = "absolute"
         label_css["max-width"] = "100px"
         this.label_div.css(label_css)
-        $("#context_panel").append(this.label_div)
+        $("#canvas_panel").append(this.label_div)
 
         this.move_to = function(event) {
             this.x = cx(event, true)

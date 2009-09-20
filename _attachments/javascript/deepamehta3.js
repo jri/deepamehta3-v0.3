@@ -12,7 +12,13 @@ db.fulltext_search = function(text) {
 var current_doc         // document being displayed, or null if no one is currently displayed
 var current_rel         // relation being activated (CanvasAssoc object)
 var canvas
-var implementations = {}
+//
+var plugin_sources = []
+var plugins = []
+var doctype_impls = []
+var loaded_doctype_impls = {}
+var css_stylesheets = []
+//
 var debug = false
 var debug_window
 
@@ -21,30 +27,39 @@ function init() {
     if (debug) {
         debug_window = window.open()
     }
+    // register core facilities
+    doctype_implementation("javascript/plain_document.js")
+    // css_stylesheet("style/main.css")
     //
+    load_plugins()
+    //
+    // --- setup GUI ---
     canvas = new Canvas()
+    // search form
+    $("#searchmode_select_placeholder").replaceWith(searchmode_select())
+    $("#searchmode_select").change(set_searchmode)
+    $("#search_form").submit(search)
+    // create
+    $("#type_select_placeholder").replaceWith(create_type_select())
+    $("#create_button").click(create_document)
+}
+
+function set_searchmode() {
     //
-    $("#search_form").submit(search)                                    // search form
-    $("#type_select_placeholder").replaceWith(create_type_select())     // type select
-    $("#create_button").click(create_document)                          // create button
+    var searchmode = $("#searchmode_select").val()
+    var search_widget = trigger_hook("search_widget", searchmode)[0]
     //
-    for (var i = 0, implementation_class; implementation_class = implementation_classes[i]; i++) {
-        implementations[implementation_class] = eval("new " + implementation_class)
-    }
+    $("#search_widget").empty()
+    $("#search_widget").append(search_widget)
 }
 
 function search() {
     try {
-        var searchterm = $("#search_field").val()
-        var result = db.fulltext_search(searchterm)
-        // build result document
-        result_doc = {fields: [{id: "Title", content: '"' + searchterm + '"'}], implementation: "SearchResult", items: []}
-        for (var i = 0, row; row = result.rows[i]; i++) {
-            result_doc.items.push({"id": row.id, "title": row.fields ? row.fields["Title"] : "?"})
-        }
         //
-        db.save(result_doc)
+        var searchmode = $("#searchmode_select").val()
+        var result_doc = trigger_hook("search", searchmode)[0]
         //
+        save_document(result_doc)
         show_document(result_doc._id)
         canvas.add_document(current_doc, true)
     } catch (e) {
@@ -102,12 +117,12 @@ function show_document(doc_id) {
     //
     empty_detail_panel()
     //
-    var impl = implementations[current_doc.implementation]
+    var impl = loaded_doctype_impls[current_doc.implementation]
     if (impl) {
         impl.render_document(current_doc)
     // fallback
     } else {
-        alert("show_document: fallback")
+        alert("show_document: implementation \"" + current_doc.implementation + "\" not found.\nFalling back to generic rendering.")
         $("#detail_panel").append(render_object(current_doc))
     }
     return true
@@ -119,12 +134,19 @@ function create_document() {
     // update GUI
     canvas.add_document(current_doc, true)
     // initiate editing
-    var impl = implementations[current_doc.implementation]
+    var impl = loaded_doctype_impls[current_doc.implementation]
     impl.edit_document()
 }
 
 function save_document(doc) {
     try {
+        // trigger hook
+        if (doc._id) {
+            trigger_hook("pre_update", doc)
+        } else {
+            trigger_hook("pre_create", doc)
+        }
+        // update DB
         db.save(doc)
     } catch (e) {
         alert("error while saving: " + JSON.stringify(e))
@@ -200,12 +222,69 @@ function remove_relations(doc, delete_from_db) {
     }
 }
 
-/* ---------------------------------------- Helper ---------------------------------------- */
+// --- Plugin Mechanism ---
+
+function add_plugin(source_path) {
+    plugin_sources.push(source_path)
+}
+
+function doctype_implementation(source_path) {
+    doctype_impls.push(source_path)
+}
+
+function css_stylesheet(css_path) {
+    css_stylesheets.push(css_path)
+}
+
+/**************************************** Helper ****************************************/
+
+function load_plugins() {
+    // load plugins
+    log("Loading " + plugin_sources.length + " plugins:")
+    for (var i = 0, plugin_source; plugin_source = plugin_sources[i]; i++) {
+        log(plugin_source)
+        $("head").append($("<script>").attr("src", plugin_source))
+        //
+        var plugin_class = basename(plugin_source)
+        log("instantiating \"" + plugin_class + "\"")
+        plugins.push(eval("new " + plugin_class))
+    }
+    // load document type implementations
+    log("Loading " + doctype_impls.length + " document type implementations:")
+    for (var i = 0, doctype_impl; doctype_impl = doctype_impls[i]; i++) {
+        log(doctype_impl)
+        $("head").append($("<script>").attr("src", doctype_impl))
+        //
+        var doctype_class = to_camel_case(basename(doctype_impl))
+        log("instantiating \"" + doctype_class + "\"")
+        loaded_doctype_impls[doctype_class] = eval("new " + doctype_class)
+    }
+    // load CSS stylesheets
+    log("Loading " + css_stylesheets.length + " CSS stylesheets:")
+    for (var i = 0, css_stylesheet; css_stylesheet = css_stylesheets[i]; i++) {
+        log(css_stylesheet)
+        $("head").append($("<link>").attr({rel: "stylesheet", href: css_stylesheet, type: "text/css"}))
+    }
+}
+
+function trigger_hook(name, args) {
+    var result = []
+    for (var i = 0, plugin; plugin = plugins[i]; i++) {
+        if (plugin[name]) {
+            var res = plugin[name](args)
+            if (res) {
+                result.push(res)
+            }
+        }
+    }
+    return result
+}
+
+//
 
 function call_document_function(function_name) {
-    // alert("call_document_function: " + function_name)
-    var impl = implementations[current_doc.implementation]
-    eval("impl." + function_name + "()")
+    var impl = loaded_doctype_impls[current_doc.implementation]
+    impl[function_name]()
 }
 
 function call_relation_function(function_name) {
@@ -218,9 +297,38 @@ function call_relation_function(function_name) {
 
 //
 
+// "vendor/dm3-time/script/dm3-time.js" -> "dm3-time"
+function basename(path) {
+    path.match(/.*\/(.*)\..*/)
+    return RegExp.$1
+}
+
+function to_camel_case(str) {
+    var res = ""
+    var words = str.split("_")
+    for (var i = 0, word; word = words[i]; i++) {
+        res += word[0].toUpperCase()
+        res += word.substr(1)
+    }
+    return res
+}
+
+// --- GUI ---
+
+function searchmode_select() {
+    //
+    var searchmodes = trigger_hook("searchmode")
+    //
+    var select = $("<select>").attr("id", "searchmode_select")
+    for (var i = 0, searchmode; searchmode = searchmodes[i]; i++) {
+        select.append($("<option>").text(searchmode))
+    }
+    return select
+}
+
 function empty_detail_panel() {
     $("#detail_panel").empty()
-    $("#lower_document_controls").empty()
+    $("#lower_toolbar").empty()
 }
 
 function render_object(object) {

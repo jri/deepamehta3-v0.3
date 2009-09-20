@@ -31,9 +31,9 @@ function PlainDocument() {
             }
         }
         // buttons
-        $("#lower_document_controls").append($("<input>").attr({type: "button", id: "edit_button", value: "Edit"}))
-        $("#lower_document_controls").append($("<input>").attr({type: "button", id: "attach_button", value: "Upload Attachment"}))
-        $("#lower_document_controls").append($("<input>").attr({type: "button", id: "delete_button", value: "Delete"}))
+        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "edit_button", value: "Edit"}))
+        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "attach_button", value: "Upload Attachment"}))
+        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "delete_button", value: "Delete"}))
         $("#edit_button").click(this.edit_document)
         $("#attach_button").click(attach_file)
         $("#delete_button").click(confirm_delete)
@@ -59,8 +59,8 @@ function PlainDocument() {
             $("#detail_panel").append(valuediv)
         }
         // buttons
-        $("#lower_document_controls").append($("<input>").attr({type: "button", id: "save_button", value: "Save"}))
-        $("#lower_document_controls").append($("<input>").attr({type: "button", id: "cancel_button", value: "Cancel"}))
+        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "save_button", value: "Save"}))
+        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "cancel_button", value: "Cancel"}))
         $("#save_button").click(update_document)
         $("#cancel_button").click(cancel_editing)
     }

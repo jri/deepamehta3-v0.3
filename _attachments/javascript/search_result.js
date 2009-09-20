@@ -1,23 +1,32 @@
 function SearchResult() {
+}
 
-    this.render_document = function(doc) {
-        var heading = "Search Result " + doc.fields[0].content + " (" + doc.items.length + " docments)"
-        $("#detail_panel").append($("<p>").text(heading))
+SearchResult.prototype = {
+
+    render_document: function(doc) {
+        var heading = "Search Result " + doc.fields[0].content + " (" + doc.items.length + " documents)"
+        $("#detail_panel").append($("<div>").addClass("result_heading").text(heading))
         for (var i = 0, item; item = doc.items[i]; i++) {
-            var a = $("<a>").attr({href: "", onclick: "reveal_document('" + item.id + "'); return false"}).text(item.title)
-            $("#detail_panel").append($("<p>").append(a))
+            $("#detail_panel").append(this.render_result_item(item))
         }
-    }
+    },
 
-    this.context_menu_items = function() {
+    context_menu_items: function() {
         return [
             {label: "Remove", function: "remove"}
         ]
-    }
+    },
 
     /* Context Menu Commands */
 
-    this.remove = function() {
+    remove: function() {
         remove_document(true)
+    },
+
+    /**************************************** Helper ****************************************/
+
+    render_result_item: function(item) {
+        var a = $("<a>").attr({href: "", onclick: "reveal_document('" + item.id + "'); return false"}).text(item.title)
+        return $("<div>").addClass("result_item").append(a)
     }
 }

@@ -15,10 +15,11 @@ Requirements
 * CouchDB (tested with 0.9)  
   <http://couchdb.apache.org/>
 
-* CouchApp  
+* CouchApp (tested with 0.3.2)  
   <http://github.com/couchapp/couchapp>
 
-* Python 2.5 or later (required to run CouchApp)
+* Python 2.5 or later  
+  (required to run CouchApp)
 
 * couchdb-lucene (tested with 0.4)  
   <http://github.com/rnewson/couchdb-lucene/>
@@ -45,9 +46,9 @@ Installation
         mkdir deepamehta3
         cd deepamehta3
         git clone git://github.com/jri/deepamehta3.git
-6.  Start CouchDB
+6.  Start CouchDB server
         sudo -u couchdb couchdb
-7.  Upload DeepaMehta 3 to the CouchDB database
+7.  Upload DeepaMehta 3 to CouchDB
         couchapp push --atomic http://localhost:5984/deepamehta3-db
 8.  Visit DeepaMehta 3 in your webbrowser
         http://localhost:5984/deepamehta3-db/_design/deepamehta3/index.html
