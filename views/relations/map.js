@@ -1,7 +1,14 @@
 function(doc) {
-    if (doc.fields && doc.related_ids) {
-        for (var i = 0, rel_id; rel_id = doc.related_ids[i]; i++) {
-            emit(rel_id, doc.fields[0].content)
-        }
+    if (doc.type == "Relation") {
+        emit(doc.rel_doc_ids[0], {
+            rel_doc_id: doc.rel_doc_ids[1],
+            rel_doc_pos: 1,
+            rel_type: doc.rel_type
+        })
+        emit(doc.rel_doc_ids[1], {
+            rel_doc_id: doc.rel_doc_ids[0],
+            rel_doc_pos: 0,
+            rel_type: doc.rel_type
+        })
     }
 }

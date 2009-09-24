@@ -1,20 +1,20 @@
 var types = {
     "Note": {
-        "fields": [
+        fields: [
             {
-                "id": "Title",
-                "show_label": true,
-                "type": "single line",
-                "content": ""
+                id: "Title",
+                show_label: true,
+                type: "single line",
+                content: ""
             },
             {
-                "id": "Body",
-                "show_label": false,
-                "type": "multi line",
-                "content": ""
+                id: "Body",
+                show_label: false,
+                type: "multi line",
+                content: ""
             }
         ],
-        "implementation": "PlainDocument"
+        implementation: "PlainDocument"
     }
 }
 

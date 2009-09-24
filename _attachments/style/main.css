@@ -3,8 +3,9 @@ body {
 }
 
 #upper_toolbar {
-    width: 500px;
     margin-bottom: 0.4em;
+    padding: 0.3em;
+    background: darkgray;
 }
 
 #search_form {
@@ -14,6 +15,7 @@ body {
 
 #canvas_panel {
     float: left;
+    margin-right: 1em;
 }
 
 #canvas {
@@ -21,7 +23,6 @@ body {
 }
 
 #detail_panel {
-    margin-left: 1em;
     height: 600px;
     overflow: auto;
 }

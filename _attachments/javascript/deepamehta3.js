@@ -1,7 +1,7 @@
 var db = new CouchDB("deepamehta3-db")
 
 db.fulltext_search = function(text) {
-    var viewPath = this.uri + "_fti/dm3/search?q=" + text
+    var viewPath = this.uri + "_fti/deepamehta3/search?q=" + text
     this.last_req = this.request("GET", viewPath)      
     if (this.last_req.status == 404)
         return null
@@ -9,8 +9,8 @@ db.fulltext_search = function(text) {
     return JSON.parse(this.last_req.responseText)
 }
 
-var current_doc         // document being displayed, or null if no one is currently displayed
-var current_rel         // relation being activated (CanvasAssoc object)
+var current_doc         // topic document being displayed, or null if no one is currently displayed
+var current_rel         // relation document being activated, or null if no one is currently activated
 var canvas
 //
 var plugin_sources = []
@@ -18,30 +18,36 @@ var plugins = []
 var doctype_impls = []
 var loaded_doctype_impls = {}
 var css_stylesheets = []
-//
+
+// debug window
 var debug = false
-var debug_window
+if (debug) {
+    var debug_window = window.open()
+}
+
+// register core facilities
+doctype_implementation("javascript/plain_document.js")
+add_plugin("javascript/dm3_fulltext.js")
+// css_stylesheet("style/main.css")     // layout flatters while loading
 
 function init() {
-    // debug window
-    if (debug) {
-        debug_window = window.open()
-    }
-    // register core facilities
-    doctype_implementation("javascript/plain_document.js")
-    // css_stylesheet("style/main.css")
+    // Note: in order to avoid the canvas geometry being confused by
+    // DOM-manipulating plugins it must be initialized _before_ the plugins are loaded.
+    canvas = new Canvas()
     //
+    // Note: in order to let a plugin extend the searchmode selector
+    // the plugins must be loaded _before_ the GUI is set up.
     load_plugins()
+    trigger_hook("init")
     //
     // --- setup GUI ---
-    canvas = new Canvas()
     // search form
     $("#searchmode_select_placeholder").replaceWith(searchmode_select())
     $("#searchmode_select").change(set_searchmode)
     $("#search_form").submit(search)
-    // create
+    // create form
     $("#type_select_placeholder").replaceWith(create_type_select())
-    $("#create_button").click(create_document)
+    $("#create_button").click(create_topic_from_menu)
 }
 
 function set_searchmode() {
@@ -70,10 +76,11 @@ function search() {
 
 function reveal_document(doc_id) {
     if (document_exists(doc_id)) {
-        if (!relation_exists(current_doc, doc_id)) {
-            create_relation(current_doc, doc_id)
+        var relation_doc = get_relation_doc(current_doc._id, doc_id)
+        if (!relation_doc) {
+            create_relation(current_doc._id, doc_id, true)
         } else {
-            canvas.add_relation(current_doc._id, doc_id)
+            canvas.add_relation(relation_doc)
         }
         // update GUI
         show_document(doc_id)
@@ -128,9 +135,13 @@ function show_document(doc_id) {
     return true
 }
 
-function create_document() {
-    current_doc = clone(types[$("#type_select").val()])
-    save_document(current_doc)
+// --- Topics ---
+
+function create_topic_from_menu() {
+    // update DB
+    var topic_type = $("#type_select").val()
+    var typedef = clone(types[topic_type])
+    current_doc = create_topic(topic_type, typedef.fields, typedef.implementation)
     // update GUI
     canvas.add_document(current_doc, true)
     // initiate editing
@@ -138,18 +149,53 @@ function create_document() {
     impl.edit_document()
 }
 
+/**
+ * Creates a topic document and stores it to the DB.
+ *
+ * @return  The topic document.
+ */
+function create_topic(topic_type, fields, implementation) {
+    var topic_doc = create_topic_doc(topic_type, fields, implementation)
+    // update DB
+    save_document(topic_doc)
+    return topic_doc
+}
+
+/**
+ * Just creates a topic document in memory.
+ *
+ * @return  The topic document.
+ */
+function create_topic_doc(topic_type, fields, implementation) {
+    return {
+        type: "Topic",
+        topic_type: topic_type,
+        fields: fields,
+        implementation: implementation
+    }
+}
+
 function save_document(doc) {
     try {
         // trigger hook
         if (doc._id) {
             trigger_hook("pre_update", doc)
+            var update = true
         } else {
             trigger_hook("pre_create", doc)
         }
+        //
         // update DB
         db.save(doc)
+        //
+        // trigger hook
+        if (update) {
+            trigger_hook("post_update", doc)
+        } else {
+            trigger_hook("post_create", doc)
+        }
     } catch (e) {
-        alert("error while saving: " + JSON.stringify(e))
+        alert("Error while saving: " + JSON.stringify(e))
     }
 }
 
@@ -170,55 +216,71 @@ function remove_document(delete_from_db) {
     show_document()
 }
 
-//
+// --- Relations ---
 
 /**
- * Creates a relation between the 2 documents.
+ * Creates a relation in the DB and adds it to the canvas.
  */
-function create_relation(doc, rel_doc_id) {
-    // 1) update DB
-    // add to current topic
-    if (!doc.related_ids) {
-        doc.related_ids = []
+function create_relation(doc1_id, doc2_id, add_to_canvas) {
+    // update DB
+    var relation_doc = {
+        type: "Relation",
+        rel_type: "Relation",
+        rel_doc_ids: [doc1_id, doc2_id]
     }
-    doc.related_ids.push(rel_doc_id)
-    save_document(doc)
-    // add to related topic
-    var related_doc = db.open(rel_doc_id)
-    if (!related_doc.related_ids) {
-        related_doc.related_ids = []
+    save_document(relation_doc)
+    // update GUI
+    if (add_to_canvas) {
+        canvas.add_relation(relation_doc)
     }
-    related_doc.related_ids.push(doc._id)
-    save_document(related_doc)
-    // 2) update GUI
-    canvas.add_relation(doc._id, rel_doc_id)
 }
 
-function delete_relation() {
-    // update DB
-    var c1 = remove_related_id(current_rel.doc1_id, current_rel.doc2_id)
-    var c2 = remove_related_id(current_rel.doc2_id, current_rel.doc1_id)
-    // assertion
-    if (c1 != c2) {
-        alert("delete_relation: " + c1 + " vs. " + c2)
+/**
+ * Returns the relation between the two documents. Optionally filtered by relation type.
+ * If no such relation exists nothing is returned (undefined).
+ * If more than one relation matches, only the first one is returned.
+ *
+ * @return  The relation, a CouchDB document.
+ */
+function get_relation_doc(doc1_id, doc2_id, rel_type) {
+    if (rel_type) {
+        var options = {key: [doc1_id, doc2_id, rel_type]}
+    } else {
+        var options = {startkey: [doc1_id, doc2_id], endkey: [doc1_id, doc2_id, {}]}
+    }
+    //
+    var rows = db.view("deepamehta3/relation_undirected", options).rows
+    //
+    if (rows.length == 0) {
         return
     }
+    if (rows.length > 1) {
+        alert("get_relation_doc: there are " + rows.length + " relations between the two docs (1 is expected)\n" +
+            "doc1=" + doc1_id + "\ndoc2=" + doc2_id + "\n(rel_type=" + rel_type + ")")
+    }
+    return db.open(rows[0].id)
+}
+
+/**
+ * Deletes a relation from the DB, refreshes the canvas and the detail panel.
+ */
+function delete_relation(rel_doc) {
+    // update DB
+    db.deleteDoc(rel_doc)
     // update GUI
-    canvas.remove_relation(current_rel.id, true)
+    canvas.remove_relation(rel_doc._id, true)
     show_document()
 }
 
 function remove_relations(doc, delete_from_db) {
-    var rel_ids = doc.related_ids
-    if (rel_ids) {
-        for (var i = 0, rel_id; rel_id = rel_ids[i]; i++) {
-            // update DB
-            if (delete_from_db) {
-                remove_related_id(rel_id, doc._id)
-            }
-            // update GUI
-            canvas.remove_relation_by_topics(rel_id, doc._id)
+    var rows = relations(doc._id)
+    for (var i = 0, row; row = rows[i]; i++) {
+        // update DB
+        if (delete_from_db) {
+            db.deleteDoc(db.open(row.id))
         }
+        // update GUI
+        canvas.remove_relation(row.id)
     }
 }
 
@@ -289,13 +351,53 @@ function call_document_function(function_name) {
 
 function call_relation_function(function_name) {
     if (function_name == "delete_relation") {
-        delete_relation()
+        delete_relation(current_rel)
     } else {
         alert("call_relation_function: function \"" + function_name + "\" not implemented")
     }
 }
 
-//
+// --- DB ---
+
+function related_doc_ids(doc_id) {
+    var rows = relations(doc_id)
+    var rel_doc_ids = []
+    for (var i = 0, row; row = rows[i]; i++) {
+        rel_doc_ids.push(row.value.rel_doc_id)
+    }
+    return rel_doc_ids
+}
+
+/**
+ * Returns all relations of the document.
+ *
+ * @return  Array of CouchDB view rows: id=relation ID, key=doc_id (the argument), value={rel_doc_id: , rel_doc_pos:, rel_type:}
+ */
+function relations(doc_id) {
+    return db.view("deepamehta3/relations", {key: doc_id}).rows
+}
+
+/**
+ * Returns topics by ID list. Optionally filtered by topic type.
+ *
+ * @param   type_filter     a topic type, e.g. "Note", "Workspace"
+ * @return  Array of CouchDB view rows: id,key=doc_id (the argument), value={name: , topic_type:}
+ */
+function get_topics(doc_ids, type_filter) {
+    var rows = db.view("deepamehta3/topics", null, doc_ids).rows
+    if (type_filter) {
+        filter(rows, function(row) {
+            return row.value.topic_type == type_filter
+        })
+    }
+    return rows
+}
+
+function document_exists(doc_id) {
+    return db.open(doc_id) != null
+}
+
+// ---
 
 // "vendor/dm3-time/script/dm3-time.js" -> "dm3-time"
 function basename(path) {
@@ -343,65 +445,40 @@ function render_object(object) {
 
 //
 
-function document_exists(doc_id) {
-    return db.open(doc_id) != null
-}
-
-function relation_exists(doc, rel_doc_id) {
-    return element_index(doc.related_ids, rel_doc_id) >= 0
-}
-
-//
-
-function remove_related_id(doc_id, related_id) {
-    var doc = db.open(doc_id)
-    // assertion
-    if (!doc.related_ids) {
-        alert("remove_related_id: document has no relations")
-        return
+function doc_field(doc, field_id) {
+    for (var i = 0, field; field = doc.fields[i]; i++) {
+        if (field.id == field_id) {
+            return field
+        }
     }
-    //
-    var count = remove_element(doc.related_ids, related_id)
-    // update DB
-    save_document(doc)
-    return count
 }
 
-// Removes all occurrences of the element in the array.
-// Returns the number of removed elements.
-function remove_element(array, elem) {
-    var i = 0, count = 0, e
+// --- Utilities ---
+
+/**
+ * Filters array elements that match a filter function.
+ * The array is manipulated in-place.
+ */
+function filter(array, fn) {
+    var i = 0, e
     while (e = array[i]) {
-        if (e == elem) {
+        if (!fn(e)) {
             array.splice(i, 1)
-            count++
             continue
         }
         i++
     }
-    return count
 }
 
-// FIXME: currently not used
-/* function remove_element(array, elem) {
-    var i = element_index(array, elem)
-    if (i == -1) {
-        alert("remove_element: " + elem + " not found in " + array)
-    }
-    array.splice(i, 1)
-} */
-
-function element_index(array, elem) {
-    if (!array) {
-        return -1
-    }
-    //
+/**
+ * Returns true if the array contains a positive element according to the indicator function.
+ */
+function includes(array, fn) {
     for (var i = 0, e; e = array[i]; i++) {
-        if (e == elem) {
-            return i
+        if (fn(e)) {
+            return true
         }
     }
-    return -1
 }
 
 function clone(obj) {

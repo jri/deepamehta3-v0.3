@@ -1,5 +1,9 @@
 function(doc) {
 
+    if (doc.type != "Topic") {
+        return
+    }
+
     var ret = new Document();
 
     if (doc.fields) {

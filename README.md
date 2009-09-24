@@ -42,13 +42,15 @@ Installation
 2.  Install CouchApp
 3.  Install couchdb-lucene
 4.  Install git
-5.  Clone DeepaMehta 3 git repository to your computer
-        mkdir deepamehta3
-        cd deepamehta3
+5.  Go to the directory where you like to install DeepaMehta 3, e.g.
+        cd /usr/local
+    Clone DeepaMehta 3 git repository to your computer
         git clone git://github.com/jri/deepamehta3.git
+    A directory "deepamehta3" will be created.
 6.  Start CouchDB server
         sudo -u couchdb couchdb
 7.  Upload DeepaMehta 3 to CouchDB
+        cd deepamehta3
         couchapp push --atomic http://localhost:5984/deepamehta3-db
 8.  Visit DeepaMehta 3 in your webbrowser
         http://localhost:5984/deepamehta3-db/_design/deepamehta3/index.html
@@ -56,4 +58,4 @@ Installation
 
 ------------
 Jörg Richter  
-16.9.2009
+24.9.2009

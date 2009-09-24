@@ -16,7 +16,6 @@ function Canvas() {
     // Model
     var canvas_topics = []
     var canvas_assocs = []
-    var next_assoc_id = 1           // ID generator
     var trans_x = 0, trans_y = 0    // canvas translation
     
     // View (Canvas)
@@ -57,10 +56,10 @@ function Canvas() {
         }
     }
 
-    this.add_relation = function(doc1_id, doc2_id, refresh_canvas) {
+    this.add_relation = function(doc, refresh_canvas) {
         // add to canvas
-        if (!assoc_exists(doc1_id, doc2_id)) {
-            canvas_assocs.push(new CanvasAssoc(doc1_id, doc2_id))
+        if (!assoc_exists(doc._id)) {
+            canvas_assocs.push(new CanvasAssoc(doc))
         }
         //
         if (refresh_canvas) {
@@ -88,29 +87,24 @@ function Canvas() {
         }
     }
 
+    /**
+     * Removes a relation from the canvas.
+     * If the relation is not present on the canvas nothing is performed.
+     */
     this.remove_relation = function(assoc_id, refresh_canvas) {
         var i = assoc_index(assoc_id)
-        // assertion
         if (i == -1) {
-            throw "remove_relation: association not found on canvas (" + assoc_id + ")"
+            return
         }
         // update model
         canvas_assocs.splice(i, 1)
         //
-        if (current_rel.id == assoc_id) {
+        if (current_rel && current_rel._id == assoc_id) {
             current_rel = null
         }
         // update GUI
         if (refresh_canvas) {
             this.refresh()
-        }
-    }
-
-    this.remove_relation_by_topics = function(topic1_id, topic2_id) {
-        var i = assoc_index_by_topics(topic1_id, topic2_id)
-        if (i >= 0) {
-            // update model
-            canvas_assocs.splice(i, 1)
         }
     }
 
@@ -162,7 +156,7 @@ function Canvas() {
             ct1 = topic_by_id(ca.doc1_id)
             ct2 = topic_by_id(ca.doc2_id)
             // hightlight
-            if (current_rel && current_rel.id == ca.id) {
+            if (current_rel && current_rel._id == ca.id) {
                 draw_line(ct1.x, ct1.y, ct2.x, ct2.y, active_assoc_width, active_color)
             }
             //
@@ -244,7 +238,7 @@ function Canvas() {
             //
             var ct = doc_by_position(event)
             if (ct) {
-                create_relation(current_doc, ct.doc_id)
+                create_relation(current_doc._id, ct.doc_id, true)
                 select_document(current_doc._id)
             } else {
                 draw()
@@ -282,7 +276,7 @@ function Canvas() {
         } else {
             var ca = assoc_by_position(event)
             if (ca) {
-                current_rel = ca
+                current_rel = ca.doc
                 draw()
                 var items = [{label: "Delete", function: "delete_relation"}]
                 open_context_menu(items, "assoc", event)
@@ -331,7 +325,7 @@ function Canvas() {
     }
 
     function topic_exists(doc_id) {
-        return topic_index(doc_id) >= 0;
+        return topic_index(doc_id) >= 0
     }
 
     function assoc_index(assoc_id) {
@@ -343,18 +337,13 @@ function Canvas() {
         return -1
     }
 
-    function assoc_exists(topic1_id, topic2_id) {
-        return assoc_index_by_topics(topic1_id, topic2_id) >= 0
-    }
-
-    function assoc_index_by_topics(topic1_id, topic2_id) {
+    function assoc_exists(id) {
         for (var i = 0, ca; ca = canvas_assocs[i]; i++) {
-            if (ca.doc1_id == topic1_id && ca.doc2_id == topic2_id ||
-                ca.doc1_id == topic2_id && ca.doc2_id == topic1_id) {
-                return i
+            if (ca.id == id) {
+                return true
             }
         }
-        return -1
+        return false
     }
 
     function topic_by_id(doc_id) {
@@ -497,9 +486,10 @@ function Canvas() {
         }
     }
 
-    function CanvasAssoc(doc1_id, doc2_id) {
-        this.id = next_assoc_id++
-        this.doc1_id = doc1_id
-        this.doc2_id = doc2_id
+    function CanvasAssoc(doc) {
+        this.doc = doc
+        this.id = doc._id
+        this.doc1_id = doc.rel_doc_ids[0]
+        this.doc2_id = doc.rel_doc_ids[1]
     }
 }
