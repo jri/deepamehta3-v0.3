@@ -15,21 +15,32 @@ function PlainDocument() {
         // render_buttons()     // doesn't work ("this" reference is different)
 
         function render_fields() {
-            // fields
             for (var i = 0, field; field = doc.fields[i]; i++) {
                 // field name
                 $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
                 // field value
-                switch (field.type) {
-                    case "single line":
-                    case "multi line":
-                        $("#detail_panel").append($(render_text(field.content)).addClass("field_value"))
+                switch (field.model.type) {
+                    case "text":
+                        switch (field.view.editor) {
+                            case "single line":
+                            case "multi line":
+                                $("#detail_panel").append($(render_text(field.content)).addClass("field_value"))
+                                break
+                            default:
+                                alert("render_fields: unexpected field editor (" + field.view.editor + ")")
+                        }
                         break
                     case "relation":
-                        $("#detail_panel").append($(render_defined_relations(field)).addClass("field_value"))
+                        switch (field.view.editor) {
+                            case "checkboxes":
+                                $("#detail_panel").append($(render_defined_relations(field)).addClass("field_value"))
+                                break
+                            default:
+                                alert("render_fields: unexpected field editor (" + field.view.editor + ")")
+                        }
                         break
                     default:
-                        alert("render_document: unexpected field type (" + field.type + ")")
+                        alert("render_fields: unexpected field type (" + field.model.type + ")")
                 }
             }
 
@@ -91,18 +102,30 @@ function PlainDocument() {
             $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
             // field value
             var valuediv = $("<div>").addClass("field_value")
-            switch (field.type) {
-                case "single line":
-                    valuediv.append($("<input>").attr({id: "field_" + field.id, value: field.content, size: 80}))
-                    break
-                case "multi line":
-                    valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: 35, cols: 80}).text(field.content))
+            switch (field.model.type) {
+                case "text":
+                    switch (field.view.editor) {
+                        case "single line":
+                            valuediv.append($("<input>").attr({id: "field_" + field.id, value: field.content, size: 80}))
+                            break
+                        case "multi line":
+                            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: 35, cols: 80}).text(field.content))
+                            break
+                        default:
+                            alert("edit_document: unexpected field editor (" + field.view.editor + ")")
+                    }
                     break
                 case "relation":
-                    render_defined_relations(current_doc, field)
+                    switch (field.view.editor) {
+                        case "checkboxes":
+                            render_defined_relations(current_doc, field)
+                            break
+                        default:
+                            alert("edit_document: unexpected field editor (" + field.view.editor + ")")
+                    }
                     break
                 default:
-                    alert("edit_document: unexpected field type (" + field.type + ")")
+                    alert("edit_document: unexpected field type (" + field.model.type + ")")
             }
             $("#detail_panel").append(valuediv)
         }
@@ -117,7 +140,7 @@ function PlainDocument() {
             var topics = get_related_topics(doc, field)
             topic_buffer[field.id] = topics
             //
-            var docs = db.view("deepamehta3/by_type", {key: field.related_type})
+            var docs = db.view("deepamehta3/by_type", {key: field.model.related_type})
             for (var i = 0, row; row = docs.rows[i]; i++) {
                 var attr = {type: "checkbox", id: row.id, name: "relation_" + field.id}
                 if (includes(topics, function(topic) {
@@ -161,27 +184,39 @@ function PlainDocument() {
     }
 
     /**
-     * Returns topics of a field of type "relation".
+     * Returns topics of a "relation" field.
      */
     function get_related_topics(doc, field) {
         var doc_ids = related_doc_ids(doc._id)
-        return get_topics(doc_ids, field.related_type)
+        return get_topics(doc_ids, field.model.related_type)
     }
 
     /* ---------------------------------------- Private Methods ---------------------------------------- */
 
     function update_document() {
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
-            switch (field.type) {
-                case "single line":
-                case "multi line":
-                    field.content = $("#field_" + field.id).val()
+            switch (field.model.type) {
+                case "text":
+                    switch (field.view.editor) {
+                        case "single line":
+                        case "multi line":
+                            field.content = $("#field_" + field.id).val()
+                            break
+                        default:
+                            alert("update_document: unexpected field editor (" + field.view.editor + ")")
+                    }
                     break
                 case "relation":
-                    update_relation_field(current_doc, field)
+                    switch (field.view.editor) {
+                        case "checkboxes":
+                            update_relation_field(current_doc, field)
+                            break
+                        default:
+                            alert("update_document: unexpected field editor (" + field.view.editor + ")")
+                    }
                     break
                 default:
-                    alert("update_document: unexpected field type (" + field.type + ")")
+                    alert("update_document: unexpected field type (" + field.model.type + ")")
             }
         }
         // update DB

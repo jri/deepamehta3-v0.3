@@ -7,7 +7,7 @@ function(doc) {
     var ret = new Document();
 
     if (doc.fields) {
-        ret.add(doc.fields[0].content, {field: doc.fields[0].id, store: "yes", index: "not_analyzed"})
+        ret.add(doc.fields[0].content, {field: "title", store: "yes", index: "not_analyzed"})
     }
 
     function idx(obj) {

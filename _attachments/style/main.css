@@ -24,6 +24,7 @@ body {
 
 #detail_panel {
     height: 600px;
+    line-height: 1.6em;
     overflow: auto;
 }
 
@@ -32,6 +33,7 @@ body {
 }
 
 .field_value {
+    margin-bottom: 1.2em;
 }
 
 #upload_target {

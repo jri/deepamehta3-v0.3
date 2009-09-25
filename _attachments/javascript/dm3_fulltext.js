@@ -22,13 +22,13 @@ function dm3_fulltext() {
     this.search = function(searchmode) {
         if (searchmode == "Fulltext") {
             var searchterm = $("#search_field").val()
-            var result = db.fulltext_search(searchterm)
+            var result = db.fulltext_search(searchterm + "*")
             // build result document
             var fields = [{id: "Title", content: '"' + searchterm + '"'}]
             var result_doc = create_topic_doc("Search Result", fields, "SearchResult")
             result_doc.items = []
             for (var i = 0, row; row = result.rows[i]; i++) {
-                result_doc.items.push({"id": row.id, "title": row.fields ? row.fields["Title"] : "?"})
+                result_doc.items.push({"id": row.id, "title": row.fields ? row.fields["title"] : "?"})
             }
             return result_doc
         }

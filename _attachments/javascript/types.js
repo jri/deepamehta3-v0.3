@@ -3,14 +3,22 @@ var types = {
         fields: [
             {
                 id: "Title",
-                show_label: true,
-                type: "single line",
+                model: {
+                    type: "text",
+                },
+                view: {
+                    editor: "single line"
+                },
                 content: ""
             },
             {
                 id: "Body",
-                show_label: false,
-                type: "multi line",
+                model: {
+                    type: "text",
+                },
+                view: {
+                    editor: "multi line"
+                },
                 content: ""
             }
         ],
