@@ -22,9 +22,12 @@ body {
     background: #eee;
 }
 
+#document_form {
+    line-height: 1.6em;
+}
+
 #detail_panel {
     height: 600px;
-    line-height: 1.6em;
     overflow: auto;
 }
 
@@ -39,6 +42,8 @@ body {
 #upload_target {
     display: none;
 }
+
+/* Contextmenu */
 
 .contextmenu {
     background: white;
@@ -60,6 +65,28 @@ body {
 }
 
 .contextmenu a:hover {
+    color: white;
+    background: #555;
+}
+
+/* Autocomplete List */
+
+.autocomplete_list {
+    position: absolute;
+    background: white;
+    border: 1px solid darkgray;
+    display: none;
+}
+
+.autocomplete_list a {
+    color: black;
+    text-decoration: none;
+    display: block;
+    padding-left: 0.6em;
+    padding-right: 0.6em;
+}
+
+.autocomplete_list .active {
     color: white;
     background: #555;
 }

@@ -1,13 +1,20 @@
 function PlainDocument() {
+    this.name = "PlainDocument"
 
     // upload dialog
     $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 550})
-    $("#upload_target").load(upload_complete)
+    $("#upload_target").load(this.upload_complete)
     // delete dialog
     $("#delete_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 350,
-        buttons: {"Delete": do_delete}})
+        buttons: {"Delete": this.do_delete}})
+    // autocomplete list
+    $("#document_form").append($("<div>").addClass("autocomplete_list"))
+    autocomplete_item = -1
+}
 
-    this.render_document = function(doc) {
+PlainDocument.prototype = {
+
+    render_document: function(doc) {
 
         render_fields()
         render_attachments()
@@ -59,10 +66,10 @@ function PlainDocument() {
             }
 
             function render_defined_relations(field) {
-                var topics = get_related_topics(doc, field)
+                var topics = PlainDocument.prototype.get_related_topics(doc, field)
                 $("#detail_panel").append($("<div>").addClass("field_name").text(field.id + " (" + topics.length + ")"))
                 var field_value = $("<div>").addClass("field_value")
-                render_topic_list(topics, field_value)
+                PlainDocument.prototype.render_topic_list(topics, field_value)
                 $("#detail_panel").append(field_value)
             }
         }
@@ -83,7 +90,7 @@ function PlainDocument() {
             var topics = get_topics(related_doc_ids(doc._id))
             $("#detail_panel").append($("<div>").addClass("field_name").text("Relations (" + topics.length + ")"))
             var field_value = $("<div>").addClass("field_value")
-            render_topic_list(topics, field_value)
+            PlainDocument.prototype.render_topic_list(topics, field_value)
             $("#detail_panel").append(field_value)
         }
 
@@ -91,13 +98,13 @@ function PlainDocument() {
         $("#lower_toolbar").append($("<input>").attr({type: "button", id: "edit_button", value: "Edit"}))
         $("#lower_toolbar").append($("<input>").attr({type: "button", id: "attach_button", value: "Upload Attachment"}))
         $("#lower_toolbar").append($("<input>").attr({type: "button", id: "delete_button", value: "Delete"}))
-        $("#edit_button").click(this.edit_document)
-        $("#attach_button").click(attach_file)
-        $("#delete_button").click(confirm_delete)
+        $("#edit_button").click(edit_document)
+        $("#attach_button").click(this.attach_file)
+        $("#delete_button").click(this.confirm_delete)
         // }
-    }
+    },
 
-    this.edit_document = function() {
+    render_document_form: function() {
         empty_detail_panel()
         topic_buffer = {}
         //
@@ -110,14 +117,19 @@ function PlainDocument() {
                 case "text":
                     switch (field.view.editor) {
                         case "single line":
-                            valuediv.append($("<input>").attr({id: "field_" + field.id, value: field.content, size: 80}))
+                            var input = $("<input>").attr({id: "field_" + field.id, value: field.content, size: 80})
+                            if (field.view.autocomplete_indexes) {
+                                input.keyup(this.autocomplete)
+                                input.blur(this.lost_focus)
+                            }
+                            valuediv.append(input)
                             break
                         case "multi line":
                             var lines = field.view.lines || 30
                             valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: lines, cols: 80}).text(field.content))
                             break
                         default:
-                            alert("edit_document: unexpected field editor (" + field.view.editor + ")")
+                            alert("render_document_form: unexpected field editor (" + field.view.editor + ")")
                     }
                     break
                 case "relation":
@@ -126,23 +138,18 @@ function PlainDocument() {
                             render_defined_relations(current_doc, field)
                             break
                         default:
-                            alert("edit_document: unexpected field editor (" + field.view.editor + ")")
+                            alert("render_document_form: unexpected field editor (" + field.view.editor + ")")
                     }
                     break
                 default:
-                    alert("edit_document: unexpected field type (" + field.model.type + ")")
+                    alert("render_document_form: unexpected field type (" + field.model.type + ")")
             }
             $("#detail_panel").append(valuediv)
         }
-        // buttons
-        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "save_button", value: "Save"}))
-        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "cancel_button", value: "Cancel"}))
-        $("#save_button").click(update_document)
-        $("#cancel_button").click(cancel_editing)
 
         function render_defined_relations(doc, field) {
             // buffer current topic selection to compare it at submit time
-            var topics = get_related_topics(doc, field)
+            var topics = PlainDocument.prototype.get_related_topics(doc, field)
             topic_buffer[field.id] = topics
             //
             var docs = db.view("deepamehta3/by_type", {key: field.model.related_type})
@@ -156,49 +163,58 @@ function PlainDocument() {
                 valuediv.append($("<label>").append($("<input>").attr(attr)).append(row.value))
             }
         }
-    }
+    },
 
-    this.context_menu_items = function() {
+    post_render_form: function() {
+        // buttons
+        // Note: pseudo-attribute "submit" TODO: explain
+        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "save_button", value: "Save", submit: true}))
+        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "cancel_button", value: "Cancel"}))
+        $("#save_button").click(this.update_document)
+        $("#cancel_button").click(this.cancel_editing)
+    },
+
+    context_menu_items: function() {
         return [
             {label: "Hide", function: "hide"},
             {label: "Relate", function: "relate"}
         ]
-    }
+    },
 
     /* Context Menu Commands */
 
-    this.hide = function() {
+    hide: function() {
         remove_document(false)
-    }
+    },
 
-    this.relate = function() {
+    relate: function() {
         canvas.begin_relation(current_doc._id)
-    }
+    },
 
     /* Helper */
 
     /**
      * @param   topics      Array of rows as returned by the CouchDB "topics" view.
      */
-    function render_topic_list(topics, elem) {
+    render_topic_list: function(topics, elem) {
         for (var i = 0, row; row = topics[i]; i++) {
             var a = $("<a>").attr({href: "", onclick: "reveal_document('" + row.id + "'); return false"}).text(row.value.name)
             elem.append(a).append("<br>")
         }
         return elem
-    }
+    },
 
     /**
      * Returns topics of a "relation" field.
      */
-    function get_related_topics(doc, field) {
+    get_related_topics: function(doc, field) {
         var doc_ids = related_doc_ids(doc._id)
         return get_topics(doc_ids, field.model.related_type)
-    }
+    },
 
     /* ---------------------------------------- Private Methods ---------------------------------------- */
 
-    function update_document() {
+    update_document: function() {
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
             switch (field.model.type) {
                 case "text":
@@ -214,7 +230,7 @@ function PlainDocument() {
                 case "relation":
                     switch (field.view.editor) {
                         case "checkboxes":
-                            update_relation_field(current_doc, field)
+                            PlainDocument.prototype.update_relation_field(current_doc, field)
                             break
                         default:
                             alert("update_document: unexpected field editor (" + field.view.editor + ")")
@@ -229,9 +245,9 @@ function PlainDocument() {
         // update GUI
         canvas.update_document(current_doc)
         show_document()
-    }
+    },
 
-    function update_relation_field(doc, field) {
+    update_relation_field: function(doc, field) {
         $("input:checkbox[name=relation_" + field.id + "]").each(
             function() {
                 var checkbox = this
@@ -251,33 +267,152 @@ function PlainDocument() {
                 }
             }
         )
-    }
+    },
 
-    function cancel_editing() {
+    cancel_editing: function() {
         show_document()
-    }
+    },
 
     /* Attachments */
 
-    function attach_file() {
+    attach_file: function() {
         $("#attachment_form").attr("action", db.uri + current_doc._id)
         $("#attachment_form_rev").attr("value", current_doc._rev)
         $("#attachment_dialog").dialog("open")
-    }
+    },
 
-    function upload_complete() {
+    upload_complete: function() {
         $("#attachment_dialog").dialog("close")
         show_document()
-    }
+    },
 
     /* Delete */
 
-    function confirm_delete() {
+    confirm_delete: function() {
         $("#delete_dialog").dialog("open")
-    }
+    },
 
-    function do_delete() {
+    do_delete: function() {
         $("#delete_dialog").dialog("close")
         remove_document(true)
+    },
+
+    /* Auto-Completion */
+
+    autocomplete: function(event) {
+        // log("autocomplete: which=" + event.which)
+        if (PlainDocument.prototype.handle_special_input(event)) {
+            return
+        }
+        // assertion
+        if (this.id.substr(0, 6) != "field_") {
+            alert("autocomplete: document " + current_doc._id + "\n" +
+                "has unexpected element id (" + this.id + ").\n" +
+                "It is expected to begin with \"field_\"")
+            return
+        }
+        //
+        autocomplete_items = []
+        //
+        var field_id = this.id.substr(6)
+        var field = get_field(current_doc, field_id)
+        for (var i = 0, index; index = field.view.autocomplete_indexes[i]; i++) {
+            var searchterm = this.value
+            var result = db.fulltext_search(index, searchterm + "*")
+            //
+            if (result.rows.length && !autocomplete_items.length) {
+                PlainDocument.prototype.show_autocomplete_list(this)
+            }
+            //
+            for (var i = 0, row; row = result.rows[i]; i++) {
+                var item = row.fields.default
+                // Note: if the index function stores only one field per document
+                // we get it as a string, otherwise we get an array
+                if (typeof(item) == "string") {
+                    item = [item]
+                }
+                autocomplete_items.push(item)
+                var a = $("<a>").attr({href: "", id: i}).text(item[0])
+                a.mousemove(PlainDocument.prototype.item_hovered)
+                a.mousedown(PlainDocument.prototype.insert_selection)
+                // Note: we use mousedown instead of click because the click causes loosing the focus
+                // and "lost focus" is fired _before_ "mouseup" and thus "click" would never be fired.
+                // At least as long as we hide the autocompletion list on "hide focus" which we do for
+                // the sake of simplicity. This leads to non-conform GUI behavoir (action on mousedown).
+                // A more elaborated rule for hiding the autocompletion list is required.
+                $(".autocomplete_list").append(a)
+            }
+        }
+        if (!autocomplete_items.length) {
+            PlainDocument.prototype.hide_autocomplete_list("no result")
+        }
+    },
+
+    handle_special_input: function(event) {
+        // log("handle_special_input: event.which=" + event.which)
+        if (event.which == 13) {            // return
+            PlainDocument.prototype.insert_selection()
+            return true
+        } if (event.which == 27) {          // escape
+            PlainDocument.prototype.hide_autocomplete_list("aborted (escape)")
+            return true
+        } if (event.which == 38) {          // cursor up
+            autocomplete_item--
+            if (autocomplete_item == -2) {
+                autocomplete_item = autocomplete_items.length -1
+            }
+            // log("handle_special_input: cursor up, autocomplete_item=" + autocomplete_item)
+            PlainDocument.prototype.activate_list_item()
+            return true
+        } else if (event.which == 40) {     // cursor down
+            autocomplete_item++
+            if (autocomplete_item == autocomplete_items.length) {
+                autocomplete_item = -1
+            }
+            // log("handle_special_input: cursor down, autocomplete_item=" + autocomplete_item)
+            PlainDocument.prototype.activate_list_item()
+            return true
+        }
+    },
+
+    insert_selection: function() {
+        if (autocomplete_item != -1) {
+            var input_element_id = $(".autocomplete_list").attr("id").substr(7)     // 7 = "aclist_".length
+            var item = autocomplete_items[autocomplete_item]
+            log("insert_selection: text=" + item[0] + " input_element_id=" + input_element_id)
+            $("#" + input_element_id).val(item[0])
+        }
+        PlainDocument.prototype.hide_autocomplete_list("selection performed")
+    },
+
+    lost_focus: function() {
+        PlainDocument.prototype.hide_autocomplete_list("lost focus")
+    },
+
+    show_autocomplete_list: function(input_element) {
+        // log("show_autocomplete_list: " + input_element.id)
+        var pos = $(input_element).position()
+        var height = $(input_element).outerHeight()
+        $(".autocomplete_list").attr("id", "aclist_" + input_element.id)
+        $(".autocomplete_list").css({top: pos.top + height, left: pos.left})
+        $(".autocomplete_list").empty()
+        $(".autocomplete_list").show()
+    },
+
+    hide_autocomplete_list: function(msg) {
+        log("hide_autocomplete_list: " + msg)
+        $(".autocomplete_list").hide()
+        autocomplete_item = -1
+    },
+
+    activate_list_item: function() {
+        $(".autocomplete_list a").removeClass("active")
+        $(".autocomplete_list a:eq(" + autocomplete_item + ")").addClass("active")
+    },
+
+    item_hovered: function() {
+        autocomplete_item = this.id
+        // log("item_hovered: autocomplete_item=" + autocomplete_item)
+        PlainDocument.prototype.activate_list_item()
     }
 }

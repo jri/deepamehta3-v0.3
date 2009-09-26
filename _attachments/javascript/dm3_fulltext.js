@@ -1,9 +1,5 @@
 function dm3_fulltext() {
 
-    // alert("Plugin dm3-fulltext loaded!")
-
-    this.name = "dm3-fulltext"
-
     doctype_implementation("javascript/search_result.js")
     css_stylesheet("style/search_result.css")
 
@@ -22,7 +18,7 @@ function dm3_fulltext() {
     this.search = function(searchmode) {
         if (searchmode == "Fulltext") {
             var searchterm = $("#search_field").val()
-            var result = db.fulltext_search(searchterm + "*")
+            var result = db.fulltext_search("search", searchterm + "*")
             // build result document
             var fields = [{id: "Title", content: '"' + searchterm + '"'}]
             var result_doc = create_topic_doc("Search Result", fields, "SearchResult")

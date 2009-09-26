@@ -1,7 +1,7 @@
 var db = new CouchDB("deepamehta3-db")
 
-db.fulltext_search = function(text) {
-    var viewPath = this.uri + "_fti/deepamehta3/search?q=" + text
+db.fulltext_search = function(index, text) {
+    var viewPath = this.uri + "_fti/deepamehta3/" + index + "?q=" + text
     this.last_req = this.request("GET", viewPath)      
     if (this.last_req.status == 404)
         return null
@@ -48,6 +48,8 @@ function init() {
     // create form
     $("#type_select_placeholder").replaceWith(create_type_select())
     $("#create_button").click(create_topic_from_menu)
+    // document form
+    $("#document_form").submit(submit_document)
 }
 
 function set_searchmode() {
@@ -135,6 +137,18 @@ function show_document(doc_id) {
     return true
 }
 
+function edit_document() {
+    trigger_doctype_hook("render_document_form")
+    trigger_doctype_hook("post_render_form")
+}
+
+function submit_document() {
+    var submit_button = $("#document_form input[submit=true]")
+    // alert("submit_document: submit button id=" + submit_button.attr("id"))
+    submit_button.click()
+    return false
+}
+
 function document_exists(doc_id) {
     return db.open(doc_id) != null
 }
@@ -155,8 +169,7 @@ function create_topic_from_menu() {
     // update GUI
     canvas.add_document(current_doc, true)
     // initiate editing
-    var impl = loaded_doctype_impls[current_doc.implementation]
-    impl.edit_document()
+    edit_document()
 }
 
 /**
@@ -295,6 +308,11 @@ function get_relation_doc(doc1_id, doc2_id, rel_type) {
     return db.open(rows[0].id)
 }
 
+/**
+ * Returns the IDs of all relations of the document. Auxiliary relations are NOT included.
+ *
+ * @return  Array of relation IDs.
+ */
 function related_doc_ids(doc_id) {
     var rows = get_relations(doc_id)
     var rel_doc_ids = []
@@ -362,36 +380,38 @@ function load_plugins() {
     // load plugins
     log("Loading " + plugin_sources.length + " plugins:")
     for (var i = 0, plugin_source; plugin_source = plugin_sources[i]; i++) {
-        log(plugin_source)
+        log("..... " + plugin_source)
         $("head").append($("<script>").attr("src", plugin_source))
         //
         var plugin_class = basename(plugin_source)
-        log("instantiating \"" + plugin_class + "\"")
+        log(".......... instantiating \"" + plugin_class + "\"")
         plugins.push(eval("new " + plugin_class))
     }
-    // load document type implementations
-    log("Loading " + doctype_impls.length + " document type implementations:")
+    // load doctype implementations
+    log("Loading " + doctype_impls.length + " doctype implementations:")
     for (var i = 0, doctype_impl; doctype_impl = doctype_impls[i]; i++) {
-        log(doctype_impl)
+        log("..... " + doctype_impl)
         $("head").append($("<script>").attr("src", doctype_impl))
         //
         var doctype_class = to_camel_case(basename(doctype_impl))
-        log("instantiating \"" + doctype_class + "\"")
-        loaded_doctype_impls[doctype_class] = eval("new " + doctype_class)
+        log(".......... instantiating \"" + doctype_class + "\"")
+        var doctype_impl = eval("new " + doctype_class)
+        loaded_doctype_impls[doctype_class] = doctype_impl
+        trigger_doctype_hook("init", doctype_impl)
     }
     // load CSS stylesheets
     log("Loading " + css_stylesheets.length + " CSS stylesheets:")
     for (var i = 0, css_stylesheet; css_stylesheet = css_stylesheets[i]; i++) {
-        log(css_stylesheet)
+        log("..... " + css_stylesheet)
         $("head").append($("<link>").attr({rel: "stylesheet", href: css_stylesheet, type: "text/css"}))
     }
 }
 
-function trigger_hook(name, args) {
+function trigger_hook(hook_name, args) {
     var result = []
     for (var i = 0, plugin; plugin = plugins[i]; i++) {
-        if (plugin[name]) {
-            var res = plugin[name](args)
+        if (plugin[hook_name]) {
+            var res = plugin[hook_name](args)
             if (res) {
                 result.push(res)
             }
@@ -402,9 +422,16 @@ function trigger_hook(name, args) {
 
 //
 
-function call_document_function(function_name) {
-    var impl = loaded_doctype_impls[current_doc.implementation]
-    impl[function_name]()
+function trigger_doctype_hook(hook_name, doctype_impl) {
+    // if no doctype implementation is specified the one of the current document is used.
+    if (!doctype_impl) {
+        doctype_impl = loaded_doctype_impls[current_doc.implementation]
+    }
+    // trigger the hook only if it is defined (a doctype implementation must not define all hooks).
+    // alert("trigger_doctype_hook: doctype=" + doctype_impl.name + " hook_name=" + hook_name + " hook=" + doctype_impl[hook_name])
+    if (doctype_impl[hook_name]) {
+        doctype_impl[hook_name]()
+    }
 }
 
 function call_relation_function(function_name) {
@@ -463,7 +490,7 @@ function render_object(object) {
 
 //
 
-function doc_field(doc, field_id) {
+function get_field(doc, field_id) {
     for (var i = 0, field; field = doc.fields[i]; i++) {
         if (field.id == field_id) {
             return field
@@ -505,6 +532,9 @@ function clone(obj) {
 
 function log(text) {
     if (debug) {
-        debug_window.document.writeln(text + "<br>")
+        // Note: the debug window might be closed meanwhile
+        if (debug_window.document) {
+            debug_window.document.writeln(text + "<br>")
+        }
     }
 }

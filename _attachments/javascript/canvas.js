@@ -298,7 +298,7 @@ function Canvas() {
         for (var i = 0, item; item = items[i]; i++) {
             switch (type) {
             case "topic":
-                var handler = "call_document_function"
+                var handler = "trigger_doctype_hook"
                 break
             case "assoc":
                 var handler = "call_relation_function"
