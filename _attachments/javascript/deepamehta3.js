@@ -78,7 +78,7 @@ function reveal_document(doc_id) {
     if (document_exists(doc_id)) {
         var relation_doc = get_relation_doc(current_doc._id, doc_id)
         if (!relation_doc) {
-            create_relation(current_doc._id, doc_id, true)
+            create_relation(current_doc._id, doc_id, true, "Auxiliary")
         } else {
             canvas.add_relation(relation_doc)
         }
@@ -135,7 +135,17 @@ function show_document(doc_id) {
     return true
 }
 
-// --- Topics ---
+function document_exists(doc_id) {
+    return db.open(doc_id) != null
+}
+
+
+
+/****************************************************************************************/
+/**************************************** Topics ****************************************/
+/****************************************************************************************/
+
+
 
 function create_topic_from_menu() {
     // update DB
@@ -200,6 +210,22 @@ function save_document(doc) {
 }
 
 /**
+ * Returns topics by ID list. Optionally filtered by topic type.
+ *
+ * @param   type_filter     a topic type, e.g. "Note", "Workspace"
+ * @return  Array of CouchDB view rows: id,key=doc_id (the argument), value={name: , topic_type:}
+ */
+function get_topics(doc_ids, type_filter) {
+    var rows = db.view("deepamehta3/topics", null, doc_ids).rows
+    if (type_filter) {
+        filter(rows, function(row) {
+            return row.value.topic_type == type_filter
+        })
+    }
+    return rows
+}
+
+/**
  * @param   delete_from_db  If true, the document (including its relations) is deleted permanently.
  *                          If false, the document (including its relations) is just removed from the view.
  */
@@ -216,16 +242,24 @@ function remove_document(delete_from_db) {
     show_document()
 }
 
-// --- Relations ---
+
+
+/*******************************************************************************************/
+/**************************************** Relations ****************************************/
+/*******************************************************************************************/
+
+
 
 /**
- * Creates a relation in the DB and adds it to the canvas.
+ * Creates a relation in the DB and optionally adds it also to the canvas.
+ *
+ * @param   rel_type    The type for the new relation. If not specified, "Relation" is used.
  */
-function create_relation(doc1_id, doc2_id, add_to_canvas) {
+function create_relation(doc1_id, doc2_id, add_to_canvas, rel_type) {
     // update DB
     var relation_doc = {
         type: "Relation",
-        rel_type: "Relation",
+        rel_type: rel_type || "Relation",
         rel_doc_ids: [doc1_id, doc2_id]
     }
     save_document(relation_doc)
@@ -261,6 +295,30 @@ function get_relation_doc(doc1_id, doc2_id, rel_type) {
     return db.open(rows[0].id)
 }
 
+function related_doc_ids(doc_id) {
+    var rows = get_relations(doc_id)
+    var rel_doc_ids = []
+    for (var i = 0, row; row = rows[i]; i++) {
+        rel_doc_ids.push(row.value.rel_doc_id)
+    }
+    return rel_doc_ids
+}
+
+/**
+ * Returns all relations of the document. Optionally including auxiliary relations.
+ * Auxialiary relations are not part of the knowledge base but help to visualize / navigate result sets.
+ *
+ * @return  Array of CouchDB view rows: id=relation ID, key=doc_id (the argument), value={rel_doc_id: , rel_doc_pos:, rel_type:}
+ */
+function get_relations(doc_id, include_auxiliary) {
+    if (include_auxiliary) {
+        var options = {startkey: [doc_id, 0], endkey: [doc_id, 1]}
+    } else {
+        var options = {key: [doc_id, 0]}
+    }
+    return db.view("deepamehta3/relations", options).rows
+}
+
 /**
  * Deletes a relation from the DB, refreshes the canvas and the detail panel.
  */
@@ -273,7 +331,7 @@ function delete_relation(rel_doc) {
 }
 
 function remove_relations(doc, delete_from_db) {
-    var rows = relations(doc._id)
+    var rows = get_relations(doc._id, true)
     for (var i = 0, row; row = rows[i]; i++) {
         // update DB
         if (delete_from_db) {
@@ -355,46 +413,6 @@ function call_relation_function(function_name) {
     } else {
         alert("call_relation_function: function \"" + function_name + "\" not implemented")
     }
-}
-
-// --- DB ---
-
-function related_doc_ids(doc_id) {
-    var rows = relations(doc_id)
-    var rel_doc_ids = []
-    for (var i = 0, row; row = rows[i]; i++) {
-        rel_doc_ids.push(row.value.rel_doc_id)
-    }
-    return rel_doc_ids
-}
-
-/**
- * Returns all relations of the document.
- *
- * @return  Array of CouchDB view rows: id=relation ID, key=doc_id (the argument), value={rel_doc_id: , rel_doc_pos:, rel_type:}
- */
-function relations(doc_id) {
-    return db.view("deepamehta3/relations", {key: doc_id}).rows
-}
-
-/**
- * Returns topics by ID list. Optionally filtered by topic type.
- *
- * @param   type_filter     a topic type, e.g. "Note", "Workspace"
- * @return  Array of CouchDB view rows: id,key=doc_id (the argument), value={name: , topic_type:}
- */
-function get_topics(doc_ids, type_filter) {
-    var rows = db.view("deepamehta3/topics", null, doc_ids).rows
-    if (type_filter) {
-        filter(rows, function(row) {
-            return row.value.topic_type == type_filter
-        })
-    }
-    return rows
-}
-
-function document_exists(doc_id) {
-    return db.open(doc_id) != null
 }
 
 // ---

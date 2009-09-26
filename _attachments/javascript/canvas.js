@@ -155,6 +155,11 @@ function Canvas() {
             ca = canvas_assocs[i]
             ct1 = topic_by_id(ca.doc1_id)
             ct2 = topic_by_id(ca.doc2_id)
+            // assertion
+            if (!ct1 || !ct2) {
+                alert("draw: invalid association " + ca.id + " (endpoint doesn't exist)")
+                continue
+            }
             // hightlight
             if (current_rel && current_rel._id == ca.id) {
                 draw_line(ct1.x, ct1.y, ct2.x, ct2.y, active_assoc_width, active_color)

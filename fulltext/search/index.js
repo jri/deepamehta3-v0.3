@@ -1,6 +1,6 @@
 function(doc) {
 
-    if (doc.type != "Topic") {
+    if (doc.type != "Topic" || doc.topic_type == "Search Result") {
         return
     }
 

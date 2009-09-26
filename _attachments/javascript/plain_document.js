@@ -16,15 +16,13 @@ function PlainDocument() {
 
         function render_fields() {
             for (var i = 0, field; field = doc.fields[i]; i++) {
-                // field name
-                $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
-                // field value
                 switch (field.model.type) {
                     case "text":
+                        $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
                         switch (field.view.editor) {
                             case "single line":
                             case "multi line":
-                                $("#detail_panel").append($(render_text(field.content)).addClass("field_value"))
+                                render_text(field.content)
                                 break
                             default:
                                 alert("render_fields: unexpected field editor (" + field.view.editor + ")")
@@ -33,7 +31,7 @@ function PlainDocument() {
                     case "relation":
                         switch (field.view.editor) {
                             case "checkboxes":
-                                $("#detail_panel").append($(render_defined_relations(field)).addClass("field_value"))
+                                render_defined_relations(field)
                                 break
                             default:
                                 alert("render_fields: unexpected field editor (" + field.view.editor + ")")
@@ -47,43 +45,49 @@ function PlainDocument() {
             // Creates a div-element holding the text.
             // Conversion performed: linefeed characters (\n) are replaced by br-elements.
             function render_text(text) {
-                var div = $("<div>")
+                var field_value = $("<div>").addClass("field_value")
                 var pos = 0
                 do {
                     var i = text.indexOf("\n", pos)
                     if (i >= 0) {
-                        div.append(text.substring(pos, i)).append("<br>")
+                        field_value.append(text.substring(pos, i)).append("<br>")
                         pos = i + 1
                     }
                 } while (i >= 0)
-                div.append(text.substring(pos))
-                return div
+                field_value.append(text.substring(pos))
+                $("#detail_panel").append(field_value)
             }
 
             function render_defined_relations(field) {
                 var topics = get_related_topics(doc, field)
-                return render_topic_list(topics, $("<div>"))
+                $("#detail_panel").append($("<div>").addClass("field_name").text(field.id + " (" + topics.length + ")"))
+                var field_value = $("<div>").addClass("field_value")
+                render_topic_list(topics, field_value)
+                $("#detail_panel").append(field_value)
             }
         }
 
         function render_attachments() {
             if (doc._attachments) {
                 $("#detail_panel").append($("<div>").addClass("field_name").text("Attachments"))
+                var field_value = $("<div>").addClass("field_value")
                 for (var attach in doc._attachments) {
                     var a = $("<a>").attr("href", db.uri + doc._id + "/" + attach).text(attach)
-                    $("#detail_panel").append(a).append("<br>")
+                    field_value.append(a).append("<br>")
                 }
+                $("#detail_panel").append(field_value)
             }
         }
 
         function render_relations() {
-            var doc_ids = related_doc_ids(doc._id)
-            var topics = get_topics(doc_ids)
+            var topics = get_topics(related_doc_ids(doc._id))
             $("#detail_panel").append($("<div>").addClass("field_name").text("Relations (" + topics.length + ")"))
-            render_topic_list(topics, $("#detail_panel"))
+            var field_value = $("<div>").addClass("field_value")
+            render_topic_list(topics, field_value)
+            $("#detail_panel").append(field_value)
         }
 
-        // function render_buttons() {
+        // functio render_buttons() {
         $("#lower_toolbar").append($("<input>").attr({type: "button", id: "edit_button", value: "Edit"}))
         $("#lower_toolbar").append($("<input>").attr({type: "button", id: "attach_button", value: "Upload Attachment"}))
         $("#lower_toolbar").append($("<input>").attr({type: "button", id: "delete_button", value: "Delete"}))
@@ -109,7 +113,8 @@ function PlainDocument() {
                             valuediv.append($("<input>").attr({id: "field_" + field.id, value: field.content, size: 80}))
                             break
                         case "multi line":
-                            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: 35, cols: 80}).text(field.content))
+                            var lines = field.view.lines || 30
+                            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: lines, cols: 80}).text(field.content))
                             break
                         default:
                             alert("edit_document: unexpected field editor (" + field.view.editor + ")")
