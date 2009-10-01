@@ -314,37 +314,52 @@ PlainDocument.prototype = {
         //
         autocomplete_items = []
         //
-        var field_id = this.id.substr(6)
-        var field = get_field(current_doc, field_id)
-        for (var i = 0, index; index = field.view.autocomplete_indexes[i]; i++) {
-            var searchterm = this.value
-            var result = db.fulltext_search(index, searchterm + "*")
-            //
-            if (result.rows.length && !autocomplete_items.length) {
-                PlainDocument.prototype.show_autocomplete_list(this)
-            }
-            //
-            for (var i = 0, row; row = result.rows[i]; i++) {
-                var item = row.fields.default
-                // Note: if the index function stores only one field per document
-                // we get it as a string, otherwise we get an array
-                if (typeof(item) == "string") {
-                    item = [item]
+        try {
+            var field = PlainDocument.prototype.get_field(this)
+            for (var i = 0, index; index = field.view.autocomplete_indexes[i]; i++) {
+                var searchterm = searchterm(field, this)
+                var result = db.fulltext_search(index, searchterm + "*")
+                //
+                if (result.rows.length && !autocomplete_items.length) {
+                    PlainDocument.prototype.show_autocomplete_list(this)
                 }
-                autocomplete_items.push(item)
-                var a = $("<a>").attr({href: "", id: i}).text(item[0])
-                a.mousemove(PlainDocument.prototype.item_hovered)
-                a.mousedown(PlainDocument.prototype.insert_selection)
-                // Note: we use mousedown instead of click because the click causes loosing the focus
-                // and "lost focus" is fired _before_ "mouseup" and thus "click" would never be fired.
-                // At least as long as we hide the autocompletion list on "hide focus" which we do for
-                // the sake of simplicity. This leads to non-conform GUI behavoir (action on mousedown).
-                // A more elaborated rule for hiding the autocompletion list is required.
-                $(".autocomplete_list").append(a)
+                //
+                for (var i = 0, row; row = result.rows[i]; i++) {
+                    var item = row.fields.default
+                    // Note: if the index function stores only one field per document
+                    // we get it as a string, otherwise we get an array
+                    if (typeof(item) == "string") {
+                        item = [item]
+                    }
+                    autocomplete_items.push(item)
+                    var a = $("<a>").attr({href: "", id: i}).text(item[0])
+                    a.mousemove(PlainDocument.prototype.item_hovered)
+                    a.mousedown(PlainDocument.prototype.insert_selection)
+                    // Note: we use mousedown instead of click because the click causes loosing the focus
+                    // and "lost focus" is fired _before_ "mouseup" and thus "click" would never be fired.
+                    // At least as long as we hide the autocompletion list on "hide focus" which we do for
+                    // the sake of simplicity. This leads to non-conform GUI behavoir (action on mousedown).
+                    // A more elaborated rule for hiding the autocompletion list is required.
+                    $(".autocomplete_list").append(a)
+                }
             }
+        } catch (e) {
+            // log("Error while searching: " + JSON.stringify(e))
         }
+        //
         if (!autocomplete_items.length) {
             PlainDocument.prototype.hide_autocomplete_list("no result")
+        }
+
+        function searchterm(field, input_element) {
+            if (field.view.autocomplete_style == "item list") {
+                var searchterm = PlainDocument.prototype.current_term(input_element)
+                log("pos=" + searchterm[1] + "cpos=" + searchterm[2] + " searchterm=\"" + searchterm[0] + "\"")
+                return searchterm[0]
+            } else {
+                // autocomplete_style "default"
+                return input_element.value
+            }
         }
     },
 
@@ -377,12 +392,38 @@ PlainDocument.prototype = {
 
     insert_selection: function() {
         if (autocomplete_item != -1) {
-            var input_element_id = $(".autocomplete_list").attr("id").substr(7)     // 7 = "aclist_".length
-            var item = autocomplete_items[autocomplete_item]
-            log("insert_selection: text=" + item[0] + " input_element_id=" + input_element_id)
-            $("#" + input_element_id).val(item[0])
+            var input_element_id = $(".autocomplete_list").attr("id").substr(7) // 7 = "aclist_".length
+            var input_element = $("#" + input_element_id).get(0)
+            var item = autocomplete_items[autocomplete_item][0]                 // the item to insert
+            var field = PlainDocument.prototype.get_field(input_element)
+            if (field.view.autocomplete_style == "item list") {
+                var term = PlainDocument.prototype.current_term(input_element)  // term[0]: the term to replace, starts immediately after the comma
+                                                                                // term[1]: position of the previous comma or -1
+                var value = input_element.value
+                input_element.value = value.substring(0, term[1] + 1)
+                if (term[1] + 1 > 0) {
+                    input_element.value += " "
+                }
+                input_element.value += item + ", " + value.substring(term[1] + 1 + term[0].length)
+            } else {
+                // autocomplete_style "default"
+                input_element.value = item
+            }
         }
         PlainDocument.prototype.hide_autocomplete_list("selection performed")
+    },
+
+    current_term: function(input_element) {
+        var cpos = input_element.selectionStart
+        var pos = input_element.value.lastIndexOf(",", cpos - 1)
+        var term = input_element.value.substring(pos + 1, cpos)
+        return [term, pos, cpos]
+    },
+
+    get_field: function(input_element) {
+        var field_id = input_element.id.substr(6)            // 6 = "field_".length
+        var field = get_field(current_doc, field_id)
+        return field
     },
 
     lost_focus: function() {

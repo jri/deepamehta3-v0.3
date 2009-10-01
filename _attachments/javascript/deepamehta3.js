@@ -71,7 +71,7 @@ function search() {
         show_document(result_doc._id)
         canvas.add_document(current_doc, true)
     } catch (e) {
-        alert("error while searching: " + JSON.stringify(e))
+        alert("Error while searching: " + JSON.stringify(e))
     }
     return false
 }
