@@ -225,6 +225,7 @@ function save_document(doc) {
 /**
  * Returns topics by ID list. Optionally filtered by topic type.
  *
+ * @param   doc_ids         Array of topic IDs
  * @param   type_filter     a topic type, e.g. "Note", "Workspace"
  * @return  Array of CouchDB view rows: id,key=doc_id (the argument), value={name: , topic_type:}
  */
@@ -360,7 +361,13 @@ function remove_relations(doc, delete_from_db) {
     }
 }
 
-// --- Plugin Mechanism ---
+
+
+/************************************************************************************************/
+/**************************************** Plugin Support ****************************************/
+/************************************************************************************************/
+
+
 
 function add_plugin(source_path) {
     plugin_sources.push(source_path)

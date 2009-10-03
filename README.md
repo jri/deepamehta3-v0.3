@@ -15,14 +15,23 @@ Requirements
 * CouchDB (tested with 0.9)  
   <http://couchdb.apache.org/>
 
-* CouchApp (tested with 0.3.2)  
+* CouchApp (tested with 0.3.2 and later)  
   <http://github.com/couchapp/couchapp>
 
-* Python 2.5 or later  
-  (required to run CouchApp)
+* Python (tested with 2.4, preferred is 2.5 or later)  
+  required to run CouchApp  
+  <http://www.python.org/>
 
 * couchdb-lucene (tested with 0.4)  
   <http://github.com/rnewson/couchdb-lucene/>
+
+* Java (tested with JDK 1.4, preferred is JDK 1.5 or later)  
+  required to run couchdb-lucene  
+  <http://java.sun.com/>
+
+* Git (tested with 1.6.4)  
+  required for easy installation of DeepaMehta 3 and plugins  
+  <http://git-scm.com/>
 
 For Mac OS X 10.3.9 ("Panther") and JDK 1.4:
 
@@ -38,24 +47,41 @@ For Mac OS X 10.3.9 ("Panther") and JDK 1.4:
 Installation
 ------------
 
-1.  Install CouchDB
-2.  Install CouchApp
-3.  Install couchdb-lucene
-4.  Install git
-5.  Go to the directory where you like to install DeepaMehta 3, e.g.
-        cd /usr/local
-    Clone DeepaMehta 3 git repository to your computer
-        git clone git://github.com/jri/deepamehta3.git
-    A directory "deepamehta3" will be created.
-6.  Start CouchDB server
+Preparation
+
+1.  Install Python, Java, Git
+2.  Install CouchDB, CouchApp, couchdb-lucene
+3.  Configure CouchDB for use with couchdb-lucene as described in the README
+        <http://github.com/rnewson/couchdb-lucene/>
+4.  Start CouchDB server
         sudo -u couchdb couchdb
-7.  Upload DeepaMehta 3 to CouchDB
+
+DeepaMehta 3 installation
+
+1.  Go to the directory where you like to install DeepaMehta 3, e.g.
+        cd /usr/local
+    Clone DeepaMehta 3 Git repository to your computer
+        git clone git://github.com/jri/deepamehta3.git
+    A directory "deepamehta3" will be created. Go there
         cd deepamehta3
+
+2.  Upload DeepaMehta 3 to CouchDB
         couchapp push --atomic http://localhost:5984/deepamehta3-db
-8.  Visit DeepaMehta 3 in your webbrowser
-        http://localhost:5984/deepamehta3-db/_design/deepamehta3/index.html
+3.  Optional: install DeepaMehta 3 plugins. For the moment there are 4 plugins available:
+        <http://github.com/jri/dm3-time>
+        <http://github.com/jri/dm3-workspaces>
+        <http://github.com/jri/dm3-contacts>
+        <http://github.com/jri/dm3-email>
+    See installation instructions on the respective page.
+
+
+Running
+-------
+
+Visit DeepaMehta 3 in your webbrowser
+    http://localhost:5984/deepamehta3-db/_design/deepamehta3/index.html
 
 
 ------------
 Jörg Richter  
-24.9.2009
+Oct 3, 2009

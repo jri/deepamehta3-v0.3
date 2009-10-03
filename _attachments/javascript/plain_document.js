@@ -1,6 +1,4 @@
 function PlainDocument() {
-    this.name = "PlainDocument"
-
     // upload dialog
     $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 550})
     $("#upload_target").load(this.upload_complete)
@@ -16,12 +14,14 @@ PlainDocument.prototype = {
 
     render_document: function(doc) {
 
+        // alert("render_document: this=" + this + " type=" + typeof(this) + "\n" + JSON.stringify(this))
         render_fields()
         render_attachments()
         render_relations()
         // render_buttons()     // doesn't work ("this" reference is different)
 
         function render_fields() {
+            // alert("render_fields: this=" + this + " type=" + typeof(this) + "\n" + JSON.stringify(this))
             for (var i = 0, field; field = doc.fields[i]; i++) {
                 switch (field.model.type) {
                     case "text":
@@ -316,23 +316,24 @@ PlainDocument.prototype = {
         //
         try {
             var field = PlainDocument.prototype.get_field(this)
+            var searchterm = searchterm(field, this)
             for (var i = 0, index; index = field.view.autocomplete_indexes[i]; i++) {
-                var searchterm = searchterm(field, this)
                 var result = db.fulltext_search(index, searchterm + "*")
                 //
                 if (result.rows.length && !autocomplete_items.length) {
                     PlainDocument.prototype.show_autocomplete_list(this)
                 }
                 //
-                for (var i = 0, row; row = result.rows[i]; i++) {
+                for (var j = 0, row; row = result.rows[j]; j++) {
+                    // Note: only default field(s) is/are respected.
                     var item = row.fields.default
                     // Note: if the index function stores only one field per document
-                    // we get it as a string, otherwise we get an array
+                    // we get it as a string, otherwise we get an array.
                     if (typeof(item) == "string") {
                         item = [item]
                     }
                     autocomplete_items.push(item)
-                    var a = $("<a>").attr({href: "", id: i}).text(item[0])
+                    var a = $("<a>").attr({href: "", id: j}).text(item[0])
                     a.mousemove(PlainDocument.prototype.item_hovered)
                     a.mousedown(PlainDocument.prototype.insert_selection)
                     // Note: we use mousedown instead of click because the click causes loosing the focus
@@ -354,7 +355,7 @@ PlainDocument.prototype = {
         function searchterm(field, input_element) {
             if (field.view.autocomplete_style == "item list") {
                 var searchterm = PlainDocument.prototype.current_term(input_element)
-                log("pos=" + searchterm[1] + "cpos=" + searchterm[2] + " searchterm=\"" + searchterm[0] + "\"")
+                // log("pos=" + searchterm[1] + "cpos=" + searchterm[2] + " searchterm=\"" + searchterm[0] + "\"")
                 return searchterm[0]
             } else {
                 // autocomplete_style "default"
@@ -441,7 +442,7 @@ PlainDocument.prototype = {
     },
 
     hide_autocomplete_list: function(msg) {
-        log("hide_autocomplete_list: " + msg)
+        // log("hide_autocomplete_list: " + msg)
         $(".autocomplete_list").hide()
         autocomplete_item = -1
     },

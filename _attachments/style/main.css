@@ -39,6 +39,10 @@ body {
     margin-bottom: 1em;
 }
 
+.field_value label {
+    display: block;
+}
+
 #upload_target {
     display: none;
 }
