@@ -3,6 +3,10 @@
     <head>
         <title>DeepaMehta 3 v0.2-SNAPSHOT</title>
         <link rel="stylesheet" href="style/main.css" type="text/css">
+        <!-- jQuery -->
+        <script src="vendor/jquery/js/jquery-1.3.2.min.js"></script>
+        <script src="vendor/jquery/js/jquery-ui-1.7.2.custom.min.js"></script>
+        <link rel="stylesheet" href="vendor/jquery/css/smoothness/jquery-ui-1.7.2.custom.css" type="text/css">
         <!-- CouchDB -->
         <script src="/_utils/script/couch.js"></script>
         <script src="/_utils/script/json2.js"></script>
@@ -11,12 +15,8 @@
         <script src="javascript/canvas.js"></script>
         <script src="javascript/types.js"></script>
         <script src="javascript/plugins.js"></script>
-        <!-- jQuery -->
-        <script src="vendor/jquery/js/jquery-1.3.2.min.js"></script>
-        <script src="vendor/jquery/js/jquery-ui-1.7.2.custom.min.js"></script>
-        <link rel="stylesheet" href="vendor/jquery/css/smoothness/jquery-ui-1.7.2.custom.css" type="text/css">
     </head>
-    <body onload="init()">
+    <body>
         <div id="upper_toolbar">
             <form id="search_form">
                 <div id="searchmode_select_placeholder"></div>
@@ -29,9 +29,11 @@
                 <div id="type_select_placeholder"></div>
                 <input id="create_button" type="button" value="Create">
             </div>
+            <div id="special_form">
+                <div id="special_select_placeholder"></div>
+            </div>
         </div>
         <div id="canvas_panel">
-            <canvas id="canvas" width="500" height="600"></canvas>
         </div>
         <form id="document_form">
             <div id="detail_panel"></div>

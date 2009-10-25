@@ -19,17 +19,19 @@ function Canvas() {
     var trans_x = 0, trans_y = 0    // canvas translation
     
     // View (Canvas)
-    var canvas_elem = document.getElementById("canvas")
-    var ox = $(canvas_elem).offset().left
-    var oy = $(canvas_elem).offset().top
-    var ctx = canvas_elem.getContext("2d")
+    var canvas_elem = $("<canvas>").attr({id: "canvas", width: canvas_width, height: canvas_height})
+    $("#canvas_panel").append(canvas_elem)
+    var ox = canvas_elem.offset().left
+    var oy = canvas_elem.offset().top
+    log("Canvas offset: x=" + ox + " y=" + oy)
+    var ctx = canvas_elem.get(0).getContext("2d")
     ctx.fillStyle = topic_color
 
     // Events
-    $(canvas_elem).click(clicked)
-    $(canvas_elem).mousedown(mousedown)
-    $(canvas_elem).mousemove(mousemove)
-    canvas_elem.oncontextmenu = contextmenu
+    canvas_elem.click(clicked)
+    canvas_elem.mousedown(mousedown)
+    canvas_elem.mousemove(mousemove)
+    canvas_elem.get(0).oncontextmenu = contextmenu
 
     // Short-term Interaction State
     var topic_move_in_progress      // true while topic move is in progress

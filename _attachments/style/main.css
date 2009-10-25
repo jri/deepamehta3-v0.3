@@ -13,6 +13,11 @@ body {
     margin-right: 3em;
 }
 
+#create_form {
+    float: left;
+    margin-right: 3em;
+}
+
 #canvas_panel {
     float: left;
     margin-right: 1em;

@@ -3,10 +3,8 @@ function dm3_fulltext() {
     doctype_implementation("javascript/search_result.js")
     css_stylesheet("style/search_result.css")
 
-    /* --- Search Modes --- */
-
-    this.searchmode = function() {
-        return "Fulltext"
+    this.init = function() {
+        $("#searchmode_select").append($("<option>").text("Fulltext"))
     }
 
     this.search_widget = function(searchmode) {

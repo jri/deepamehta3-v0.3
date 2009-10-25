@@ -33,7 +33,7 @@ Requirements
   required for easy installation of DeepaMehta 3 and plugins  
   <http://git-scm.com/>
 
-For Mac OS X 10.3.9 ("Panther") and JDK 1.4:
+For Mac OS X 10.3.9 "Panther" and JDK 1.4:
 
 * CouchDB on "Panther" installation notes:  
   <http://triumphofthenerds.blogspot.com/>
@@ -62,16 +62,16 @@ DeepaMehta 3 installation
         cd /usr/local
     Clone DeepaMehta 3 Git repository to your computer
         git clone git://github.com/jri/deepamehta3.git
-    A directory "deepamehta3" will be created. Go there
+    A directory `deepamehta3` will be created. Go there
         cd deepamehta3
-
 2.  Upload DeepaMehta 3 to CouchDB
         couchapp push --atomic http://localhost:5984/deepamehta3-db
-3.  Optional: install DeepaMehta 3 plugins. For the moment there are 4 plugins available:
+3.  Optional: install DeepaMehta 3 plugins. For the moment there are 5 plugins available:
         <http://github.com/jri/dm3-time>
         <http://github.com/jri/dm3-workspaces>
         <http://github.com/jri/dm3-contacts>
         <http://github.com/jri/dm3-email>
+        <http://github.com/jri/dm3-import>
     See installation instructions on the respective page.
 
 
@@ -84,4 +84,4 @@ Visit DeepaMehta 3 in your webbrowser
 
 ------------
 Jörg Richter  
-Oct 3, 2009
+Oct 25, 2009

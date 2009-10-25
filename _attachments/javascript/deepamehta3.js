@@ -30,27 +30,32 @@ doctype_implementation("javascript/plain_document.js")
 add_plugin("javascript/dm3_fulltext.js")
 // css_stylesheet("style/main.css")     // layout flatters while loading
 
-function init() {
-    // Note: in order to avoid the canvas geometry being confused by
-    // DOM-manipulating plugins it must be initialized _before_ the plugins are loaded.
-    canvas = new Canvas()
-    //
-    // Note: in order to let a plugin extend the searchmode selector
-    // the plugins must be loaded _before_ the GUI is set up.
-    load_plugins()
-    trigger_hook("init")
-    //
+$(document).ready(function() {
     // --- setup GUI ---
     // search form
     $("#searchmode_select_placeholder").replaceWith(searchmode_select())
     $("#searchmode_select").change(set_searchmode)
     $("#search_form").submit(search)
+    // special form
+    $("#special_select_placeholder").replaceWith(create_special_select())
+    // document form
+    $("#document_form").submit(submit_document)
+    //
+    // Note: in order to let a plugin DOM manipulate the GUI
+    // the plugins must be loaded _after_ the GUI is set up.
+    load_plugins()
+    trigger_hook("init")
+    //
     // create form
     $("#type_select_placeholder").replaceWith(create_type_select())
     $("#create_button").click(create_topic_from_menu)
-    // document form
-    $("#document_form").submit(submit_document)
-}
+    //
+    // Note: in order to avoid the canvas geometry being confused by DOM-
+    // manipulating plugins it must be created _after_ the plugins are loaded.
+    // (for some reason the canvas still gets confused, so we further postpone
+    // its creation by waiting for the window being loaded completely.)
+    $(window).load(function() {canvas = new Canvas()})
+})
 
 function set_searchmode() {
     //
@@ -74,6 +79,11 @@ function search() {
         alert("Error while searching: " + JSON.stringify(e))
     }
     return false
+}
+
+function special_selected() {
+    var command = $("#special_select").val()
+    trigger_hook("handle_special_command", command)
 }
 
 function reveal_document(doc_id) {
@@ -470,15 +480,24 @@ function to_camel_case(str) {
 // --- GUI ---
 
 function searchmode_select() {
-    //
-    var searchmodes = trigger_hook("searchmode")
-    //
-    var select = $("<select>").attr("id", "searchmode_select")
-    for (var i = 0, searchmode; searchmode = searchmodes[i]; i++) {
-        select.append($("<option>").text(searchmode))
+    return $("<select>").attr("id", "searchmode_select")
+}
+
+function create_type_select() {
+    var select = $("<select>").attr("id", "type_select")
+    for (var type in types) {
+        select.append($("<option>").text(type))
     }
     return select
 }
+
+function create_special_select() {
+    var select = $("<select>").attr("id", "special_select").change(special_selected)
+    select.append($("<option>").attr("value", "").text("Special:"))
+    return select
+}
+
+//
 
 function empty_detail_panel() {
     $("#detail_panel").empty()
