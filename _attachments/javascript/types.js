@@ -4,7 +4,7 @@ var types = {
             {
                 id: "Title",
                 model: {
-                    type: "text",
+                    type: "text"
                 },
                 view: {
                     editor: "single line"
@@ -14,7 +14,7 @@ var types = {
             {
                 id: "Body",
                 model: {
-                    type: "text",
+                    type: "text"
                 },
                 view: {
                     editor: "multi line"
@@ -22,6 +22,7 @@ var types = {
                 content: ""
             }
         ],
-        implementation: "PlainDocument"
+        implementation: "PlainDocument",
+        icon_src: "images/pencil.png"
     }
 }

@@ -12,6 +12,9 @@ function Canvas() {
     var assoc_width = 4
     var assoc_click_tolerance = 0.3
     var canvas_animation_steps = 30
+    var HIGHLIGHT_DIST = 5
+    var LABEL_DIST_Y = 5
+    var LABEL_MAX_WIDTH = 120
 
     // Model
     var canvas_topics = []
@@ -21,9 +24,9 @@ function Canvas() {
     // View (Canvas)
     var canvas_elem = $("<canvas>").attr({id: "canvas", width: canvas_width, height: canvas_height})
     $("#canvas_panel").append(canvas_elem)
-    var ox = canvas_elem.offset().left
-    var oy = canvas_elem.offset().top
-    log("Canvas offset: x=" + ox + " y=" + oy)
+    var cox = canvas_elem.offset().left
+    var coy = canvas_elem.offset().top
+    log("Canvas offset: x=" + cox + " y=" + coy)
     var ctx = canvas_elem.get(0).getContext("2d")
     ctx.fillStyle = topic_color
 
@@ -146,17 +149,23 @@ function Canvas() {
         action_topic = topic_by_id(doc_id)
     }
 
-    /* ---------------------------------------- Private Methods ---------------------------------------- */
 
-    /* Drawing */
+
+    /*************************************************************************************************/
+    /**************************************** Private Methods ****************************************/
+    /*************************************************************************************************/
+
+
+
+    /*** Drawing ***/
 
     function draw() {
         ctx.clearRect(-trans_x, -trans_y, canvas_width, canvas_height)
         // 1) assocs
         for (var i in canvas_assocs) {
-            ca = canvas_assocs[i]
-            ct1 = topic_by_id(ca.doc1_id)
-            ct2 = topic_by_id(ca.doc2_id)
+            var ca = canvas_assocs[i]
+            var ct1 = topic_by_id(ca.doc1_id)
+            var ct2 = topic_by_id(ca.doc2_id)
             // assertion
             if (!ct1 || !ct2) {
                 alert("draw: invalid association " + ca.id + " (endpoint doesn't exist)")
@@ -174,19 +183,33 @@ function Canvas() {
             draw_line(action_topic.x, action_topic.y, tmp_x - trans_x, tmp_y - trans_y, assoc_width, active_color)
         }
         // 3) topics
+        draw_topics()
+    }
+
+    function draw_topics() {
         ctx.lineWidth = active_topic_width
         ctx.strokeStyle = active_color
         for (var i in canvas_topics) {
-            ct = canvas_topics[i]
-            ctx.beginPath()
-            // alert("draw topic=" + JSON.stringify(ct))
-            ctx.arc(ct.x, ct.y, topic_radius, 0, 2 * Math.PI, true)
-            ctx.fill()
+            var ct = canvas_topics[i]
+            //
+            if (ct.icon) {
+                var w = ct.icon.width
+                var h = ct.icon.height
+                ctx.drawImage(ct.icon, ct.x - w / 2, ct.y - h / 2)
+            } else {
+                ctx.beginPath()
+                ctx.arc(ct.x, ct.y, topic_radius, 0, 2 * Math.PI, true)
+                ctx.fill()
+            }
             // highlight
             if (current_doc && current_doc._id == ct.doc_id) {
-                ctx.beginPath()
-                ctx.arc(ct.x, ct.y, 1.5 * topic_radius, 0, 2 * Math.PI, true)
-                ctx.stroke()
+                if (ct.icon) {
+                    ctx.strokeRect(ct.x - w / 2 - HIGHLIGHT_DIST, ct.y - h / 2 - HIGHLIGHT_DIST, w + 2 * HIGHLIGHT_DIST, h + 2 * HIGHLIGHT_DIST)
+                } else {
+                    ctx.beginPath()
+                    ctx.arc(ct.x, ct.y, topic_radius + HIGHLIGHT_DIST, 0, 2 * Math.PI, true)
+                    ctx.stroke()
+                }
             }
         }
     }
@@ -200,14 +223,14 @@ function Canvas() {
         ctx.stroke()
     }
 
-    /* Event Handling */
+    /*** Event Handling ***/
 
     function mousedown(event) {
         if (event.which == 1) {
             tmp_x = cx(event)
             tmp_y = cy(event)
             //
-            var ct = doc_by_position(event)
+            var ct = topic_by_position(event)
             if (ct) {
                 action_topic = ct
             } else if (!assoc_create_in_progress) {
@@ -243,7 +266,7 @@ function Canvas() {
             // end relation in progress
             assoc_create_in_progress = false
             //
-            var ct = doc_by_position(event)
+            var ct = topic_by_position(event)
             if (ct) {
                 create_relation(current_doc._id, ct.doc_id, true)
                 select_document(current_doc._id)
@@ -257,7 +280,7 @@ function Canvas() {
             // end translation
             canvas_move_in_progress = false
         } else {
-            var ct = doc_by_position(event)
+            var ct = topic_by_position(event)
             if (ct) {
                 select_document(ct.doc_id)
             }
@@ -272,7 +295,7 @@ function Canvas() {
     }
 
     function contextmenu(event) {
-        var ct = doc_by_position(event)
+        var ct = topic_by_position(event)
         if (ct) {
             //
             select_document(ct.doc_id)
@@ -292,7 +315,7 @@ function Canvas() {
         return false
     }
 
-    /* Context Menu */
+    /*** Context Menu ***/
 
     // type: "topic" / "assoc"
     function open_context_menu(items, type, event) {
@@ -350,25 +373,22 @@ function Canvas() {
                 return true
             }
         }
-        return false
     }
 
     function topic_by_id(doc_id) {
         return canvas_topics[topic_index(doc_id)]
     }
 
-    function doc_by_position(event) {
+    function topic_by_position(event) {
         var x = cx(event, true)
         var y = cy(event, true)
-        for (var i in canvas_topics) {
-            ct = canvas_topics[i]
-            if (x >= ct.x - topic_radius && x < ct.x + topic_radius &&
-                y >= ct.y - topic_radius && y < ct.y + topic_radius) {
+        for (var i = 0, ct; ct = canvas_topics[i]; i++) {
+            if (x >= ct.x - ct.width / 2 && x < ct.x + ct.width / 2 &&
+                y >= ct.y - ct.height / 2 && y < ct.y + ct.height / 2) {
                 //
                 return ct
             }
         }
-        return null
     }
 
     function assoc_by_position(event) {
@@ -416,11 +436,11 @@ function Canvas() {
      }
 
     function cx(event, consider_translation) {
-        return event.pageX - ox - (consider_translation ? trans_x : 0)
+        return event.pageX - cox - (consider_translation ? trans_x : 0)
     }
 
     function cy(event, consider_translation) {
-        return event.pageY - oy - (consider_translation ? trans_y : 0)
+        return event.pageY - coy - (consider_translation ? trans_y : 0)
     }
 
     /* CanvasTopic */
@@ -428,24 +448,41 @@ function Canvas() {
     function CanvasTopic(doc, x, y) {
 
         this.doc_id = doc._id
-        this.x = x - trans_x;
-        this.y = y - trans_y;
+        this.x = x - trans_x
+        this.y = y - trans_y
+        var icon = topic_type_icons[doc.topic_type]
+        if (icon) {
+            var w = icon.width
+            var h = icon.height
+            log("Icon " + icon.src)
+            log("..... width=" + w + " height=" + h)
+            this.icon = icon
+            this.width = w
+            this.height = h
+            this.lox = -w / 2                       // label offset
+            this.loy = h / 2 + LABEL_DIST_Y         // label offset
+        } else {
+            this.width = 2 * topic_radius
+            this.height = 2 * topic_radius
+            this.lox = -topic_radius                // label offset
+            this.loy = topic_radius + LABEL_DIST_Y  // label offset
+        }
 
         // label
-        this.label_x = x + ox - topic_radius
-        this.label_y = y + oy + 1.5 * topic_radius
+        this.label_x = x + cox + this.lox
+        this.label_y = y + coy + this.loy
         this.label_div = $("<div>").text(label_text(doc))
         var label_css = label_position_css(this)
         label_css.position = "absolute"
-        label_css["max-width"] = "100px"
+        label_css["max-width"] = LABEL_MAX_WIDTH + "px"
         this.label_div.css(label_css)
         $("#canvas_panel").append(this.label_div)
 
         this.move_to = function(event) {
             this.x = cx(event, true)
             this.y = cy(event, true)
-            this.label_x = event.pageX - topic_radius
-            this.label_y = event.pageY + 1.5 * topic_radius
+            this.label_x = event.pageX + this.lox
+            this.label_y = event.pageY + this.loy
             this.label_div.css(label_position_css(this))
         }
 
@@ -471,8 +508,8 @@ function Canvas() {
             // because "overflow: hidden" only works with absolute positioning the context panel
             // which in turn has a lot of consequences, e.g. the context menu items doesn't
             // occupy the entire context menu width anymore and I don't know how to fix it.
-            var lx = ct.label_x - ox;
-            var ly = ct.label_y - oy;
+            var lx = ct.label_x - cox;
+            var ly = ct.label_y - coy;
             // Note: if the label div is completely out of sight we must set it to "display: none".
             // Otherwise the document would grow and produce window scrollbars.
             if (lx > canvas_width || ly > canvas_height) {

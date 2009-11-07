@@ -47,7 +47,7 @@ For Mac OS X 10.3.9 "Panther" and JDK 1.4:
 Installation
 ------------
 
-Preparation
+### Preparation ###
 
 1.  Install Python, Java, Git
 2.  Install CouchDB, CouchApp, couchdb-lucene
@@ -56,7 +56,7 @@ Preparation
 4.  Start CouchDB server
         sudo -u couchdb couchdb
 
-DeepaMehta 3 installation
+### DeepaMehta 3 installation ###
 
 1.  Go to the directory where you like to install DeepaMehta 3, e.g.
         cd /usr/local

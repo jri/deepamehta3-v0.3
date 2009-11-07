@@ -18,6 +18,8 @@ var plugins = []
 var doctype_impls = []
 var loaded_doctype_impls = {}
 var css_stylesheets = []
+//
+var topic_type_icons = {}
 
 // debug window
 var debug = false
@@ -175,7 +177,7 @@ function create_topic_from_menu() {
     // update DB
     var topic_type = $("#type_select").val()
     var typedef = clone(types[topic_type])
-    current_doc = create_topic(topic_type, typedef.fields, typedef.implementation)
+    current_doc = create_topic(topic_type, typedef.fields, typedef.implementation, typedef.icon_src)
     // update GUI
     canvas.add_document(current_doc, true)
     // initiate editing
@@ -187,8 +189,8 @@ function create_topic_from_menu() {
  *
  * @return  The topic document.
  */
-function create_topic(topic_type, fields, implementation) {
-    var topic_doc = create_topic_doc(topic_type, fields, implementation)
+function create_topic(topic_type, fields, implementation, icon_src) {
+    var topic_doc = create_topic_doc(topic_type, fields, implementation, icon_src)
     // update DB
     save_document(topic_doc)
     return topic_doc
@@ -199,12 +201,13 @@ function create_topic(topic_type, fields, implementation) {
  *
  * @return  The topic document.
  */
-function create_topic_doc(topic_type, fields, implementation) {
+function create_topic_doc(topic_type, fields, implementation, icon_src) {
     return {
         type: "Topic",
         topic_type: topic_type,
         fields: fields,
-        implementation: implementation
+        implementation: implementation,
+        icon_src: icon_src
     }
 }
 
@@ -487,7 +490,14 @@ function create_type_select() {
     var select = $("<select>").attr("id", "type_select")
     for (var type in types) {
         select.append($("<option>").text(type))
+        //
+        if (types[type].icon_src) {
+            topic_type_icons[type] = create_image(types[type].icon_src)
+        }
     }
+    //
+    topic_type_icons["Search Result"] = create_image("images/bucket.png")
+    //
     return select
 }
 
@@ -495,6 +505,14 @@ function create_special_select() {
     var select = $("<select>").attr("id", "special_select").change(special_selected)
     select.append($("<option>").attr("value", "").text("Special:"))
     return select
+}
+
+//
+
+function create_image(src) {
+    var img = new Image()
+    img.src = src
+    return img
 }
 
 //
@@ -553,7 +571,11 @@ function includes(array, fn) {
 }
 
 function clone(obj) {
-    return JSON.parse(JSON.stringify(obj))
+    try {
+        return JSON.parse(JSON.stringify(obj))
+    } catch (e) {
+        log("### Error while cloning: " + JSON.stringify(e))
+    }
 }
 
 function log(text) {

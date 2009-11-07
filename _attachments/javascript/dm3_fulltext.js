@@ -19,7 +19,7 @@ function dm3_fulltext() {
             var result = db.fulltext_search("search", searchterm + "*")
             // build result document
             var fields = [{id: "Title", content: '"' + searchterm + '"'}]
-            var result_doc = create_topic_doc("Search Result", fields, "SearchResult")
+            var result_doc = create_topic_doc("Search Result", fields, "SearchResult", "images/bucket.png")
             result_doc.items = []
             for (var i = 0, row; row = result.rows[i]; i++) {
                 result_doc.items.push({"id": row.id, "title": row.fields ? row.fields["title"] : "?"})
