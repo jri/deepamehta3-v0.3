@@ -177,7 +177,7 @@ function create_topic_from_menu() {
     // update DB
     var topic_type = $("#type_select").val()
     var typedef = clone(types[topic_type])
-    current_doc = create_topic(topic_type, typedef.fields, typedef.implementation, typedef.icon_src)
+    current_doc = create_topic(topic_type, typedef.fields, typedef.view, typedef.implementation)
     // update GUI
     canvas.add_document(current_doc, true)
     // initiate editing
@@ -189,8 +189,8 @@ function create_topic_from_menu() {
  *
  * @return  The topic document.
  */
-function create_topic(topic_type, fields, implementation, icon_src) {
-    var topic_doc = create_topic_doc(topic_type, fields, implementation, icon_src)
+function create_topic(topic_type, fields, view, implementation) {
+    var topic_doc = create_topic_doc(topic_type, fields, view, implementation)
     // update DB
     save_document(topic_doc)
     return topic_doc
@@ -201,13 +201,13 @@ function create_topic(topic_type, fields, implementation, icon_src) {
  *
  * @return  The topic document.
  */
-function create_topic_doc(topic_type, fields, implementation, icon_src) {
+function create_topic_doc(topic_type, fields, view, implementation) {
     return {
         type: "Topic",
         topic_type: topic_type,
         fields: fields,
-        implementation: implementation,
-        icon_src: icon_src
+        view: view,
+        implementation: implementation
     }
 }
 
@@ -491,8 +491,8 @@ function create_type_select() {
     for (var type in types) {
         select.append($("<option>").text(type))
         //
-        if (types[type].icon_src) {
-            topic_type_icons[type] = create_image(types[type].icon_src)
+        if (types[type].view && types[type].view.icon_src) {
+            topic_type_icons[type] = create_image(types[type].view.icon_src)
         }
     }
     //
