@@ -103,8 +103,8 @@ Installation
 Running
 -------
 
-Visit DeepaMehta 3 in your webbrowser
-    http://localhost:5984/deepamehta3-db/_design/deepamehta3/index.html
+Visit DeepaMehta 3 in your webbrowser:  
+<http://localhost:5984/deepamehta3-db/_design/deepamehta3/index.html>
 
 
 ------------

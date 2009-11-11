@@ -1,11 +1,15 @@
 function PlainDocument() {
-    // upload dialog
-    $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 550})
+    DEFAULT_FIELD_WIDTH = 60    // in chars
+    DEFAULT_AREA_HEIGHT = 30    // in chars
+    UPLOAD_DIALOG_WIDTH = 800   // in pixel
+    DELETE_DIALOG_WIDTH = 350   // in pixel
+    // The upload dialog
+    $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: UPLOAD_DIALOG_WIDTH})
     $("#upload_target").load(this.upload_complete)
-    // delete dialog
-    $("#delete_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: 350,
+    // The delete dialog
+    $("#delete_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: DELETE_DIALOG_WIDTH,
         buttons: {"Delete": this.do_delete}})
-    // autocomplete list
+    // The autocomplete list
     $("#document_form").append($("<div>").addClass("autocomplete_list"))
     autocomplete_item = -1
 }
@@ -117,7 +121,7 @@ PlainDocument.prototype = {
                 case "text":
                     switch (field.view.editor) {
                         case "single line":
-                            var input = $("<input>").attr({id: "field_" + field.id, value: field.content, size: 80})
+                            var input = $("<input>").attr({id: "field_" + field.id, value: field.content, size: DEFAULT_FIELD_WIDTH})
                             if (field.view.autocomplete_indexes) {
                                 input.keyup(this.autocomplete)
                                 input.blur(this.lost_focus)
@@ -125,8 +129,8 @@ PlainDocument.prototype = {
                             valuediv.append(input)
                             break
                         case "multi line":
-                            var lines = field.view.lines || 30
-                            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: lines, cols: 80}).text(field.content))
+                            var lines = field.view.lines || DEFAULT_AREA_HEIGHT
+                            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: lines, cols: DEFAULT_FIELD_WIDTH}).text(field.content))
                             break
                         default:
                             alert("render_document_form: unexpected field editor (" + field.view.editor + ")")
@@ -297,8 +301,17 @@ PlainDocument.prototype = {
         remove_document(true)
     },
 
-    /* Auto-Completion */
 
+
+    /***********************/
+    /*** Auto-Completion ***/
+    /***********************/
+
+
+
+    /**
+     * Auto-Completion main function. Triggered for every keystroke.
+     */
     autocomplete: function(event) {
         // log("autocomplete: which=" + event.which)
         if (PlainDocument.prototype.handle_special_input(event)) {
@@ -311,32 +324,38 @@ PlainDocument.prototype = {
                 "It is expected to begin with \"field_\"")
             return
         }
-        //
+        // Holds the matched items (model). These items are rendered as pulldown menu (the "autocomplete list", view).
+        // Element type: array, holds all item fields as stored by the fulltext index function.
         autocomplete_items = []
+        item_id = 0
         //
         try {
             var field = PlainDocument.prototype.get_field(this)
             var searchterm = searchterm(field, this)
+            // --- trigger search for each fulltext index ---
             for (var i = 0, index; index = field.view.autocomplete_indexes[i]; i++) {
                 var result = db.fulltext_search(index, searchterm + "*")
                 //
                 if (result.rows.length && !autocomplete_items.length) {
                     PlainDocument.prototype.show_autocomplete_list(this)
                 }
-                //
+                // --- add each result item to the autocomplete list ---
                 for (var j = 0, row; row = result.rows[j]; j++) {
                     // Note: only default field(s) is/are respected.
                     var item = row.fields.default
-                    // Note: if the index function stores only one field per document
+                    // Note: if the fulltext index function stores only one field per document
                     // we get it as a string, otherwise we get an array.
                     if (typeof(item) == "string") {
                         item = [item]
                     }
+                    // --- Add item to model ---
                     autocomplete_items.push(item)
-                    var a = $("<a>").attr({href: "", id: j}).text(item[0])
+                    // --- Add item to view ---
+                    var html = trigger_doctype_hook("render_autocomplete_item", item)
+                    var a = $("<a>").attr({href: "", id: item_id++}).html(html)
                     a.mousemove(PlainDocument.prototype.item_hovered)
-                    a.mousedown(PlainDocument.prototype.insert_selection)
-                    // Note: we use mousedown instead of click because the click causes loosing the focus
+                    a.mousedown(PlainDocument.prototype.process_selection)
+                    // Note: we use "mousedown" instead of "click" because the click causes loosing the focus
                     // and "lost focus" is fired _before_ "mouseup" and thus "click" would never be fired.
                     // At least as long as we hide the autocompletion list on "hide focus" which we do for
                     // the sake of simplicity. This leads to non-conform GUI behavoir (action on mousedown).
@@ -367,7 +386,7 @@ PlainDocument.prototype = {
     handle_special_input: function(event) {
         // log("handle_special_input: event.which=" + event.which)
         if (event.which == 13) {            // return
-            PlainDocument.prototype.insert_selection()
+            PlainDocument.prototype.process_selection()
             return true
         } if (event.which == 27) {          // escape
             PlainDocument.prototype.hide_autocomplete_list("aborted (escape)")
@@ -391,11 +410,13 @@ PlainDocument.prototype = {
         }
     },
 
-    insert_selection: function() {
+    process_selection: function() {
         if (autocomplete_item != -1) {
             var input_element_id = $(".autocomplete_list").attr("id").substr(7) // 7 = "aclist_".length
             var input_element = $("#" + input_element_id).get(0)
-            var item = autocomplete_items[autocomplete_item][0]                 // the item to insert
+            // trigger hook to get the item (string) to insert into the input element
+            var item = trigger_doctype_hook("process_autocomplete_selection", autocomplete_items[autocomplete_item])
+            //
             var field = PlainDocument.prototype.get_field(input_element)
             if (field.view.autocomplete_style == "item list") {
                 var term = PlainDocument.prototype.current_term(input_element)  // term[0]: the term to replace, starts immediately after the comma

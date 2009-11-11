@@ -417,7 +417,7 @@ function load_plugins() {
         log(".......... instantiating \"" + doctype_class + "\"")
         var doctype_impl = eval("new " + doctype_class)
         loaded_doctype_impls[doctype_class] = doctype_impl
-        trigger_doctype_hook("init", doctype_impl)
+        trigger_doctype_hook("init", undefined, doctype_impl)
     }
     // load CSS stylesheets
     log("Loading " + css_stylesheets.length + " CSS stylesheets:")
@@ -427,6 +427,9 @@ function load_plugins() {
     }
 }
 
+/**
+ * Triggers the named hook of all installed plugins.
+ */
 function trigger_hook(hook_name, args) {
     var result = []
     for (var i = 0, plugin; plugin = plugins[i]; i++) {
@@ -442,7 +445,7 @@ function trigger_hook(hook_name, args) {
 
 //
 
-function trigger_doctype_hook(hook_name, doctype_impl) {
+function trigger_doctype_hook(hook_name, args, doctype_impl) {
     // if no doctype implementation is specified the one of the current document is used.
     if (!doctype_impl) {
         doctype_impl = loaded_doctype_impls[current_doc.implementation]
@@ -450,7 +453,7 @@ function trigger_doctype_hook(hook_name, doctype_impl) {
     // trigger the hook only if it is defined (a doctype implementation must not define all hooks).
     // alert("trigger_doctype_hook: doctype=" + doctype_impl.name + " hook_name=" + hook_name + " hook=" + doctype_impl[hook_name])
     if (doctype_impl[hook_name]) {
-        doctype_impl[hook_name]()
+        return doctype_impl[hook_name](args)
     }
 }
 
@@ -491,8 +494,9 @@ function create_type_select() {
     for (var type in types) {
         select.append($("<option>").text(type))
         //
-        if (types[type].view && types[type].view.icon_src) {
-            topic_type_icons[type] = create_image(types[type].view.icon_src)
+        var src = get_icon_src(type)
+        if (src) {
+            topic_type_icons[type] = create_image(src)
         }
     }
     //
@@ -508,6 +512,17 @@ function create_special_select() {
 }
 
 //
+
+/**
+ * Returns the icon source for a topic type, or undefined if no icon is unknown.
+ */
+function get_icon_src(type) {
+    if (type == "Workspace") {
+        return "vendor/dm3-workspaces/images/star.png"  // ### TODO: make Workspace a regular type
+    } else if (types[type].view) {
+        return types[type].view.icon_src
+    }
+}
 
 function create_image(src) {
     var img = new Image()
