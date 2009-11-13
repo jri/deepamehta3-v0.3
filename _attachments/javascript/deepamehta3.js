@@ -575,6 +575,17 @@ function filter(array, fn) {
 }
 
 /**
+ * Returns an array containing the keys of the object.
+ */
+function keys(object) {
+    var a = []
+    for (var key in object) {
+        a.push(key)
+    }
+    return a
+}
+
+/**
  * Returns true if the array contains a positive element according to the indicator function.
  */
 function includes(array, fn) {
