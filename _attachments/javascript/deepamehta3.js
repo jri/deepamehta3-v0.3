@@ -176,8 +176,7 @@ function document_exists(doc_id) {
 function create_topic_from_menu() {
     // update DB
     var topic_type = $("#type_select").val()
-    var typedef = clone(types[topic_type])
-    current_doc = create_topic(topic_type, typedef.fields, typedef.view, typedef.implementation)
+    current_doc = create_topic(topic_type)
     // update GUI
     canvas.add_document(current_doc, true)
     // initiate editing
@@ -185,23 +184,37 @@ function create_topic_from_menu() {
 }
 
 /**
- * Creates a topic document and stores it to the DB.
+ * Creates a topic document and stores it in the DB.
+ *
+ * @param   topic_type      the type as defined in the global type table ("types", see types.js).
+ * @param   field_contents  optional - contents to override the default content (object, key: field id, value: content).
  *
  * @return  The topic document.
  */
-function create_topic(topic_type, fields, view, implementation) {
-    var topic_doc = create_topic_doc(topic_type, fields, view, implementation)
-    // update DB
-    save_document(topic_doc)
-    return topic_doc
+function create_topic(topic_type, field_contents) {
+    var typedef = clone(types[topic_type])
+    var topic = create_raw_topic(topic_type, typedef.fields, typedef.view, typedef.implementation)
+    // override default content
+    if (field_contents) {
+        for (var field_id in field_contents) {
+            get_field(topic, field_id).content = field_contents[field_id]
+        }
+    }
+    //
+    save_document(topic)
+    //
+    return topic
 }
 
 /**
- * Just creates a topic document in memory.
+ * Creates a topic document in memory.
+ *
+ * This low-level approach allows to create a topic of a type which is not necessarily
+ * defined in the global type table ("types", see types.js).
  *
  * @return  The topic document.
  */
-function create_topic_doc(topic_type, fields, view, implementation) {
+function create_raw_topic(topic_type, fields, view, implementation) {
     return {
         type: "Topic",
         topic_type: topic_type,
@@ -394,6 +407,10 @@ function css_stylesheet(css_path) {
     css_stylesheets.push(css_path)
 }
 
+function javascript_source(source_path) {
+    $("head").append($("<script>").attr("src", source_path))
+}
+
 /**************************************** Helper ****************************************/
 
 function load_plugins() {
@@ -401,7 +418,7 @@ function load_plugins() {
     log("Loading " + plugin_sources.length + " plugins:")
     for (var i = 0, plugin_source; plugin_source = plugin_sources[i]; i++) {
         log("..... " + plugin_source)
-        $("head").append($("<script>").attr("src", plugin_source))
+        javascript_source(plugin_source)
         //
         var plugin_class = basename(plugin_source)
         log(".......... instantiating \"" + plugin_class + "\"")
@@ -411,7 +428,7 @@ function load_plugins() {
     log("Loading " + doctype_impls.length + " doctype implementations:")
     for (var i = 0, doctype_impl; doctype_impl = doctype_impls[i]; i++) {
         log("..... " + doctype_impl)
-        $("head").append($("<script>").attr("src", doctype_impl))
+        javascript_source(doctype_impl)
         //
         var doctype_class = to_camel_case(basename(doctype_impl))
         log(".......... instantiating \"" + doctype_class + "\"")

@@ -89,13 +89,17 @@ Installation
 2.  Upload DeepaMehta 3 to CouchDB:
         couchapp push --atomic http://localhost:5984/deepamehta3-db
 
-3.  Optional: install DeepaMehta 3 plugins. For the moment there are 5 plugins available:
+3.  Optional: install DeepaMehta 3 plugins.
+    For the moment there are 6 general purpose plugins and 1 custom application available:
 
     <http://github.com/jri/dm3-time>  
     <http://github.com/jri/dm3-workspaces>  
     <http://github.com/jri/dm3-contacts>  
     <http://github.com/jri/dm3-email>  
     <http://github.com/jri/dm3-import>  
+    <http://github.com/jri/dm3-accounts>  
+
+    <http://github.com/jri/dm3-poemspace-app>  
 
     See installation instructions on the respective pages.
 
@@ -109,4 +113,4 @@ Visit DeepaMehta 3 in your webbrowser:
 
 ------------
 Jörg Richter  
-Nov 9, 2009
+Nov 16, 2009
