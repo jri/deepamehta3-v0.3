@@ -574,6 +574,21 @@ function get_field(doc, field_id) {
     }
 }
 
+/**
+ * Returns the label for the topic.
+ */
+function topic_label(doc) {
+    // if there is a view.label_field declaration use the content of that field
+    if (doc.view) {
+        var field_id = doc.view.label_field
+        if (field_id) {
+            return get_field(doc, field_id).content
+        }
+    }
+    // fallback: use the content of the first field as label
+    return doc.fields[0].content
+}
+
 // --- Utilities ---
 
 /**

@@ -7,7 +7,7 @@ function(doc) {
     var ret = new Document();
 
     if (doc.fields) {
-        ret.add(doc.fields[0].content, {field: "title", store: "yes", index: "not_analyzed"})
+        ret.add(topic_label(), {field: "title", store: "yes", index: "not_analyzed"})
     }
 
     function idx(obj) {
@@ -34,4 +34,30 @@ function(doc) {
     }
     
     return ret;
+
+
+
+    /***************/
+    /*** Helpers ***/
+    /***************/
+
+
+
+    function get_field(field_id) {
+        for (var i = 0, field; field = doc.fields[i]; i++) {
+            if (field.id == field_id) {
+                return field
+            }
+        }
+    }
+
+    function topic_label() {
+        if (doc.view) {
+            var field_id = doc.view.label_field
+            if (field_id) {
+                return get_field(field_id).content
+            }
+        }
+        return doc.fields[0].content
+    }
 }

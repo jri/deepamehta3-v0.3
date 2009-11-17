@@ -15,10 +15,10 @@ Requirements
 * CouchDB (tested with 0.9 and 0.9.1, not yet tested with 0.10)  
   <http://couchdb.apache.org/>
 
-* CouchApp (tested with 0.3.2 to 0.3.32, not yet tested with 0.3.4 and 0.4)  
+* CouchApp (tested with 0.4)  
   <http://github.com/couchapp/couchapp/>
 
-* Python (tested with 2.4, preferred is 2.5 or later)  
+* Python (tested with 2.6.4)  
   required to run CouchApp  
   <http://www.python.org/>
 
@@ -51,14 +51,9 @@ Installation
 
 1.  Install Python, Java, Git
 
-2.  Install CouchDB
+2.  Install CouchDB, CouchApp
 
-3.  Install CouchApp
-
-    ** Please note:** DeepaMehta 3 has only been tested with CouchApp versions 0.3.2 to 0.3.32 so far.  
-    When using the newer CouchApp versions 0.3.4 or 0.4 the DeepaMehta 3 installation procedure might differ from described here.
-
-4.  Install couchdb-lucene
+3.  Install couchdb-lucene
 
     ** Please note:** Do not install the couchdb-lucene trunk (which is 0.5 in progress and unstable).  
     Instead download the latest stable version, which is 0.4, from here:  
@@ -67,12 +62,12 @@ Installation
     IMPORTANT: Follow this unpack instruction (the usual `gunzip` won't work!):  
     <http://cloud.github.com/downloads/rnewson/couchdb-lucene/README>
 
-5.  Configure CouchDB for use with couchdb-lucene as described in the couchdb-lucene README for version 0.4:  
+4.  Configure CouchDB for use with couchdb-lucene as described in the couchdb-lucene README for version 0.4:  
     <http://github.com/rnewson/couchdb-lucene/tree/v0.4>
 
     (You also get there from the project's main page <http://github.com/rnewson/couchdb-lucene/> by choosing `v0.4` from the `all tags` menu.)
 
-6.  Start CouchDB server
+5.  Start CouchDB server
         sudo -u couchdb couchdb
 
 ### DeepaMehta 3 installation ###
@@ -87,7 +82,8 @@ Installation
         cd deepamehta3
 
 2.  Upload DeepaMehta 3 to CouchDB:
-        couchapp push --atomic http://localhost:5984/deepamehta3-db
+        couchapp init
+        couchapp push http://localhost:5984/deepamehta3-db
 
 3.  Optional: install DeepaMehta 3 plugins.
     For the moment there are 6 general purpose plugins and 1 custom application available:
@@ -101,7 +97,7 @@ Installation
 
     <http://github.com/jri/dm3-poemspace-app>  
 
-    See installation instructions on the respective pages.
+    Follow the installation instructions on the respective pages.
 
 
 Running
@@ -113,4 +109,4 @@ Visit DeepaMehta 3 in your webbrowser:
 
 ------------
 Jörg Richter  
-Nov 16, 2009
+Nov 17, 2009

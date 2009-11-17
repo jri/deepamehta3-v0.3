@@ -433,7 +433,7 @@ function Canvas() {
          for (var i = 0, ct; ct = canvas_topics[i]; i++) {
              ct.move_label_by(tx, ty)
          }
-     }
+    }
 
     function cx(event, consider_translation) {
         return event.pageX - cox - (consider_translation ? trans_x : 0)
@@ -471,7 +471,7 @@ function Canvas() {
         // label
         this.label_x = x + cox + this.lox
         this.label_y = y + coy + this.loy
-        this.label_div = $("<div>").text(label_text(doc))
+        this.label_div = $("<div>").text(topic_label(doc))
         var label_css = label_position_css(this)
         label_css.position = "absolute"
         label_css["max-width"] = LABEL_MAX_WIDTH + "px"
@@ -493,11 +493,7 @@ function Canvas() {
         }
         
         this.update = function(doc) {
-            this.label_div.text(label_text(doc))
-        }
-
-        function label_text(doc) {
-            return doc.fields[0].content
+            this.label_div.text(topic_label(doc))
         }
 
         function label_position_css(ct) {
