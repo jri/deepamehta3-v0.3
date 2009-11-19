@@ -99,12 +99,12 @@ PlainDocument.prototype = {
         }
 
         // functio render_buttons() {
-        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "edit_button", value: "Edit"}))
-        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "attach_button", value: "Upload Attachment"}))
-        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "delete_button", value: "Delete"}))
-        $("#edit_button").click(edit_document)
-        $("#attach_button").click(this.attach_file)
-        $("#delete_button").click(this.confirm_delete)
+        $("#lower_toolbar").append("<button id='edit_button'>")
+        $("#lower_toolbar").append("<button id='attach_button'>")
+        $("#lower_toolbar").append("<button id='delete_button'>")
+        ui.button("edit_button", edit_document, "Edit", "pencil")
+        ui.button("attach_button", this.attach_file, "Upload Attachment", "document")
+        ui.button("delete_button", this.confirm_delete, "Delete", "trash")
         // }
     },
 
@@ -171,11 +171,10 @@ PlainDocument.prototype = {
 
     post_render_form: function() {
         // buttons
-        // Note: pseudo-attribute "submit" TODO: explain
-        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "save_button", value: "Save", submit: true}))
-        $("#lower_toolbar").append($("<input>").attr({type: "button", id: "cancel_button", value: "Cancel"}))
-        $("#save_button").click(this.update_document)
-        $("#cancel_button").click(this.cancel_editing)
+        $("#lower_toolbar").append("<button id='save_button'>")
+        $("#lower_toolbar").append("<button id='cancel_button'>")
+        ui.button("save_button", this.update_document, "Save", "circle-check", true)
+        ui.button("cancel_button", this.cancel_editing, "Cancel")
     },
 
     context_menu_items: function() {

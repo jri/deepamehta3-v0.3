@@ -1,4 +1,5 @@
 var db = new CouchDB("deepamehta3-db")
+var ui = new UIHelper()
 
 db.fulltext_search = function(index, text) {
     var viewPath = this.uri + "_fti/deepamehta3/" + index + "?q=" + text
@@ -34,13 +35,14 @@ add_plugin("javascript/dm3_fulltext.js")
 
 $(document).ready(function() {
     // --- setup GUI ---
-    // search form
+    $("#upper_toolbar").addClass("ui-widget-header").addClass("ui-corner-all")
+    // the search form
     $("#searchmode_select_placeholder").replaceWith(searchmode_select())
-    $("#searchmode_select").change(set_searchmode)
     $("#search_form").submit(search)
-    // special form
+    ui.button("search_button", search, "Search", "gear")
+    // the special form
     $("#special_select_placeholder").replaceWith(create_special_select())
-    // document form
+    // the document form
     $("#document_form").submit(submit_document)
     //
     // Note: in order to let a plugin DOM manipulate the GUI
@@ -48,9 +50,11 @@ $(document).ready(function() {
     load_plugins()
     trigger_hook("init")
     //
-    // create form
+    ui.menu("searchmode_select", set_searchmode)
+    //
+    // the create form
     $("#type_select_placeholder").replaceWith(create_type_select())
-    $("#create_button").click(create_topic_from_menu)
+    ui.button("create_button", create_topic_from_menu, "Create", "plus")
     //
     // Note: in order to avoid the canvas geometry being confused by DOM-
     // manipulating plugins it must be created _after_ the plugins are loaded.
@@ -59,10 +63,8 @@ $(document).ready(function() {
     $(window).load(function() {canvas = new Canvas()})
 })
 
-function set_searchmode() {
-    //
-    var searchmode = $("#searchmode_select").val()
-    var search_widget = trigger_hook("search_widget", searchmode)[0]
+function set_searchmode(searchmode) {
+    var search_widget = trigger_hook("search_widget", searchmode.label)[0]
     //
     $("#search_widget").empty()
     $("#search_widget").append(search_widget)
@@ -71,8 +73,8 @@ function set_searchmode() {
 function search() {
     try {
         //
-        var searchmode = $("#searchmode_select").val()
-        var result_doc = trigger_hook("search", searchmode)[0]
+        var searchmode = ui.menu_val("searchmode_select")
+        var result_doc = trigger_hook("search", searchmode.label)[0]
         //
         save_document(result_doc)
         show_document(result_doc._id)
@@ -155,7 +157,7 @@ function edit_document() {
 }
 
 function submit_document() {
-    var submit_button = $("#document_form input[submit=true]")
+    var submit_button = $("#document_form button[submit=true]")
     // alert("submit_document: submit button id=" + submit_button.attr("id"))
     submit_button.click()
     return false
@@ -585,7 +587,7 @@ function topic_label(doc) {
             return get_field(doc, field_id).content
         }
     }
-    // fallback: use the content of the first field as label
+    // fallback: use the content of the first field
     return doc.fields[0].content
 }
 
@@ -615,6 +617,14 @@ function keys(object) {
         a.push(key)
     }
     return a
+}
+
+function inspect(object) {
+    var str = "\n"
+    for (var key in object) {
+        str += key + ": " + object[key] + "\n"
+    }
+    return str
 }
 
 /**
