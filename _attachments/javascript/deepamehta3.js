@@ -75,7 +75,7 @@ function set_searchmode(searchmode) {
 function search() {
     try {
         //
-        var searchmode = ui.menu_val("searchmode_select").label
+        var searchmode = ui.menu_item("searchmode_select").label
         var result_doc = trigger_hook("search", searchmode)[0]
         //
         save_document(result_doc)
@@ -179,7 +179,7 @@ function document_exists(doc_id) {
 
 function create_topic_from_menu() {
     // update DB
-    var topic_type = ui.menu_val("type_select").label
+    var topic_type = ui.menu_item("type_select").label
     current_doc = create_topic(topic_type)
     // update GUI
     canvas.add_document(current_doc, true)

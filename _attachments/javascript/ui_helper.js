@@ -295,7 +295,7 @@ function UIHelper() {
         menus[menu_id].select(item_value)
     }
 
-    this.menu_val = function(menu_id) {
+    this.menu_item = function(menu_id) {
         return menus[menu_id].get_selection()
     }
 
