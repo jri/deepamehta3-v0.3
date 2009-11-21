@@ -45,6 +45,14 @@ function Canvas() {
     var animation
     var animation_count
 
+
+
+    /**********************************************************************************************/
+    /**************************************** "Public" API ****************************************/
+    /**********************************************************************************************/
+
+
+
     this.add_document = function(doc, refresh_canvas, x, y) {
         // init geometry
         if (x == undefined && y == undefined) {
@@ -157,7 +165,7 @@ function Canvas() {
 
 
 
-    /*** Drawing ***/
+    /**************************************** Drawing ****************************************/
 
     function draw() {
         ctx.clearRect(-trans_x, -trans_y, canvas_width, canvas_height)
@@ -223,7 +231,7 @@ function Canvas() {
         ctx.stroke()
     }
 
-    /*** Event Handling ***/
+    /**************************************** Event Handling ****************************************/
 
     function mousedown(event) {
         if (event.which == 1) {
@@ -294,6 +302,8 @@ function Canvas() {
         }
     }
 
+    /**************************************** Context Menu ****************************************/
+
     function contextmenu(event) {
         var ct = topic_by_position(event)
         if (ct) {
@@ -314,8 +324,6 @@ function Canvas() {
         }
         return false
     }
-
-    /*** Context Menu ***/
 
     // type: "topic" / "assoc"
     function open_context_menu(items, type, event) {
@@ -340,7 +348,7 @@ function Canvas() {
 
     function close_context_menu() {
         // remove context menu
-        $(".contextmenu").remove()
+        $("#canvas_panel .contextmenu").remove()
     }
 
     /**************************************** Helper ****************************************/

@@ -56,7 +56,7 @@ $(document).ready(function() {
     //
     ui.menu("searchmode_select", set_searchmode)
     ui.menu("type_select")
-    ui.menu("special_select", special_selected)
+    ui.menu("special_select", special_selected, undefined, "Special")
     //
     // Note: in order to avoid the canvas geometry being confused by DOM-
     // manipulating plugins it must be created _after_ the plugins are loaded.
@@ -87,8 +87,8 @@ function search() {
     return false
 }
 
-function special_selected() {
-    var command = $("#special_select").val()
+function special_selected(menu_item) {
+    var command = menu_item.label
     trigger_hook("handle_special_command", command)
 }
 
@@ -527,9 +527,7 @@ function create_type_select() {
 }
 
 function create_special_select() {
-    var select = $("<select>").attr("id", "special_select").change(special_selected)
-    select.append($("<option>").attr("value", "").text("Special:"))
-    return select
+    return $("<select>").attr("id", "special_select")
 }
 
 //
