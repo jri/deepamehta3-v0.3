@@ -50,11 +50,13 @@ $(document).ready(function() {
     load_plugins()
     trigger_hook("init")
     //
-    ui.menu("searchmode_select", set_searchmode)
-    //
     // the create form
     $("#type_select_placeholder").replaceWith(create_type_select())
     ui.button("create_button", create_topic_from_menu, "Create", "plus")
+    //
+    ui.menu("searchmode_select", set_searchmode)
+    ui.menu("type_select")
+    ui.menu("special_select", special_selected)
     //
     // Note: in order to avoid the canvas geometry being confused by DOM-
     // manipulating plugins it must be created _after_ the plugins are loaded.
@@ -73,8 +75,8 @@ function set_searchmode(searchmode) {
 function search() {
     try {
         //
-        var searchmode = ui.menu_val("searchmode_select")
-        var result_doc = trigger_hook("search", searchmode.label)[0]
+        var searchmode = ui.menu_val("searchmode_select").label
+        var result_doc = trigger_hook("search", searchmode)[0]
         //
         save_document(result_doc)
         show_document(result_doc._id)
@@ -177,7 +179,7 @@ function document_exists(doc_id) {
 
 function create_topic_from_menu() {
     // update DB
-    var topic_type = $("#type_select").val()
+    var topic_type = ui.menu_val("type_select").label
     current_doc = create_topic(topic_type)
     // update GUI
     canvas.add_document(current_doc, true)
@@ -650,7 +652,7 @@ function log(text) {
     if (debug) {
         // Note: the debug window might be closed meanwhile
         if (debug_window.document) {
-            debug_window.document.writeln(text + "<br>")
+            debug_window.document.writeln(text.replace(/\n/g, "<br>") + "<br>")
         }
     }
 }
