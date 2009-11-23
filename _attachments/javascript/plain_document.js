@@ -125,6 +125,7 @@ PlainDocument.prototype = {
                             if (field.view.autocomplete_indexes) {
                                 input.keyup(this.autocomplete)
                                 input.blur(this.lost_focus)
+                                input.attr({autocomplete: "off"})
                             }
                             valuediv.append(input)
                             break
