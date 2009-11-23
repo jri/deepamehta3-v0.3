@@ -82,6 +82,7 @@ function UIHelper() {
              *                      "label" - The label to be displayed in the menu.
              *                      "value" - Optional: the value to be examined by the caller.
              *                          Note: if this item is about to be selected programatically the value must be specified.
+             *                      "icon" - Optional: the icon to decorate the item (relative or absolute URL).
              *                      "is_trigger" (boolean) - Optional: if true this item acts as stateless
              *                          action-trigger within an stateful select-like menu. Default is false.
              *                          Reasonable only for stateful select-like menus.
@@ -141,8 +142,12 @@ function UIHelper() {
                 items.push(item)
                 // 2) update GUI
                 var item_id = items.length - 1
-                var anchor = $("<a>").attr({href: "", id: anchor_id(item_id)}).text(item.label).click(item_selected)
-                menu.append(anchor).append("<br>")
+                var anchor = $("<a>").attr({href: "", id: anchor_id(item_id)}).click(item_selected)
+                if (item.icon) {
+                    anchor.append(image_tag(item.icon, "menu-icon"))
+                }
+                anchor.append(item.label)
+                menu.append(anchor)
                 // select the item if there is no selection yet
                 if (!selection) {
                     // Note: this sets also the button label (in case of stateful select-like menus)

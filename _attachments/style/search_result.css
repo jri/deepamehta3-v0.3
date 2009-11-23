@@ -1,8 +1,13 @@
-.result_heading {
-    margin-bottom: 0.7em;
+.result-heading {
+    font-size: 75%;
+    font-weight: bold;
+    color: gray;
+    margin-top: 1.4em;
+    margin-bottom: 0.8em;
 }
 
-.result_item {
-    line-height: 1.2em;
-    margin-bottom: 0.5em;
+.result-item {
+    line-height: 1.1em;
+    padding-bottom: 0.6em;
+    padding-right: 2px;
 }

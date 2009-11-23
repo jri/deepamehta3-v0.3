@@ -7,7 +7,8 @@ function(doc) {
     var ret = new Document();
 
     if (doc.fields) {
-        ret.add(topic_label(), {field: "title", store: "yes", index: "not_analyzed"})
+        ret.add(topic_label(),  {field: "topic_label", store: "yes", index: "not_analyzed"})
+        ret.add(doc.topic_type, {field: "topic_type",  store: "yes", index: "not_analyzed"})
     }
 
     function idx(obj) {

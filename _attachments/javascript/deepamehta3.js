@@ -1,3 +1,5 @@
+GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
+
 var db = new CouchDB("deepamehta3-db")
 var ui = new UIHelper()
 
@@ -20,7 +22,9 @@ var doctype_impls = []
 var loaded_doctype_impls = {}
 var css_stylesheets = []
 //
-var topic_type_icons = {}
+var topic_type_icons = {}   // key: Type ID, value: icon (JavaScript Image object)
+var generic_topic_icon = create_image(GENERIC_TOPIC_ICON_SRC)
+topic_type_icons["Search Result"] = create_image("images/bucket.png")
 
 // debug window
 var debug = false
@@ -35,15 +39,15 @@ add_plugin("javascript/dm3_fulltext.js")
 
 $(document).ready(function() {
     // --- setup GUI ---
-    $("#upper_toolbar").addClass("ui-widget-header").addClass("ui-corner-all")
+    $("#upper-toolbar").addClass("ui-widget-header").addClass("ui-corner-all")
     // the search form
     $("#searchmode_select_placeholder").replaceWith(searchmode_select())
-    $("#search_form").submit(search)
+    $("#search-form").submit(search)
     ui.button("search_button", search, "Search", "gear")
     // the special form
     $("#special_select_placeholder").replaceWith(create_special_select())
     // the document form
-    $("#document_form").submit(submit_document)
+    $("#document-form").submit(submit_document)
     //
     // Note: in order to let a plugin DOM manipulate the GUI
     // the plugins must be loaded _after_ the GUI is set up.
@@ -51,11 +55,10 @@ $(document).ready(function() {
     trigger_hook("init")
     //
     // the create form
-    $("#type_select_placeholder").replaceWith(create_type_select())
+    $("#type_select_placeholder").replaceWith(create_type_menu())
     ui.button("create_button", create_topic_from_menu, "Create", "plus")
     //
     ui.menu("searchmode_select", set_searchmode)
-    ui.menu("type_select")
     ui.menu("special_select", special_selected, undefined, "Special")
     //
     // Note: in order to avoid the canvas geometry being confused by DOM-
@@ -148,7 +151,7 @@ function show_document(doc_id) {
     // fallback
     } else {
         alert("show_document: implementation \"" + current_doc.implementation + "\" not found.\nFalling back to generic rendering.")
-        $("#detail_panel").append(render_object(current_doc))
+        $("#detail-panel").append(render_object(current_doc))
     }
     return true
 }
@@ -159,7 +162,7 @@ function edit_document() {
 }
 
 function submit_document() {
-    var submit_button = $("#document_form button[submit=true]")
+    var submit_button = $("#document-form button[submit=true]")
     // alert("submit_document: submit button id=" + submit_button.attr("id"))
     submit_button.click()
     return false
@@ -510,20 +513,19 @@ function searchmode_select() {
     return $("<select>").attr("id", "searchmode_select")
 }
 
-function create_type_select() {
-    var select = $("<select>").attr("id", "type_select")
+function create_type_menu() {
+    var type_menu = ui.menu("type_select")
     for (var type in types) {
-        select.append($("<option>").text(type))
-        //
+        // create type icon
         var src = get_icon_src(type)
         if (src) {
             topic_type_icons[type] = create_image(src)
         }
+        // add item to menu
+        ui.add_menu_item("type_select", {label: type, icon: src})
     }
     //
-    topic_type_icons["Search Result"] = create_image("images/bucket.png")
-    //
-    return select
+    return type_menu
 }
 
 function create_special_select() {
@@ -533,14 +535,45 @@ function create_special_select() {
 //
 
 /**
- * Returns the icon source for a topic type, or undefined if no icon is unknown.
+ * @return  The <img> element (jQuery object).
+ */
+function type_icon_tag(type, class) {
+    return image_tag(get_icon_src(type), class)
+}
+
+/**
+ * @return  The <img> element (jQuery object).
+ */
+function image_tag(src, class) {
+    return $("<img>").attr("src", src).addClass(class)
+}
+
+/**
+ * Returns the icon source for a topic type.
+ * If no icon is configured for that type the source of the generic topic icon is returned.
+ *
+ * @return  The icon source (string).
  */
 function get_icon_src(type) {
     if (type == "Workspace") {
         return "vendor/dm3-workspaces/images/star.png"  // ### TODO: make Workspace a regular type
-    } else if (types[type].view) {
+    // Note: types[type] is undefined if plugin is deactivated and content still exist.
+    } else if (types[type] && types[type].view && types[type].view.icon_src) {
         return types[type].view.icon_src
+    } else {
+        return GENERIC_TOPIC_ICON_SRC
     }
+}
+
+/**
+ * Returns the icon for a topic type.
+ * If no icon is configured for that type the generic topic icon is returned.
+ *
+ * @return  The icon (JavaScript Image object)
+ */
+function get_type_icon(type) {
+    var icon = topic_type_icons[type]
+    return icon || generic_topic_icon
 }
 
 function create_image(src) {
@@ -552,7 +585,7 @@ function create_image(src) {
 //
 
 function empty_detail_panel() {
-    $("#detail_panel").empty()
+    $("#detail-panel").empty()
     $("#lower_toolbar").empty()
 }
 

@@ -5,12 +5,12 @@ function PlainDocument() {
     DELETE_DIALOG_WIDTH = 350   // in pixel
     // The upload dialog
     $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: UPLOAD_DIALOG_WIDTH})
-    $("#upload_target").load(this.upload_complete)
+    $("#upload-target").load(this.upload_complete)
     // The delete dialog
     $("#delete_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: DELETE_DIALOG_WIDTH,
         buttons: {"Delete": this.do_delete}})
     // The autocomplete list
-    $("#document_form").append($("<div>").addClass("autocomplete_list"))
+    $("#document-form").append($("<div>").addClass("autocomplete-list"))
     autocomplete_item = -1
 }
 
@@ -29,7 +29,7 @@ PlainDocument.prototype = {
             for (var i = 0, field; field = doc.fields[i]; i++) {
                 switch (field.model.type) {
                     case "text":
-                        $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
+                        $("#detail-panel").append($("<div>").addClass("field-name").text(field.id))
                         switch (field.view.editor) {
                             case "single line":
                             case "multi line":
@@ -56,7 +56,7 @@ PlainDocument.prototype = {
             // Creates a div-element holding the text.
             // Conversion performed: linefeed characters (\n) are replaced by br-elements.
             function render_text(text) {
-                var field_value = $("<div>").addClass("field_value")
+                var field_value = $("<div>").addClass("field-value")
                 var pos = 0
                 do {
                     var i = text.indexOf("\n", pos)
@@ -66,36 +66,36 @@ PlainDocument.prototype = {
                     }
                 } while (i >= 0)
                 field_value.append(text.substring(pos))
-                $("#detail_panel").append(field_value)
+                $("#detail-panel").append(field_value)
             }
 
             function render_defined_relations(field) {
                 var topics = PlainDocument.prototype.get_related_topics(doc, field)
-                $("#detail_panel").append($("<div>").addClass("field_name").text(field.id + " (" + topics.length + ")"))
-                var field_value = $("<div>").addClass("field_value")
+                $("#detail-panel").append($("<div>").addClass("field-name").text(field.id + " (" + topics.length + ")"))
+                var field_value = $("<div>").addClass("field-value")
                 PlainDocument.prototype.render_topic_list(topics, field_value)
-                $("#detail_panel").append(field_value)
+                $("#detail-panel").append(field_value)
             }
         }
 
         function render_attachments() {
             if (doc._attachments) {
-                $("#detail_panel").append($("<div>").addClass("field_name").text("Attachments"))
-                var field_value = $("<div>").addClass("field_value")
+                $("#detail-panel").append($("<div>").addClass("field-name").text("Attachments"))
+                var field_value = $("<div>").addClass("field-value")
                 for (var attach in doc._attachments) {
                     var a = $("<a>").attr("href", db.uri + doc._id + "/" + attach).text(attach)
                     field_value.append(a).append("<br>")
                 }
-                $("#detail_panel").append(field_value)
+                $("#detail-panel").append(field_value)
             }
         }
 
         function render_relations() {
             var topics = get_topics(related_doc_ids(doc._id))
-            $("#detail_panel").append($("<div>").addClass("field_name").text("Relations (" + topics.length + ")"))
-            var field_value = $("<div>").addClass("field_value")
+            $("#detail-panel").append($("<div>").addClass("field-name").text("Relations (" + topics.length + ")"))
+            var field_value = $("<div>").addClass("field-value")
             PlainDocument.prototype.render_topic_list(topics, field_value)
-            $("#detail_panel").append(field_value)
+            $("#detail-panel").append(field_value)
         }
 
         // functio render_buttons() {
@@ -114,9 +114,9 @@ PlainDocument.prototype = {
         //
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
             // field name
-            $("#detail_panel").append($("<div>").addClass("field_name").text(field.id))
+            $("#detail-panel").append($("<div>").addClass("field-name").text(field.id))
             // field value
-            var valuediv = $("<div>").addClass("field_value")
+            var valuediv = $("<div>").addClass("field-value")
             switch (field.model.type) {
                 case "text":
                     switch (field.view.editor) {
@@ -148,7 +148,7 @@ PlainDocument.prototype = {
                 default:
                     alert("render_document_form: unexpected field type (" + field.model.type + ")")
             }
-            $("#detail_panel").append(valuediv)
+            $("#detail-panel").append(valuediv)
         }
 
         function render_defined_relations(doc, field) {
@@ -350,8 +350,8 @@ PlainDocument.prototype = {
                     // --- Add item to model ---
                     autocomplete_items.push(item)
                     // --- Add item to view ---
-                    var html = trigger_doctype_hook("render_autocomplete_item", item)
-                    var a = $("<a>").attr({href: "", id: item_id++}).html(html)
+                    var ac_item = trigger_doctype_hook("render_autocomplete_item", item)
+                    var a = $("<a>").attr({href: "", id: item_id++}).append(ac_item)
                     a.mousemove(PlainDocument.prototype.item_hovered)
                     a.mousedown(PlainDocument.prototype.process_selection)
                     // Note: we use "mousedown" instead of "click" because the click causes loosing the focus
@@ -359,7 +359,7 @@ PlainDocument.prototype = {
                     // At least as long as we hide the autocompletion list on "hide focus" which we do for
                     // the sake of simplicity. This leads to non-conform GUI behavoir (action on mousedown).
                     // A more elaborated rule for hiding the autocompletion list is required.
-                    $(".autocomplete_list").append(a)
+                    $(".autocomplete-list").append(a)
                 }
             }
         } catch (e) {
@@ -411,7 +411,7 @@ PlainDocument.prototype = {
 
     process_selection: function() {
         if (autocomplete_item != -1) {
-            var input_element_id = $(".autocomplete_list").attr("id").substr(7) // 7 = "aclist_".length
+            var input_element_id = $(".autocomplete-list").attr("id").substr(7) // 7 = "aclist_".length
             var input_element = $("#" + input_element_id).get(0)
             // trigger hook to get the item (string) to insert into the input element
             var item = trigger_doctype_hook("process_autocomplete_selection", autocomplete_items[autocomplete_item])
@@ -455,21 +455,21 @@ PlainDocument.prototype = {
         // log("show_autocomplete_list: " + input_element.id)
         var pos = $(input_element).position()
         var height = $(input_element).outerHeight()
-        $(".autocomplete_list").attr("id", "aclist_" + input_element.id)
-        $(".autocomplete_list").css({top: pos.top + height, left: pos.left})
-        $(".autocomplete_list").empty()
-        $(".autocomplete_list").show()
+        $(".autocomplete-list").attr("id", "aclist_" + input_element.id)
+        $(".autocomplete-list").css({top: pos.top + height, left: pos.left})
+        $(".autocomplete-list").empty()
+        $(".autocomplete-list").show()
     },
 
     hide_autocomplete_list: function(msg) {
         // log("hide_autocomplete_list: " + msg)
-        $(".autocomplete_list").hide()
+        $(".autocomplete-list").hide()
         autocomplete_item = -1
     },
 
     activate_list_item: function() {
-        $(".autocomplete_list a").removeClass("active")
-        $(".autocomplete_list a:eq(" + autocomplete_item + ")").addClass("active")
+        $(".autocomplete-list a").removeClass("active")
+        $(".autocomplete-list a:eq(" + autocomplete_item + ")").addClass("active")
     },
 
     item_hovered: function() {

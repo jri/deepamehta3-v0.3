@@ -23,7 +23,7 @@ function Canvas() {
     
     // View (Canvas)
     var canvas_elem = $("<canvas>").attr({id: "canvas", width: canvas_width, height: canvas_height})
-    $("#canvas_panel").append(canvas_elem)
+    $("#canvas-panel").append(canvas_elem)
     var cox = canvas_elem.offset().left
     var coy = canvas_elem.offset().top
     log("Canvas offset: x=" + cox + " y=" + coy)
@@ -37,11 +37,11 @@ function Canvas() {
     canvas_elem.get(0).oncontextmenu = contextmenu
 
     // Short-term Interaction State
-    var topic_move_in_progress      // true while topic move is in progress
-    var assoc_create_in_progress    // true while new association is pulled
-    var canvas_move_in_progress     // true while canvas translation is in progress
-    var action_topic                // topic being moved / related
-    var tmp_x, tmp_y                // coordinates while association in progress and while canvas translation
+    var topic_move_in_progress      // true while topic move is in progress (boolean)
+    var assoc_create_in_progress    // true while new association is pulled (boolean)
+    var canvas_move_in_progress     // true while canvas translation is in progress (boolean)
+    var action_topic                // topic being moved / related (a CanvasTopic)
+    var tmp_x, tmp_y                // coordinates while action is in progress
     var animation
     var animation_count
 
@@ -260,7 +260,11 @@ function Canvas() {
                 tmp_y = y
             } else {
                 topic_move_in_progress = true
-                action_topic.move_to(event)
+                var x = cx(event)
+                var y = cy(event)
+                action_topic.move_by(x - tmp_x, y - tmp_y)
+                tmp_x = x
+                tmp_y = y
             }
             draw()
         }
@@ -343,12 +347,12 @@ function Canvas() {
             var a = $("<a>").attr({href: "", onclick: onclick}).text(item.label)
             contextmenu.append(a)
         }
-        $("#canvas_panel").append(contextmenu)
+        $("#canvas-panel").append(contextmenu)
     }
 
     function close_context_menu() {
         // remove context menu
-        $("#canvas_panel .contextmenu").remove()
+        $("#canvas-panel .contextmenu").remove()
     }
 
     /**************************************** Helper ****************************************/
@@ -458,7 +462,7 @@ function Canvas() {
         this.doc_id = doc._id
         this.x = x - trans_x
         this.y = y - trans_y
-        var icon = topic_type_icons[doc.topic_type]
+        var icon = get_type_icon(doc.topic_type)
         if (icon) {
             var w = icon.width
             var h = icon.height
@@ -479,19 +483,26 @@ function Canvas() {
         // label
         this.label_x = x + cox + this.lox
         this.label_y = y + coy + this.loy
-        this.label_div = $("<div>").text(topic_label(doc))
-        var label_css = label_position_css(this)
-        label_css.position = "absolute"
-        label_css["max-width"] = LABEL_MAX_WIDTH + "px"
-        this.label_div.css(label_css)
-        $("#canvas_panel").append(this.label_div)
+        // Note: we must add the label div to the document (along with text content and max-width
+        // setting) _before_ the clipping is applied. Otherwise the clipping can't be calculated
+        // because the size of the label div is unknown.
+        this.label_div = $("<div>").text(topic_label(doc)).css("max-width", LABEL_MAX_WIDTH + "px")
+        $("#canvas-panel").append(this.label_div)
+        this.label_div.css(label_position_css(this))
 
+        // FIXME: not in use
         this.move_to = function(event) {
             this.x = cx(event, true)
             this.y = cy(event, true)
             this.label_x = event.pageX + this.lox
             this.label_y = event.pageY + this.loy
             this.label_div.css(label_position_css(this))
+        }
+
+        this.move_by = function(tx, ty) {
+            this.x += tx
+            this.y += ty
+            this.move_label_by(tx, ty)
         }
 
         this.move_label_by = function(tx, ty) {
@@ -506,7 +517,7 @@ function Canvas() {
 
         function label_position_css(ct) {
             // 1) Positioning
-            var css = {top: ct.label_y + "px", left: ct.label_x + "px"}
+            var css = {position: "absolute", top: ct.label_y + "px", left: ct.label_x + "px"}
             // 2) Clipping
             // Note: we do clip each label div instead of "overflow: hidden" for the context panel
             // because "overflow: hidden" only works with absolute positioning the context panel
@@ -528,7 +539,6 @@ function Canvas() {
                 css.clip = "rect(" + top + ", " + right + ", " + bottom + ", " + left + ")"
                 css.display = "block"
             }
-            // alert("css=" + JSON.stringify(css))
             //
             return css
         }
