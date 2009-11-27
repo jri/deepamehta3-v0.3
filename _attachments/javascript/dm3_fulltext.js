@@ -27,9 +27,9 @@ function dm3_fulltext() {
             result_doc.items = []
             for (var i = 0, row; row = result.rows[i]; i++) {
                 result_doc.items.push({
-                    id:          row.id,
-                    topic_label: row.fields.topic_label,
-                    topic_type:  row.fields.topic_type
+                    id:    row.id,
+                    type:  row.fields.topic_type,
+                    label: row.fields.topic_label
                 })
             }
             //

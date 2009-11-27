@@ -1,17 +1,15 @@
 function Canvas() {
 
     // Settings
-    var canvas_width = 500
-    var canvas_height = 600
-    var topic_radius = 10
-    var topic_color = "gray"
-    var active_color = "red"
-    var active_topic_width = 3
-    var active_assoc_width = 10
-    var assoc_color = "gray"
-    var assoc_width = 4
-    var assoc_click_tolerance = 0.3
-    var canvas_animation_steps = 30
+    var CANVAS_WIDTH = 500
+    var CANVAS_HEIGHT = 580
+    var ACTIVE_COLOR = "red"
+    var ACTIVE_TOPIC_WIDTH = 3
+    var ACTIVE_ASSOC_WIDTH = 10
+    var ASSOC_COLOR = "gray"
+    var ASSOC_WIDTH = 4
+    var ASSOC_CLICK_TOLERANCE = 0.3
+    var CANVAS_ANIMATION_STEPS = 30
     var HIGHLIGHT_DIST = 5
     var LABEL_DIST_Y = 5
     var LABEL_MAX_WIDTH = 120
@@ -22,13 +20,12 @@ function Canvas() {
     var trans_x = 0, trans_y = 0    // canvas translation
     
     // View (Canvas)
-    var canvas_elem = $("<canvas>").attr({id: "canvas", width: canvas_width, height: canvas_height})
+    var canvas_elem = $("<canvas>").attr({id: "canvas", width: CANVAS_WIDTH, height: CANVAS_HEIGHT})
     $("#canvas-panel").append(canvas_elem)
     var cox = canvas_elem.offset().left
     var coy = canvas_elem.offset().top
     log("Canvas offset: x=" + cox + " y=" + coy)
     var ctx = canvas_elem.get(0).getContext("2d")
-    ctx.fillStyle = topic_color
 
     // Events
     canvas_elem.click(clicked)
@@ -56,8 +53,8 @@ function Canvas() {
     this.add_document = function(doc, refresh_canvas, x, y) {
         // init geometry
         if (x == undefined && y == undefined) {
-            x = canvas_width * Math.random()
-            y = canvas_height * Math.random()
+            x = CANVAS_WIDTH * Math.random()
+            y = CANVAS_HEIGHT * Math.random()
         }
         // add to canvas
         if (!topic_exists(doc._id)) {
@@ -127,9 +124,9 @@ function Canvas() {
 
     this.focus_topic = function(topic_id) {
         var ct = topic_by_id(topic_id)
-        if (ct.x + trans_x < 0 || ct.x + trans_x >= canvas_width || ct.y + trans_y < 0 || ct.y + trans_y >= canvas_height) {
-            var dx = (canvas_width / 2 - ct.x - trans_x) / canvas_animation_steps
-            var dy = (canvas_height / 2 - ct.y - trans_y) / canvas_animation_steps
+        if (ct.x + trans_x < 0 || ct.x + trans_x >= CANVAS_WIDTH || ct.y + trans_y < 0 || ct.y + trans_y >= CANVAS_HEIGHT) {
+            var dx = (CANVAS_WIDTH / 2 - ct.x - trans_x) / CANVAS_ANIMATION_STEPS
+            var dy = (CANVAS_HEIGHT / 2 - ct.y - trans_y) / CANVAS_ANIMATION_STEPS
             // alert("topic out of sight\ntrans_x=" + trans_x + " trans_y=" + trans_y + "\nct.x=" + ct.x + " ct.y=" + ct.y + "\ndx=" + dx + " dy=" + dy)
             animation_count = 0;
             animation = setInterval("canvas.animation(" + dx + ", " + dy + ")", 0)
@@ -139,7 +136,7 @@ function Canvas() {
     this.animation = function(dx, dy) {
         translate(dx, dy)
         draw()
-        if (++animation_count == canvas_animation_steps) {
+        if (++animation_count == CANVAS_ANIMATION_STEPS) {
             clearInterval(animation)
         }
     }
@@ -157,6 +154,10 @@ function Canvas() {
         action_topic = topic_by_id(doc_id)
     }
 
+    this.get_height = function() {
+        return CANVAS_HEIGHT
+    }
+
 
 
     /*************************************************************************************************/
@@ -168,7 +169,7 @@ function Canvas() {
     /**************************************** Drawing ****************************************/
 
     function draw() {
-        ctx.clearRect(-trans_x, -trans_y, canvas_width, canvas_height)
+        ctx.clearRect(-trans_x, -trans_y, CANVAS_WIDTH, CANVAS_HEIGHT)
         // 1) assocs
         for (var i in canvas_assocs) {
             var ca = canvas_assocs[i]
@@ -181,43 +182,30 @@ function Canvas() {
             }
             // hightlight
             if (current_rel && current_rel._id == ca.id) {
-                draw_line(ct1.x, ct1.y, ct2.x, ct2.y, active_assoc_width, active_color)
+                draw_line(ct1.x, ct1.y, ct2.x, ct2.y, ACTIVE_ASSOC_WIDTH, ACTIVE_COLOR)
             }
             //
-            draw_line(ct1.x, ct1.y, ct2.x, ct2.y, assoc_width, assoc_color)
+            draw_line(ct1.x, ct1.y, ct2.x, ct2.y, ASSOC_WIDTH, ASSOC_COLOR)
         }
         // 2) relation in progress
         if (assoc_create_in_progress) {
-            draw_line(action_topic.x, action_topic.y, tmp_x - trans_x, tmp_y - trans_y, assoc_width, active_color)
+            draw_line(action_topic.x, action_topic.y, tmp_x - trans_x, tmp_y - trans_y, ASSOC_WIDTH, ACTIVE_COLOR)
         }
         // 3) topics
         draw_topics()
     }
 
     function draw_topics() {
-        ctx.lineWidth = active_topic_width
-        ctx.strokeStyle = active_color
+        ctx.lineWidth = ACTIVE_TOPIC_WIDTH
+        ctx.strokeStyle = ACTIVE_COLOR
         for (var i in canvas_topics) {
             var ct = canvas_topics[i]
-            //
-            if (ct.icon) {
-                var w = ct.icon.width
-                var h = ct.icon.height
-                ctx.drawImage(ct.icon, ct.x - w / 2, ct.y - h / 2)
-            } else {
-                ctx.beginPath()
-                ctx.arc(ct.x, ct.y, topic_radius, 0, 2 * Math.PI, true)
-                ctx.fill()
-            }
+            var w = ct.icon.width
+            var h = ct.icon.height
+            ctx.drawImage(ct.icon, ct.x - w / 2, ct.y - h / 2)
             // highlight
             if (current_doc && current_doc._id == ct.doc_id) {
-                if (ct.icon) {
-                    ctx.strokeRect(ct.x - w / 2 - HIGHLIGHT_DIST, ct.y - h / 2 - HIGHLIGHT_DIST, w + 2 * HIGHLIGHT_DIST, h + 2 * HIGHLIGHT_DIST)
-                } else {
-                    ctx.beginPath()
-                    ctx.arc(ct.x, ct.y, topic_radius + HIGHLIGHT_DIST, 0, 2 * Math.PI, true)
-                    ctx.stroke()
-                }
+                ctx.strokeRect(ct.x - w / 2 - HIGHLIGHT_DIST, ct.y - h / 2 - HIGHLIGHT_DIST, w + 2 * HIGHLIGHT_DIST, h + 2 * HIGHLIGHT_DIST)
             }
         }
     }
@@ -411,7 +399,7 @@ function Canvas() {
             var ct1 = topic_by_id(ca.doc1_id)
             var ct2 = topic_by_id(ca.doc2_id)
             // bounding rectangle
-            var aw2 = assoc_width / 2   // buffer to make orthogonal associations selectable
+            var aw2 = ASSOC_WIDTH / 2   // buffer to make orthogonal associations selectable
             var bx1 = Math.min(ct1.x, ct2.x) - aw2
             var bx2 = Math.max(ct1.x, ct2.x) + aw2
             var by1 = Math.min(ct1.y, ct2.y) - aw2
@@ -425,7 +413,7 @@ function Canvas() {
             var g2 = (y - ct2.y) / (x - ct2.x)
             // log(g1 + " " + g2 + " -> " + Math.abs(g1 - g2))
             //
-            if (Math.abs(g1 - g2) < assoc_click_tolerance) {
+            if (Math.abs(g1 - g2) < ASSOC_CLICK_TOLERANCE) {
                 return ca
             }
         }
@@ -463,22 +451,15 @@ function Canvas() {
         this.x = x - trans_x
         this.y = y - trans_y
         var icon = get_type_icon(doc.topic_type)
-        if (icon) {
-            var w = icon.width
-            var h = icon.height
-            log("Icon " + icon.src)
-            log("..... width=" + w + " height=" + h)
-            this.icon = icon
-            this.width = w
-            this.height = h
-            this.lox = -w / 2                       // label offset
-            this.loy = h / 2 + LABEL_DIST_Y         // label offset
-        } else {
-            this.width = 2 * topic_radius
-            this.height = 2 * topic_radius
-            this.lox = -topic_radius                // label offset
-            this.loy = topic_radius + LABEL_DIST_Y  // label offset
-        }
+        var w = icon.width
+        var h = icon.height
+        log("Icon " + icon.src)
+        log("..... width=" + w + " height=" + h)
+        this.icon = icon
+        this.width = w
+        this.height = h
+        this.lox = -w / 2                       // label offset
+        this.loy = h / 2 + LABEL_DIST_Y         // label offset
 
         // label
         this.label_x = x + cox + this.lox
@@ -527,15 +508,15 @@ function Canvas() {
             var ly = ct.label_y - coy;
             // Note: if the label div is completely out of sight we must set it to "display: none".
             // Otherwise the document would grow and produce window scrollbars.
-            if (lx > canvas_width || ly > canvas_height) {
+            if (lx > CANVAS_WIDTH || ly > CANVAS_HEIGHT) {
                 css.display = "none"
             } else {
                 var lw = ct.label_div.width()
                 var lh = ct.label_div.height()
                 var top = ly < 0 ? -ly + "px" : "auto"
-                var bottom = ly + lh > canvas_height ? canvas_height - ly + "px" : "auto"
+                var bottom = ly + lh > CANVAS_HEIGHT ? CANVAS_HEIGHT - ly + "px" : "auto"
                 var left = lx < 0 ? -lx + "px" : "auto"
-                var right = lx + lw > canvas_width ? canvas_width - lx + "px" : "auto"
+                var right = lx + lw > CANVAS_WIDTH ? CANVAS_WIDTH - lx + "px" : "auto"
                 css.clip = "rect(" + top + ", " + right + ", " + bottom + ", " + left + ")"
                 css.display = "block"
             }

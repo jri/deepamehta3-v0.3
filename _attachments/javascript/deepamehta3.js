@@ -65,7 +65,10 @@ $(document).ready(function() {
     // manipulating plugins it must be created _after_ the plugins are loaded.
     // (for some reason the canvas still gets confused, so we further postpone
     // its creation by waiting for the window being loaded completely.)
-    $(window).load(function() {canvas = new Canvas()})
+    $(window).load(function() {
+        canvas = new Canvas()
+        $("#detail-panel").height(canvas.get_height())
+    })
 })
 
 function set_searchmode(searchmode) {
@@ -260,16 +263,24 @@ function save_document(doc) {
  *
  * @param   doc_ids         Array of topic IDs
  * @param   type_filter     a topic type, e.g. "Note", "Workspace"
- * @return  Array of CouchDB view rows: id,key=doc_id (the argument), value={name: , topic_type:}
+ *
+ * @return  Array of Topic objects
  */
 function get_topics(doc_ids, type_filter) {
     var rows = db.view("deepamehta3/topics", null, doc_ids).rows
+    //
     if (type_filter) {
         filter(rows, function(row) {
             return row.value.topic_type == type_filter
         })
     }
-    return rows
+    //
+    var topics = []
+    for (var i = 0, row; row = rows[i]; i++) {
+        topics.push(new Topic(row.id, row.value.topic_type, row.value.topic_label))
+    }
+    //
+    return topics
 }
 
 /**
@@ -535,6 +546,45 @@ function create_special_select() {
 //
 
 /**
+ * @param   topics      Topics to render (array of Topic objects).
+ */
+function render_topics(topics, render_function) {
+    render_function = render_function || render_topic
+    //
+    var table = $("<table>")
+    for (var i = 0, topic; topic = topics[i]; i++) {
+        // icon
+        var icon_td = $("<td>").addClass("topic-icon").addClass(i == topics.length - 1 ? "last-topic" : undefined)
+        icon_td.append(render_topic_anchor(topic, type_icon_tag(topic.type, "type-icon")))
+        // label
+        var topic_td = $("<td>").addClass("topic-label").addClass(i == topics.length - 1 ? "last-topic" : undefined)
+        topic_td.append(render_function(topic))
+        //
+        table.append($("<tr>").append(icon_td).append(topic_td))
+    }
+    return table
+}
+
+/**
+ * @param   topic       Topic to render (a Topic object).
+ */
+function render_topic(topic) {
+    return $("<div>").append(render_topic_anchor(topic, topic.label))
+}
+
+/**
+* @param   topic       Topic to render (a Topic object).
+ */
+function render_topic_anchor(topic, anchor_content) {
+    return $("<a>").attr({href: ""}).append(anchor_content).click(function() {
+        reveal_document(topic.id)
+        return false
+    })
+}
+
+//
+
+/**
  * @return  The <img> element (jQuery object).
  */
 function type_icon_tag(type, class) {
@@ -671,6 +721,17 @@ function includes(array, fn) {
     }
 }
 
+/**
+ * Substracts array2 from array1.
+ */
+function substract(array1, array2, fn) {
+    filter(array1, function(e1) {
+         return !includes(array2, function(e2) {
+             return fn(e1, e2)
+         })
+    })
+}
+
 function clone(obj) {
     try {
         return JSON.parse(JSON.stringify(obj))
@@ -686,4 +747,12 @@ function log(text) {
             debug_window.document.writeln(text.replace(/\n/g, "<br>") + "<br>")
         }
     }
+}
+
+//
+
+function Topic(id, type, label) {
+    this.id = id
+    this.type = type
+    this.label = label
 }

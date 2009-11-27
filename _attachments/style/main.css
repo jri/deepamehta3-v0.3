@@ -1,6 +1,8 @@
 body {
-    font-family: "Lucida Grande";
+    font-family: "Lucida Grande", Verdana, Arial, Helvetica, sans-serif;
 }
+
+/* Main Layout */
 
 #upper-toolbar {
     margin-bottom: 0.4em;
@@ -31,9 +33,10 @@ body {
 }
 
 #detail-panel {
-    height: 600px;
     overflow: auto;
 }
+
+/* Topic Details */
 
 .field-name {
     font-size: 75%;
@@ -49,6 +52,24 @@ body {
     display: block;
 }
 
+/* Topic Lists */
+
+.topic-icon {
+    width: 50px;
+    text-align: center;
+}
+
+.topic-label {
+    line-height: 1.1em;
+    padding-bottom: 0.6em;
+}
+
+.last-topic {
+    padding-bottom: 0;
+}
+
+/* Icons */
+
 .type-icon {
     border-style: none;
 }
@@ -57,10 +78,6 @@ body {
     border-style: none;
     vertical-align: middle;
     padding-right: 12px;
-}
-
-#upload-target {
-    display: none;
 }
 
 /* Contextmenu */
@@ -110,4 +127,10 @@ body {
 .autocomplete-list .active {
     color: white;
     background: #555;
+}
+
+/* Upload Target */
+
+#upload-target {
+    display: none;
 }

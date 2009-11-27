@@ -18,14 +18,14 @@ PlainDocument.prototype = {
 
     render_document: function(doc) {
 
-        // alert("render_document: this=" + this + " type=" + typeof(this) + "\n" + JSON.stringify(this))
+        var defined_relation_topics = []
+
         render_fields()
         render_attachments()
         render_relations()
-        // render_buttons()     // doesn't work ("this" reference is different)
+        render_buttons()
 
         function render_fields() {
-            // alert("render_fields: this=" + this + " type=" + typeof(this) + "\n" + JSON.stringify(this))
             for (var i = 0, field; field = doc.fields[i]; i++) {
                 switch (field.model.type) {
                     case "text":
@@ -71,9 +71,10 @@ PlainDocument.prototype = {
 
             function render_defined_relations(field) {
                 var topics = PlainDocument.prototype.get_related_topics(doc, field)
+                defined_relation_topics = defined_relation_topics.concat(topics)
                 $("#detail-panel").append($("<div>").addClass("field-name").text(field.id + " (" + topics.length + ")"))
                 var field_value = $("<div>").addClass("field-value")
-                PlainDocument.prototype.render_topic_list(topics, field_value)
+                field_value.append(render_topics(topics))
                 $("#detail-panel").append(field_value)
             }
         }
@@ -92,20 +93,25 @@ PlainDocument.prototype = {
 
         function render_relations() {
             var topics = get_topics(related_doc_ids(doc._id))
+            // don't render topics already rendered via "defined relations"
+            substract(topics, defined_relation_topics, function(topic, drt) {
+                return topic.id == drt.id
+            })
+            //
             $("#detail-panel").append($("<div>").addClass("field-name").text("Relations (" + topics.length + ")"))
             var field_value = $("<div>").addClass("field-value")
-            PlainDocument.prototype.render_topic_list(topics, field_value)
+            field_value.append(render_topics(topics))
             $("#detail-panel").append(field_value)
         }
 
-        // functio render_buttons() {
-        $("#lower_toolbar").append("<button id='edit_button'>")
-        $("#lower_toolbar").append("<button id='attach_button'>")
-        $("#lower_toolbar").append("<button id='delete_button'>")
-        ui.button("edit_button", edit_document, "Edit", "pencil")
-        ui.button("attach_button", this.attach_file, "Upload Attachment", "document")
-        ui.button("delete_button", this.confirm_delete, "Delete", "trash")
-        // }
+        function render_buttons() {
+            $("#lower_toolbar").append("<button id='edit_button'>")
+            $("#lower_toolbar").append("<button id='attach_button'>")
+            $("#lower_toolbar").append("<button id='delete_button'>")
+            ui.button("edit_button", edit_document, "Edit", "pencil")
+            ui.button("attach_button", PlainDocument.prototype.attach_file, "Upload Attachment", "document")
+            ui.button("delete_button", PlainDocument.prototype.confirm_delete, "Delete", "trash")
+        }
     },
 
     render_document_form: function() {
@@ -196,17 +202,6 @@ PlainDocument.prototype = {
     },
 
     /* Helper */
-
-    /**
-     * @param   topics      Array of rows as returned by the CouchDB "topics" view.
-     */
-    render_topic_list: function(topics, elem) {
-        for (var i = 0, row; row = topics[i]; i++) {
-            var a = $("<a>").attr({href: "", onclick: "reveal_document('" + row.id + "'); return false"}).text(row.value.name)
-            elem.append(a).append("<br>")
-        }
-        return elem
-    },
 
     /**
      * Returns topics of a "relation" field.
