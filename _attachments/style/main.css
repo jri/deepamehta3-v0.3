@@ -33,6 +33,7 @@ body {
 }
 
 #detail-panel {
+    width: 33em;
     overflow: auto;
 }
 

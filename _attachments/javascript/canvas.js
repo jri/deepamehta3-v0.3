@@ -1,8 +1,6 @@
 function Canvas() {
 
     // Settings
-    var CANVAS_WIDTH = 500
-    var CANVAS_HEIGHT = 580
     var ACTIVE_COLOR = "red"
     var ACTIVE_TOPIC_WIDTH = 3
     var ACTIVE_ASSOC_WIDTH = 10
@@ -20,18 +18,11 @@ function Canvas() {
     var trans_x = 0, trans_y = 0    // canvas translation
     
     // View (Canvas)
-    var canvas_elem = $("<canvas>").attr({id: "canvas", width: CANVAS_WIDTH, height: CANVAS_HEIGHT})
-    $("#canvas-panel").append(canvas_elem)
-    var cox = canvas_elem.offset().left
-    var coy = canvas_elem.offset().top
-    log("Canvas offset: x=" + cox + " y=" + coy)
-    var ctx = canvas_elem.get(0).getContext("2d")
-
-    // Events
-    canvas_elem.click(clicked)
-    canvas_elem.mousedown(mousedown)
-    canvas_elem.mousemove(mousemove)
-    canvas_elem.get(0).oncontextmenu = contextmenu
+    var canvas_width
+    var canvas_height
+    var cox, coy                    // canvas offset: upper left position of the canvas element
+    var ctx                         // the drawing context
+    build()
 
     // Short-term Interaction State
     var topic_move_in_progress      // true while topic move is in progress (boolean)
@@ -53,8 +44,8 @@ function Canvas() {
     this.add_document = function(doc, refresh_canvas, x, y) {
         // init geometry
         if (x == undefined && y == undefined) {
-            x = CANVAS_WIDTH * Math.random()
-            y = CANVAS_HEIGHT * Math.random()
+            x = canvas_width * Math.random()
+            y = canvas_height * Math.random()
         }
         // add to canvas
         if (!topic_exists(doc._id)) {
@@ -124,10 +115,9 @@ function Canvas() {
 
     this.focus_topic = function(topic_id) {
         var ct = topic_by_id(topic_id)
-        if (ct.x + trans_x < 0 || ct.x + trans_x >= CANVAS_WIDTH || ct.y + trans_y < 0 || ct.y + trans_y >= CANVAS_HEIGHT) {
-            var dx = (CANVAS_WIDTH / 2 - ct.x - trans_x) / CANVAS_ANIMATION_STEPS
-            var dy = (CANVAS_HEIGHT / 2 - ct.y - trans_y) / CANVAS_ANIMATION_STEPS
-            // alert("topic out of sight\ntrans_x=" + trans_x + " trans_y=" + trans_y + "\nct.x=" + ct.x + " ct.y=" + ct.y + "\ndx=" + dx + " dy=" + dy)
+        if (ct.x + trans_x < 0 || ct.x + trans_x >= canvas_width || ct.y + trans_y < 0 || ct.y + trans_y >= canvas_height) {
+            var dx = (canvas_width / 2 - ct.x - trans_x) / CANVAS_ANIMATION_STEPS
+            var dy = (canvas_height / 2 - ct.y - trans_y) / CANVAS_ANIMATION_STEPS
             animation_count = 0;
             animation = setInterval("canvas.animation(" + dx + ", " + dy + ")", 0)
         }
@@ -154,8 +144,12 @@ function Canvas() {
         action_topic = topic_by_id(doc_id)
     }
 
-    this.get_height = function() {
-        return CANVAS_HEIGHT
+    this.rebuild = function() {
+        $("#canvas-panel").empty()
+        build()
+        ctx.translate(trans_x, trans_y)
+        draw()
+        rebuild_topic_labels()
     }
 
 
@@ -169,7 +163,7 @@ function Canvas() {
     /**************************************** Drawing ****************************************/
 
     function draw() {
-        ctx.clearRect(-trans_x, -trans_y, CANVAS_WIDTH, CANVAS_HEIGHT)
+        ctx.clearRect(-trans_x, -trans_y, canvas_width, canvas_height)
         // 1) assocs
         for (var i in canvas_assocs) {
             var ca = canvas_assocs[i]
@@ -422,6 +416,31 @@ function Canvas() {
 
     /* GUI Helper */
 
+    function build() {
+        calculate_size()
+        var canvas_elem = $("<canvas>").attr({id: "canvas", width: canvas_width, height: canvas_height})
+        $("#canvas-panel").append(canvas_elem)
+        cox = canvas_elem.offset().left
+        coy = canvas_elem.offset().top
+        log("Canvas offset: x=" + cox + " y=" + coy)
+        ctx = canvas_elem.get(0).getContext("2d")
+        // bind events
+        canvas_elem.click(clicked)
+        canvas_elem.mousedown(mousedown)
+        canvas_elem.mousemove(mousemove)
+        canvas_elem.get(0).oncontextmenu = contextmenu
+    }
+
+    function calculate_size() {
+        var w_w = window.innerWidth
+        var w_h = window.innerHeight
+        var t_h = $("#upper-toolbar").height()
+        canvas_width = w_w - detail_panel_width - 36
+        canvas_height = w_h - t_h - 60
+        log("calculate_size: window size=" + w_w + "x" + w_h + " toolbar height=" + t_h)
+        log("..... new canvas size=" + canvas_width + "x" + canvas_height)
+    }
+
     function translate(tx, ty) {
         ctx.translate(tx, ty)
         move_topic_labels_by(tx, ty)
@@ -435,6 +454,12 @@ function Canvas() {
          }
     }
 
+    function rebuild_topic_labels() {
+         for (var i = 0, ct; ct = canvas_topics[i]; i++) {
+             ct.build_label()
+         }
+    }
+
     function cx(event, consider_translation) {
         return event.pageX - cox - (consider_translation ? trans_x : 0)
     }
@@ -443,7 +468,7 @@ function Canvas() {
         return event.pageY - coy - (consider_translation ? trans_y : 0)
     }
 
-    /* CanvasTopic */
+    /* Helper Classes */
 
     function CanvasTopic(doc, x, y) {
 
@@ -453,23 +478,17 @@ function Canvas() {
         var icon = get_type_icon(doc.topic_type)
         var w = icon.width
         var h = icon.height
-        log("Icon " + icon.src)
-        log("..... width=" + w + " height=" + h)
         this.icon = icon
         this.width = w
         this.height = h
-        this.lox = -w / 2                       // label offset
-        this.loy = h / 2 + LABEL_DIST_Y         // label offset
 
         // label
+        this.lox = -w / 2                       // label offset
+        this.loy = h / 2 + LABEL_DIST_Y         // label offset
+        this.label = topic_label(doc)
         this.label_x = x + cox + this.lox
         this.label_y = y + coy + this.loy
-        // Note: we must add the label div to the document (along with text content and max-width
-        // setting) _before_ the clipping is applied. Otherwise the clipping can't be calculated
-        // because the size of the label div is unknown.
-        this.label_div = $("<div>").text(topic_label(doc)).css("max-width", LABEL_MAX_WIDTH + "px")
-        $("#canvas-panel").append(this.label_div)
-        this.label_div.css(label_position_css(this))
+        build_label(this)
 
         // FIXME: not in use
         this.move_to = function(event) {
@@ -493,9 +512,26 @@ function Canvas() {
         }
         
         this.update = function(doc) {
-            this.label_div.text(topic_label(doc))
+            this.label = topic_label(doc)
+            this.label_div.text(this.label)
         }
 
+        this.build_label = function() {
+            build_label(this)
+        }
+
+        function build_label(ct) {
+            // Note: we must add the label div to the document (along with text content and max-width
+            // setting) _before_ the clipping is applied. Otherwise the clipping can't be calculated
+            // because the size of the label div is unknown.
+            ct.label_div = $("<div>").text(ct.label).css("max-width", LABEL_MAX_WIDTH + "px")
+            $("#canvas-panel").append(ct.label_div)
+            ct.label_div.css(label_position_css(ct))
+        }
+
+        /**
+         * Builds the CSS for positioning and clipping the label div.
+         */
         function label_position_css(ct) {
             // 1) Positioning
             var css = {position: "absolute", top: ct.label_y + "px", left: ct.label_x + "px"}
@@ -508,15 +544,15 @@ function Canvas() {
             var ly = ct.label_y - coy;
             // Note: if the label div is completely out of sight we must set it to "display: none".
             // Otherwise the document would grow and produce window scrollbars.
-            if (lx > CANVAS_WIDTH || ly > CANVAS_HEIGHT) {
+            if (lx > canvas_width || ly > canvas_height) {
                 css.display = "none"
             } else {
                 var lw = ct.label_div.width()
                 var lh = ct.label_div.height()
                 var top = ly < 0 ? -ly + "px" : "auto"
-                var bottom = ly + lh > CANVAS_HEIGHT ? CANVAS_HEIGHT - ly + "px" : "auto"
+                var bottom = ly + lh > canvas_height ? canvas_height - ly + "px" : "auto"
                 var left = lx < 0 ? -lx + "px" : "auto"
-                var right = lx + lw > CANVAS_WIDTH ? CANVAS_WIDTH - lx + "px" : "auto"
+                var right = lx + lw > canvas_width ? canvas_width - lx + "px" : "auto"
                 css.clip = "rect(" + top + ", " + right + ", " + bottom + ", " + left + ")"
                 css.display = "block"
             }

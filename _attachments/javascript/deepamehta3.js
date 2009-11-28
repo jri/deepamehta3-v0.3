@@ -14,7 +14,7 @@ db.fulltext_search = function(index, text) {
 
 var current_doc         // topic document being displayed, or null if no one is currently displayed
 var current_rel         // relation document being activated, or null if no one is currently activated
-var canvas
+var canvas              // the canvas that displays the topic map (a Canvas object)
 //
 var plugin_sources = []
 var plugins = []
@@ -61,15 +61,24 @@ $(document).ready(function() {
     ui.menu("searchmode_select", set_searchmode)
     ui.menu("special_select", special_selected, undefined, "Special")
     //
+    detail_panel_width = $("#detail-panel").width()
+    log("Detail panel width: " + detail_panel_width)
+    //
     // Note: in order to avoid the canvas geometry being confused by DOM-
     // manipulating plugins it must be created _after_ the plugins are loaded.
     // (for some reason the canvas still gets confused, so we further postpone
     // its creation by waiting for the window being loaded completely.)
+    $(window).resize(window_resized)
     $(window).load(function() {
         canvas = new Canvas()
-        $("#detail-panel").height(canvas.get_height())
+        $("#detail-panel").height($("#canvas").height())
     })
 })
+
+function window_resized() {
+    canvas.rebuild()
+    $("#detail-panel").height($("#canvas").height())
+}
 
 function set_searchmode(searchmode) {
     var search_widget = trigger_hook("search_widget", searchmode.label)[0]
