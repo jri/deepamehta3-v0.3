@@ -55,7 +55,7 @@ $(document).ready(function() {
     trigger_hook("init")
     //
     // the create form
-    $("#type_select_placeholder").replaceWith(create_type_menu())
+    $("#type_select_placeholder").replaceWith(create_type_menu("type_select"))
     ui.button("create_button", create_topic_from_menu, "Create", "plus")
     //
     ui.menu("searchmode_select", set_searchmode)
@@ -63,6 +63,8 @@ $(document).ready(function() {
     //
     detail_panel_width = $("#detail-panel").width()
     log("Detail panel width: " + detail_panel_width)
+    //
+    create_type_icons()
     //
     // Note: in order to avoid the canvas geometry being confused by DOM-
     // manipulating plugins it must be created _after_ the plugins are loaded.
@@ -533,19 +535,20 @@ function searchmode_select() {
     return $("<select>").attr("id", "searchmode_select")
 }
 
-function create_type_menu() {
-    var type_menu = ui.menu("type_select")
+function create_type_menu(menu_id) {
+    var type_menu = ui.menu(menu_id)
+    for (var type in types) {
+        // add type to menu
+        ui.add_menu_item(menu_id, {label: type, icon: get_icon_src(type)})
+    }
+    return type_menu
+}
+
+function create_type_icons() {
     for (var type in types) {
         // create type icon
-        var src = get_icon_src(type)
-        if (src) {
-            topic_type_icons[type] = create_image(src)
-        }
-        // add item to menu
-        ui.add_menu_item("type_select", {label: type, icon: src})
+        topic_type_icons[type] = create_image(get_icon_src(type))
     }
-    //
-    return type_menu
 }
 
 function create_special_select() {

@@ -448,17 +448,22 @@ PlainDocument.prototype = {
     },
 
     show_autocomplete_list: function(input_element) {
-        // log("show_autocomplete_list: " + input_element.id)
         var pos = $(input_element).position()
-        var height = $(input_element).outerHeight()
+        // calculate position
+        var top = pos.top + $(input_element).outerHeight()
+        var left = pos.left
+        // limit size (avoids document growth and thus window scrollbars)
+        var max_width = window.innerWidth - left - 26   // leave buffer for vertical document scrollbar
+        var max_height = window.innerHeight - top - 2
+        //
         $(".autocomplete-list").attr("id", "aclist_" + input_element.id)
-        $(".autocomplete-list").css({top: pos.top + height, left: pos.left})
+        $(".autocomplete-list").css({top: top, left: left})
+        $(".autocomplete-list").css({"max-width": max_width, "max-height": max_height, overflow: "hidden"})
         $(".autocomplete-list").empty()
         $(".autocomplete-list").show()
     },
 
     hide_autocomplete_list: function(msg) {
-        // log("hide_autocomplete_list: " + msg)
         $(".autocomplete-list").hide()
         autocomplete_item = -1
     },
@@ -470,7 +475,6 @@ PlainDocument.prototype = {
 
     item_hovered: function() {
         autocomplete_item = this.id
-        // log("item_hovered: autocomplete_item=" + autocomplete_item)
         PlainDocument.prototype.activate_list_item()
     }
 }
