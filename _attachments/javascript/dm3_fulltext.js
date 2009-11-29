@@ -3,37 +3,38 @@ function dm3_fulltext() {
     doctype_implementation("javascript/search_result.js")
     css_stylesheet("style/search_result.css")
 
+    db.fulltext_search = function(index, text) {
+        var viewPath = this.uri + "_fti/deepamehta3/" + index + "?q=" + text
+        this.last_req = this.request("GET", viewPath)      
+        if (this.last_req.status == 404)
+            return null
+        CouchDB.maybeThrowError(this.last_req)
+        return JSON.parse(this.last_req.responseText)
+    }
+
     this.init = function() {
-        $("#searchmode_select").append($("<option>").text("Fulltext"))
+        $("#searchmode_select").append($("<option>").text("By Text"))
     }
 
     this.search_widget = function(searchmode) {
-        if (searchmode == "Fulltext") {
-            return $("<input>").attr({id: "search_field", type: "text"})
+        if (searchmode == "By Text") {
+            return $("<input>").attr({id: "search_field", type: "text", size: SEARCH_FIELD_WIDTH})
         }
     }
 
     this.search = function(searchmode) {
-        if (searchmode == "Fulltext") {
+        if (searchmode == "By Text") {
             // 1) perform fulltext search
-            var searchterm = $("#search_field").val()
+            var searchterm = $.trim($("#search_field").val())
             var result = db.fulltext_search("search", searchterm + "*")
-            // 2) build result document
-            // create result topic
-            var fields = [{id: "Title", content: '"' + searchterm + '"'}]
-            var view = {icon_src: "images/bucket.png"}
-            var result_doc = create_raw_topic("Search Result", fields, view, "SearchResult")
-            // add result items
-            result_doc.items = []
-            for (var i = 0, row; row = result.rows[i]; i++) {
-                result_doc.items.push({
+            // 2) create result topic
+            return create_result_topic(searchterm, result, "SearchResult", function(row) {
+                return {
                     id:    row.id,
                     type:  row.fields.topic_type,
                     label: row.fields.topic_label
-                })
-            }
-            //
-            return result_doc
+                }
+            })
         }
     }
 }

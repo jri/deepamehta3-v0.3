@@ -89,8 +89,10 @@ function Canvas() {
     }
 
     /**
-     * Removes a relation from the canvas.
+     * Removes a relation from the canvas (model) and optionally refreshes the canvas (view).
      * If the relation is not present on the canvas nothing is performed.
+     *
+     * @param   refresh_canvas  Optional parameter: if true, the canvas is refreshed.
      */
     this.remove_relation = function(assoc_id, refresh_canvas) {
         var i = assoc_index(assoc_id)

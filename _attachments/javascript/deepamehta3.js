@@ -1,16 +1,10 @@
+// Settings
+DB_NAME = "deepamehta3-db"
+SEARCH_FIELD_WIDTH = 16    // in chars
 GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
 
-var db = new CouchDB("deepamehta3-db")
+var db = new CouchDB(DB_NAME)
 var ui = new UIHelper()
-
-db.fulltext_search = function(index, text) {
-    var viewPath = this.uri + "_fti/deepamehta3/" + index + "?q=" + text
-    this.last_req = this.request("GET", viewPath)      
-    if (this.last_req.status == 404)
-        return null
-    CouchDB.maybeThrowError(this.last_req)
-    return JSON.parse(this.last_req.responseText)
-}
 
 var current_doc         // topic document being displayed, or null if no one is currently displayed
 var current_rel         // relation document being activated, or null if no one is currently activated
@@ -42,6 +36,7 @@ $(document).ready(function() {
     $("#upper-toolbar").addClass("ui-widget-header").addClass("ui-corner-all")
     // the search form
     $("#searchmode_select_placeholder").replaceWith(searchmode_select())
+    $("#search_field").attr({size: SEARCH_FIELD_WIDTH})
     $("#search-form").submit(search)
     ui.button("search_button", search, "Search", "gear")
     // the special form
@@ -320,7 +315,8 @@ function remove_document(delete_from_db) {
 
 
 /**
- * Creates a relation in the DB and optionally adds it also to the canvas.
+ * Creates a relation in the DB and optionally adds it to the canvas model.
+ * Note: the canvas view and the detail panel are not refreshed.
  *
  * @param   rel_type    The type for the new relation. If not specified, "Relation" is used.
  */
@@ -332,7 +328,7 @@ function create_relation(doc1_id, doc2_id, add_to_canvas, rel_type) {
         rel_doc_ids: [doc1_id, doc2_id]
     }
     save_document(relation_doc)
-    // update GUI
+    // update GUI model
     if (add_to_canvas) {
         canvas.add_relation(relation_doc)
     }
@@ -394,14 +390,14 @@ function get_relations(doc_id, include_auxiliary) {
 }
 
 /**
- * Deletes a relation from the DB, refreshes the canvas and the detail panel.
+ * Deletes a relation from the DB, and from the canvas model.
+ * Note: the canvas view and the detail panel are not refreshed.
  */
 function delete_relation(rel_doc) {
     // update DB
     db.deleteDoc(rel_doc)
-    // update GUI
-    canvas.remove_relation(rel_doc._id, true)
-    show_document()
+    // update GUI model
+    canvas.remove_relation(rel_doc._id)
 }
 
 function remove_relations(doc, delete_from_db) {
@@ -505,7 +501,11 @@ function trigger_doctype_hook(hook_name, args, doctype_impl) {
 
 function call_relation_function(function_name) {
     if (function_name == "delete_relation") {
+        // update model
         delete_relation(current_rel)
+        // update view
+        canvas.refresh()
+        show_document()
     } else {
         alert("call_relation_function: function \"" + function_name + "\" not implemented")
     }
@@ -553,6 +553,33 @@ function create_type_icons() {
 
 function create_special_select() {
     return $("<select>").attr("id", "special_select")
+}
+
+//
+
+/**
+ * Creates a search result topic.
+ *
+ * @param   title           the title of the search result.
+ * @param   result          the search result: either a CouchDB view result or a fulltext result.
+ * @param   doctype_impl    the result topic's document type implementation.
+ * @param   result_function a function that transforms a result row into a result item. A result item
+ *                          object must contain the elements "id", "type", and "label" at least.
+ *
+ * @return  the result topic (a CouchDB document of type "Search Result")
+ */
+function create_result_topic(title, result, doctype_impl, result_function) {
+    // create result topic
+    var fields = [{id: "Title", content: '"' + title + '"'}]
+    var view = {icon_src: "images/bucket.png"}
+    var result_topic = create_raw_topic("Search Result", fields, view, doctype_impl)
+    // add result items
+    result_topic.items = []
+    for (var i = 0, row; row = result.rows[i]; i++) {
+        result_topic.items.push(result_function(row))
+    }
+    //
+    return result_topic
 }
 
 //

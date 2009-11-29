@@ -1,8 +1,11 @@
 function PlainDocument() {
+
+    // Settings
     DEFAULT_FIELD_WIDTH = 60    // in chars
     DEFAULT_AREA_HEIGHT = 30    // in chars
-    UPLOAD_DIALOG_WIDTH = 800   // in pixel
+    UPLOAD_DIALOG_WIDTH = "50em"
     DELETE_DIALOG_WIDTH = 350   // in pixel
+
     // The upload dialog
     $("#attachment_dialog").dialog({modal: true, autoOpen: false, draggable: false, resizable: false, width: UPLOAD_DIALOG_WIDTH})
     $("#upload-target").load(this.upload_complete)
@@ -220,7 +223,7 @@ PlainDocument.prototype = {
                     switch (field.view.editor) {
                         case "single line":
                         case "multi line":
-                            field.content = $("#field_" + field.id).val()
+                            field.content = $.trim($("#field_" + field.id).val())
                             break
                         default:
                             alert("update_document: unexpected field editor (" + field.view.editor + ")")
@@ -243,6 +246,7 @@ PlainDocument.prototype = {
         save_document(current_doc)
         // update GUI
         canvas.update_document(current_doc)
+        canvas.refresh()
         show_document()
     },
 
