@@ -3,7 +3,7 @@ DeepaMehta 3
 ============
 
 DeepaMehta is a platform for collaboration and knowledge management.  
-DeepaMehta 3 is a AJAX-driven web application based on CouchDB, Lucene, and HTML Canvas.  
+DeepaMehta 3 is a AJAX-driven web application based on CouchDB, Lucene, and HTML 5 Canvas.  
 DeepaMehta 3 will become a complete rewrite of DeepaMehta 2 (which is Java-based).
 
 <http://www.deepamehta.de>
@@ -33,6 +33,10 @@ Requirements
   required for easy installation of DeepaMehta 3 and plugins  
   <http://git-scm.com/>
 
+* Firefox (tested with 2.0, 3.0, and 3.5)  
+  required to use DeepaMehta (Safari or Internet Explorer doesn't work)  
+  <http://www.firefox.com/>
+
 For Mac OS X 10.3.9 "Panther" and JDK 1.4:
 
 * CouchDB on "Panther" installation notes:  
@@ -49,7 +53,7 @@ Installation
 
 ### Preparation ###
 
-1.  Install Python, Java, Git
+1.  Install Python, Java, Git, Firefox
 
 2.  Install CouchDB, CouchApp
 
@@ -86,7 +90,7 @@ Installation
         couchapp push http://localhost:5984/deepamehta3-db
 
 3.  Optional: install DeepaMehta 3 plugins.
-    For the moment there are 6 general purpose plugins and 1 custom application available:
+    For the moment there are 7 general purpose plugins and 1 custom application available:
 
     <http://github.com/jri/dm3-time>  
     <http://github.com/jri/dm3-workspaces>  
@@ -94,6 +98,7 @@ Installation
     <http://github.com/jri/dm3-email>  
     <http://github.com/jri/dm3-import>  
     <http://github.com/jri/dm3-accounts>  
+    <http://github.com/jri/dm3-typing>  
 
     <http://github.com/jri/dm3-poemspace-app>  
 
@@ -103,10 +108,24 @@ Installation
 Running
 -------
 
-Visit DeepaMehta 3 in your webbrowser:  
+Visit DeepaMehta 3 in Firefox:  
 <http://localhost:5984/deepamehta3-db/_design/deepamehta3/index.html>
+
+
+Version History
+---------------
+
+`v0.2` -- Dec  1, 2009
+* Framework for plugin developers
+* Autocompletion facility
+* Topics have icons
+* jQuery UI based GUI
+* 7 general purpose plugins (*DM3 Time*, *DM3 Workspaces*, *DM3 Contacts*, *DM3 Email*, *DM3 Import*, *DM3 Accounts*, *DM3 Typing*) and 1 custom application (*Poemspace*) available
+
+`v0.1` -- Sep 15, 2009
+* Basic functionality (Creating notes, edit, delete. Relate notes to other notes, navigate alongside relations. Attach files to notes. Fulltext searching in notes, also in attachments. Graphical network display of related notes.)
 
 
 ------------
 Jörg Richter  
-Nov 17, 2009
+Dec 1, 2009

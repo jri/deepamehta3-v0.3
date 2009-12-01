@@ -413,8 +413,7 @@ PlainDocument.prototype = {
 
     process_selection: function() {
         if (autocomplete_item != -1) {
-            var input_element_id = $(".autocomplete-list").attr("id").substr(7) // 7 = "aclist_".length
-            var input_element = $("#" + input_element_id).get(0)
+            var input_element = PlainDocument.prototype.get_input_element()
             // trigger hook to get the item (string) to insert into the input element
             var item = trigger_doctype_hook("process_autocomplete_selection", autocomplete_items[autocomplete_item])
             //
@@ -444,6 +443,12 @@ PlainDocument.prototype = {
         return [term, pos, cpos]
     },
 
+    get_input_element: function() {
+        var input_element_id = $(".autocomplete-list").attr("id").substr(7) // 7 = "aclist_".length
+        var input_element = $("#" + input_element_id).get(0)
+        return input_element
+    },
+
     get_field: function(input_element) {
         var field_id = input_element.id.substr(6)            // 6 = "field_".length
         var field = get_field(current_doc, field_id)
@@ -458,11 +463,11 @@ PlainDocument.prototype = {
         // space
         var e = document.createEvent("KeyboardEvent");
         e.initKeyEvent("keypress", true, true, null, false, false, false, false, 0, 32);
-        $(input_element).get(0).dispatchEvent(e);
+        input_element.dispatchEvent(e);
         // backspace
         e = document.createEvent("KeyboardEvent");
         e.initKeyEvent("keypress", true, true, null, false, false, false, false, 8, 0);
-        $(input_element).get(0).dispatchEvent(e);
+        input_element.dispatchEvent(e);
     },
 
     lost_focus: function() {
