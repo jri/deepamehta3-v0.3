@@ -115,7 +115,7 @@ Visit DeepaMehta 3 in Firefox:
 Version History
 ---------------
 
-`v0.2` -- Dec  1, 2009
+**v0.2** -- Dec  1, 2009
 
 * Framework for plugin developers
 * Autocompletion facility
@@ -123,7 +123,7 @@ Version History
 * jQuery UI based GUI
 * 7 general purpose plugins (*DM3 Time*, *DM3 Workspaces*, *DM3 Contacts*, *DM3 Email*, *DM3 Import*, *DM3 Accounts*, *DM3 Typing*) and 1 custom application (*Poemspace*) available
 
-`v0.1` -- Sep 15, 2009
+**v0.1** -- Sep 15, 2009
 
 * Basic functionality (Creating notes, edit, delete. Relate notes to other notes, navigate alongside relations. Attach files to notes. Fulltext searching in notes, also in attachments. Graphical network display of related notes.)
 
