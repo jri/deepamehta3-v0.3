@@ -8,4 +8,3 @@
 // add_plugin("vendor/dm3-poemspace-app/script/dm3_poemspace.js")
 // add_plugin("vendor/dm3-accounts/script/dm3_accounts.js")
 // add_plugin("vendor/dm3-typing/script/dm3_typing.js")
-// add_plugin("vendor/dm3-typing/script/dm3_project.js")
