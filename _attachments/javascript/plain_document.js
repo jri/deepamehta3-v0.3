@@ -326,44 +326,46 @@ PlainDocument.prototype = {
         // Holds the matched items (model). These items are rendered as pulldown menu (the "autocomplete list", view).
         // Element type: array, holds all item fields as stored by the fulltext index function.
         autocomplete_items = []
-        item_id = 0
+        var item_id = 0
         //
         try {
             var field = PlainDocument.prototype.get_field(this)
             var searchterm = searchterm(field, this)
-            // --- trigger search for each fulltext index ---
-            for (var i = 0, index; index = field.view.autocomplete_indexes[i]; i++) {
-                var result = db.fulltext_search(index, searchterm + "*")
-                //
-                if (result.rows.length && !autocomplete_items.length) {
-                    PlainDocument.prototype.show_autocomplete_list(this)
-                }
-                // --- add each result item to the autocomplete list ---
-                for (var j = 0, row; row = result.rows[j]; j++) {
-                    // Note: only default field(s) is/are respected.
-                    var item = row.fields.default
-                    // Note: if the fulltext index function stores only one field per document
-                    // we get it as a string, otherwise we get an array.
-                    if (typeof(item) == "string") {
-                        item = [item]
+            if (searchterm) {
+                // --- trigger search for each fulltext index ---
+                for (var i = 0, index; index = field.view.autocomplete_indexes[i]; i++) {
+                    var result = db.fulltext_search(index, searchterm + "*")
+                    //
+                    if (result.rows.length && !autocomplete_items.length) {
+                        PlainDocument.prototype.show_autocomplete_list(this)
                     }
-                    // --- Add item to model ---
-                    autocomplete_items.push(item)
-                    // --- Add item to view ---
-                    var ac_item = trigger_doctype_hook("render_autocomplete_item", item)
-                    var a = $("<a>").attr({href: "", id: item_id++}).append(ac_item)
-                    a.mousemove(PlainDocument.prototype.item_hovered)
-                    a.mousedown(PlainDocument.prototype.process_selection)
-                    // Note: we use "mousedown" instead of "click" because the click causes loosing the focus
-                    // and "lost focus" is fired _before_ "mouseup" and thus "click" would never be fired.
-                    // At least as long as we hide the autocompletion list on "hide focus" which we do for
-                    // the sake of simplicity. This leads to non-conform GUI behavoir (action on mousedown).
-                    // A more elaborated rule for hiding the autocompletion list is required.
-                    $(".autocomplete-list").append(a)
+                    // --- add each result item to the autocomplete list ---
+                    for (var j = 0, row; row = result.rows[j]; j++) {
+                        // Note: only default field(s) is/are respected.
+                        var item = row.fields.default
+                        // Note: if the fulltext index function stores only one field per document
+                        // we get it as a string, otherwise we get an array.
+                        if (typeof(item) == "string") {
+                            item = [item]
+                        }
+                        // --- Add item to model ---
+                        autocomplete_items.push(item)
+                        // --- Add item to view ---
+                        var ac_item = trigger_doctype_hook("render_autocomplete_item", item)
+                        var a = $("<a>").attr({href: "", id: item_id++}).append(ac_item)
+                        a.mousemove(PlainDocument.prototype.item_hovered)
+                        a.mousedown(PlainDocument.prototype.process_selection)
+                        // Note: we use "mousedown" instead of "click" because the click causes loosing the focus
+                        // and "lost focus" is fired _before_ "mouseup" and thus "click" would never be fired.
+                        // At least as long as we hide the autocompletion list on "hide focus" which we do for
+                        // the sake of simplicity. This leads to non-conform GUI behavoir (action on mousedown).
+                        // A more elaborated rule for hiding the autocompletion list is required.
+                        $(".autocomplete-list").append(a)
+                    }
                 }
             }
         } catch (e) {
-            // log("Error while searching: " + JSON.stringify(e))
+            alert("Error while searching: " + JSON.stringify(e))
         }
         //
         if (!autocomplete_items.length) {
@@ -374,7 +376,7 @@ PlainDocument.prototype = {
             if (field.view.autocomplete_style == "item list") {
                 var searchterm = PlainDocument.prototype.current_term(input_element)
                 // log("pos=" + searchterm[1] + "cpos=" + searchterm[2] + " searchterm=\"" + searchterm[0] + "\"")
-                return searchterm[0]
+                return $.trim(searchterm[0])
             } else {
                 // autocomplete_style "default"
                 return input_element.value
@@ -426,6 +428,7 @@ PlainDocument.prototype = {
                     input_element.value += " "
                 }
                 input_element.value += item + ", " + value.substring(term[1] + 1 + term[0].length)
+                PlainDocument.prototype.update_viewport(input_element)
             } else {
                 // autocomplete_style "default"
                 input_element.value = item
@@ -445,6 +448,21 @@ PlainDocument.prototype = {
         var field_id = input_element.id.substr(6)            // 6 = "field_".length
         var field = get_field(current_doc, field_id)
         return field
+    },
+
+    /**
+     * Moves the viewport of the input element in a way the current cursor position is on-screen.
+     * This is done by triggering the space key followed by a backspace.
+     */
+    update_viewport: function(input_element) {
+        // space
+        var e = document.createEvent("KeyboardEvent");
+        e.initKeyEvent("keypress", true, true, null, false, false, false, false, 0, 32);
+        $(input_element).get(0).dispatchEvent(e);
+        // backspace
+        e = document.createEvent("KeyboardEvent");
+        e.initKeyEvent("keypress", true, true, null, false, false, false, false, 8, 0);
+        $(input_element).get(0).dispatchEvent(e);
     },
 
     lost_focus: function() {
