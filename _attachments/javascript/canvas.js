@@ -42,13 +42,13 @@ function Canvas() {
 
 
     this.add_document = function(doc, refresh_canvas, x, y) {
-        // init geometry
-        if (x == undefined && y == undefined) {
-            x = canvas_width * Math.random()
-            y = canvas_height * Math.random()
-        }
-        // add to canvas
         if (!topic_exists(doc._id)) {
+            // init geometry
+            if (x == undefined && y == undefined) {
+                x = canvas_width * Math.random()
+                y = canvas_height * Math.random()
+            }
+            // add to canvas
             canvas_topics.push(new CanvasTopic(doc, x, y))
         }
         //

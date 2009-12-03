@@ -104,23 +104,37 @@ function special_selected(menu_item) {
     trigger_hook("handle_special_command", command)
 }
 
-function reveal_document(doc_id) {
-    if (document_exists(doc_id)) {
+/**
+ * Reveals a document and optionally relate it to the current document.
+ *
+ * @param   do_relate   Optionally (boolean): if true a relation of type "Auxiliary" is created between
+ *                      the document and the current document. If not specified false is assumed.
+ */
+function reveal_document(doc_id, do_relate) {
+    // error check
+    if (!document_exists(doc_id)) {
+        alert("Document " + doc_id + " doesn't exist. Possibly it has been deleted.")
+        return
+    }
+    // create relation
+    if (do_relate) {
         var relation_doc = get_relation_doc(current_doc._id, doc_id)
         if (!relation_doc) {
             create_relation(current_doc._id, doc_id, true, "Auxiliary")
         } else {
             canvas.add_relation(relation_doc)
         }
-        // update GUI
-        show_document(doc_id)
-        canvas.add_document(current_doc, true)
-        canvas.focus_topic(doc_id)
-    } else {
-        alert("Document " + doc_id + " doesn't exist. Possibly it has been deleted.")
     }
+    // reveal document
+    show_document(doc_id)
+    canvas.add_document(current_doc, true)
+    canvas.focus_topic(doc_id)
 }
 
+/**
+ * Selects a document which is already visible on the canvas.
+ * The document is displayed on the content panel and highlighted on the canvas.
+ */
 function select_document(doc_id) {
     show_document(doc_id)
     canvas.refresh()
@@ -616,7 +630,7 @@ function render_topic(topic) {
  */
 function render_topic_anchor(topic, anchor_content) {
     return $("<a>").attr({href: ""}).append(anchor_content).click(function() {
-        reveal_document(topic.id)
+        reveal_document(topic.id, true)
         return false
     })
 }
