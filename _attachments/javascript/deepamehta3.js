@@ -783,9 +783,22 @@ function log(text) {
     if (debug) {
         // Note: the debug window might be closed meanwhile
         if (debug_window.document) {
-            debug_window.document.writeln(text.replace(/\n/g, "<br>") + "<br>")
+            debug_window.document.writeln(render_text(text) + "<br>")
         }
     }
+}
+
+function render_text(text) {
+    return text.replace(/\n/g, "<br>")
+}
+
+/**
+ * @param   date    the date to format (string). If empty (resp. evaluates to false) an empty string is returned.
+ *                  Otherwise it must be parsable by the Date constructor, e.g. "12/30/2009".
+ */
+function format_date(date) {
+    // For possible format strings see http://docs.jquery.com/UI/Datepicker/formatDate
+    return date ? $.datepicker.formatDate("D, M d, yy", new Date(date)) : ""
 }
 
 //

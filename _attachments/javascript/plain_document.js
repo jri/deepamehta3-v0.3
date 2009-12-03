@@ -32,15 +32,17 @@ PlainDocument.prototype = {
             for (var i = 0, field; field = doc.fields[i]; i++) {
                 switch (field.model.type) {
                     case "text":
-                        $("#detail-panel").append($("<div>").addClass("field-name").text(field.id))
                         switch (field.view.editor) {
                             case "single line":
                             case "multi line":
-                                render_text(field.content)
+                                render_text_field(field)
                                 break
                             default:
                                 alert("render_fields: unexpected field editor (" + field.view.editor + ")")
                         }
+                        break
+                    case "date":
+                        render_date_field(field)
                         break
                     case "relation":
                         switch (field.view.editor) {
@@ -56,35 +58,33 @@ PlainDocument.prototype = {
                 }
             }
 
-            // Creates a div-element holding the text.
-            // Conversion performed: linefeed characters (\n) are replaced by br-elements.
-            function render_text(text) {
-                var field_value = $("<div>").addClass("field-value")
-                var pos = 0
-                do {
-                    var i = text.indexOf("\n", pos)
-                    if (i >= 0) {
-                        field_value.append(text.substring(pos, i)).append("<br>")
-                        pos = i + 1
-                    }
-                } while (i >= 0)
-                field_value.append(text.substring(pos))
-                $("#detail-panel").append(field_value)
+            function render_text_field(field) {
+                // field name
+                PlainDocument.prototype.render_field_name(field)
+                // field value
+                $("#detail-panel").append($("<div>").addClass("field-value").html(render_text(field.content)))
+            }
+
+            function render_date_field(field) {
+                // field name
+                PlainDocument.prototype.render_field_name(field)
+                // field value
+                $("#detail-panel").append($("<div>").addClass("field-value").text(format_date(field.content)))
             }
 
             function render_defined_relations(field) {
                 var topics = PlainDocument.prototype.get_related_topics(doc, field)
                 defined_relation_topics = defined_relation_topics.concat(topics)
-                $("#detail-panel").append($("<div>").addClass("field-name").text(field.id + " (" + topics.length + ")"))
-                var field_value = $("<div>").addClass("field-value")
-                field_value.append(render_topics(topics))
-                $("#detail-panel").append(field_value)
+                // field name
+                PlainDocument.prototype.render_field_name(field, " (" + topics.length + ")")
+                // field value
+                $("#detail-panel").append($("<div>").addClass("field-value").append(render_topics(topics)))
             }
         }
 
         function render_attachments() {
             if (doc._attachments) {
-                $("#detail-panel").append($("<div>").addClass("field-name").text("Attachments"))
+                PlainDocument.prototype.render_field_name("Attachments")
                 var field_value = $("<div>").addClass("field-value")
                 for (var attach in doc._attachments) {
                     var a = $("<a>").attr("href", db.uri + doc._id + "/" + attach).text(attach)
@@ -101,7 +101,7 @@ PlainDocument.prototype = {
                 return topic.id == drt.id
             })
             //
-            $("#detail-panel").append($("<div>").addClass("field-name").text("Relations (" + topics.length + ")"))
+            PlainDocument.prototype.render_field_name("Relations (" + topics.length + ")")
             var field_value = $("<div>").addClass("field-value")
             field_value.append(render_topics(topics))
             $("#detail-panel").append(field_value)
@@ -123,28 +123,15 @@ PlainDocument.prototype = {
         //
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
             // field name
-            $("#detail-panel").append($("<div>").addClass("field-name").text(field.id))
+            this.render_field_name(field)
             // field value
             var valuediv = $("<div>").addClass("field-value")
             switch (field.model.type) {
                 case "text":
-                    switch (field.view.editor) {
-                        case "single line":
-                            var input = $("<input>").attr({id: "field_" + field.id, value: field.content, size: DEFAULT_FIELD_WIDTH})
-                            if (field.view.autocomplete_indexes) {
-                                input.keyup(this.autocomplete)
-                                input.blur(this.lost_focus)
-                                input.attr({autocomplete: "off"})
-                            }
-                            valuediv.append(input)
-                            break
-                        case "multi line":
-                            var lines = field.view.lines || DEFAULT_AREA_HEIGHT
-                            valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: lines, cols: DEFAULT_FIELD_WIDTH}).text(field.content))
-                            break
-                        default:
-                            alert("render_document_form: unexpected field editor (" + field.view.editor + ")")
-                    }
+                    render_text_field(field)
+                    break
+                case "date":
+                    render_date_field(field)
                     break
                 case "relation":
                     switch (field.view.editor) {
@@ -159,6 +146,36 @@ PlainDocument.prototype = {
                     alert("render_document_form: unexpected field type (" + field.model.type + ")")
             }
             $("#detail-panel").append(valuediv)
+        }
+
+        function render_text_field(field) {
+            switch (field.view.editor) {
+                case "single line":
+                    var input = $("<input>").attr({type: "text", id: "field_" + field.id, value: field.content, size: DEFAULT_FIELD_WIDTH})
+                    if (field.view.autocomplete_indexes) {
+                        input.keyup(PlainDocument.prototype.autocomplete)
+                        input.blur(PlainDocument.prototype.lost_focus)
+                        input.attr({autocomplete: "off"})
+                    }
+                    valuediv.append(input)
+                    break
+                case "multi line":
+                    var lines = field.view.lines || DEFAULT_AREA_HEIGHT
+                    valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: lines, cols: DEFAULT_FIELD_WIDTH}).text(field.content))
+                    break
+                default:
+                    alert("render_text_field: unexpected field editor (" + field.view.editor + ")")
+            }
+        }
+
+        function render_date_field(field) {
+            var input = $("<input>").attr({type: "hidden", id: "field_" + field.id, value: field.content})
+            input.change(function() {
+                $("span", $(this).parent()).text(format_date(this.value))
+            })
+            valuediv.append($("<span>").css("margin-right", "1em").text(format_date(field.content))).append(input)
+            input.datepicker({firstDay: 1, showAnim: "fadeIn", showOtherMonths: true, showOn: "button",
+                buttonImage: "images/calendar.gif", buttonImageOnly: true, buttonText: "Choose Date"})
         }
 
         function render_defined_relations(doc, field) {
@@ -207,6 +224,23 @@ PlainDocument.prototype = {
     /* Helper */
 
     /**
+     * @param   field   a field object or a string.
+     */
+    render_field_name: function(field, suffix) {
+        var name
+        if (typeof(field) == "string") {
+            name = field
+        } else {
+            // Note: the "view" element is optional, e.g. for a "date" field
+            name = field.view && field.view.label ? field.view.label : field.id
+            if (suffix) {
+                name += suffix
+            }
+        }
+        $("#detail-panel").append($("<div>").addClass("field-name").text(name))
+    },
+
+    /**
      * Returns topics of a "relation" field.
      */
     get_related_topics: function(doc, field) {
@@ -228,6 +262,9 @@ PlainDocument.prototype = {
                         default:
                             alert("update_document: unexpected field editor (" + field.view.editor + ")")
                     }
+                    break
+                case "date":
+                    field.content = $.trim($("#field_" + field.id).val())
                     break
                 case "relation":
                     switch (field.view.editor) {
