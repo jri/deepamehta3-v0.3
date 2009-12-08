@@ -28,6 +28,7 @@ if (debug) {
 
 // register core facilities
 doctype_implementation("javascript/plain_document.js")
+add_plugin("javascript/dm3_datafields.js")
 add_plugin("javascript/dm3_fulltext.js")
 // css_stylesheet("style/main.css")     // layout flatters while loading
 
@@ -168,14 +169,8 @@ function show_document(doc_id) {
     //
     empty_detail_panel()
     //
-    var impl = loaded_doctype_impls[current_doc.implementation]
-    if (impl) {
-        impl.render_document(current_doc)
-    // fallback
-    } else {
-        alert("show_document: implementation \"" + current_doc.implementation + "\" not found.\nFalling back to generic rendering.")
-        $("#detail-panel").append(render_object(current_doc))
-    }
+    trigger_doctype_hook("render_document", current_doc)
+    //
     return true
 }
 
@@ -491,7 +486,7 @@ function trigger_hook(hook_name, args) {
     for (var i = 0, plugin; plugin = plugins[i]; i++) {
         if (plugin[hook_name]) {
             var res = plugin[hook_name](args)
-            if (res) {
+            if (res != undefined) {
                 result.push(res)
             }
         }

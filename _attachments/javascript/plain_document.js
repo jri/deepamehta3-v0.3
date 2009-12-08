@@ -30,55 +30,34 @@ PlainDocument.prototype = {
 
         function render_fields() {
             for (var i = 0, field; field = doc.fields[i]; i++) {
-                switch (field.model.type) {
-                    case "text":
-                        switch (field.view.editor) {
-                            case "single line":
-                            case "multi line":
-                                render_text_field(field)
-                                break
-                            default:
-                                alert("render_fields: unexpected field editor (" + field.view.editor + ")")
-                        }
-                        break
-                    case "date":
-                        render_date_field(field)
-                        break
-                    case "relation":
-                        switch (field.view.editor) {
-                            case "checkboxes":
-                                render_defined_relations(field)
-                                break
-                            default:
-                                alert("render_fields: unexpected field editor (" + field.view.editor + ")")
-                        }
-                        break
-                    default:
-                        alert("render_fields: unexpected field type (" + field.model.type + ")")
+                if (field.model.type != "relation") {
+                    // field name
+                    PlainDocument.prototype.render_field_name(field)
+                    // field value
+                    var html = trigger_hook("render_field", field)[0]
+                    if (html != undefined) {
+                        $("#detail-panel").append($("<div>").addClass("field-value").html(html))
+                    } else {
+                        alert("render_fields: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
+                    }
+                } else {
+                    render_defined_relations(field)
                 }
             }
 
-            function render_text_field(field) {
-                // field name
-                PlainDocument.prototype.render_field_name(field)
-                // field value
-                $("#detail-panel").append($("<div>").addClass("field-value").html(render_text(field.content)))
-            }
-
-            function render_date_field(field) {
-                // field name
-                PlainDocument.prototype.render_field_name(field)
-                // field value
-                $("#detail-panel").append($("<div>").addClass("field-value").text(format_date(field.content)))
-            }
-
             function render_defined_relations(field) {
-                var topics = PlainDocument.prototype.get_related_topics(doc, field)
-                defined_relation_topics = defined_relation_topics.concat(topics)
-                // field name
-                PlainDocument.prototype.render_field_name(field, " (" + topics.length + ")")
-                // field value
-                $("#detail-panel").append($("<div>").addClass("field-value").append(render_topics(topics)))
+                switch (field.view.editor) {
+                case "checkboxes":
+                    var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
+                    defined_relation_topics = defined_relation_topics.concat(topics)
+                    // field name
+                    PlainDocument.prototype.render_field_name(field, " (" + topics.length + ")")
+                    // field value
+                    $("#detail-panel").append($("<div>").addClass("field-value").append(render_topics(topics)))
+                    break
+                default:
+                    alert("render_fields: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
+                }
             }
         }
 
@@ -125,74 +104,43 @@ PlainDocument.prototype = {
             // field name
             this.render_field_name(field)
             // field value
-            var valuediv = $("<div>").addClass("field-value")
-            switch (field.model.type) {
-                case "text":
-                    render_text_field(field)
-                    break
-                case "date":
-                    render_date_field(field)
-                    break
-                case "relation":
-                    switch (field.view.editor) {
-                        case "checkboxes":
-                            render_defined_relations(current_doc, field)
-                            break
-                        default:
-                            alert("render_document_form: unexpected field editor (" + field.view.editor + ")")
-                    }
-                    break
-                default:
-                    alert("render_document_form: unexpected field type (" + field.model.type + ")")
+            if (field.model.type != "relation") {
+                var html = trigger_hook("render_form_field", field)[0]
+                if (html != undefined) {
+                    $("#detail-panel").append($("<div>").addClass("field-value").append(html))
+                } else {
+                    alert("render_document_form: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
+                }
+            } else {
+                render_defined_relations(current_doc, field)
             }
-            $("#detail-panel").append(valuediv)
-        }
-
-        function render_text_field(field) {
-            switch (field.view.editor) {
-                case "single line":
-                    var input = $("<input>").attr({type: "text", id: "field_" + field.id, value: field.content, size: DEFAULT_FIELD_WIDTH})
-                    if (field.view.autocomplete_indexes) {
-                        input.keyup(PlainDocument.prototype.autocomplete)
-                        input.blur(PlainDocument.prototype.lost_focus)
-                        input.attr({autocomplete: "off"})
-                    }
-                    valuediv.append(input)
-                    break
-                case "multi line":
-                    var lines = field.view.lines || DEFAULT_AREA_HEIGHT
-                    valuediv.append($("<textarea>").attr({id: "field_" + field.id, rows: lines, cols: DEFAULT_FIELD_WIDTH}).text(field.content))
-                    break
-                default:
-                    alert("render_text_field: unexpected field editor (" + field.view.editor + ")")
-            }
-        }
-
-        function render_date_field(field) {
-            var input = $("<input>").attr({type: "hidden", id: "field_" + field.id, value: field.content})
-            input.change(function() {
-                $("span", $(this).parent()).text(format_date(this.value))
-            })
-            valuediv.append($("<span>").css("margin-right", "1em").text(format_date(field.content))).append(input)
-            input.datepicker({firstDay: 1, showAnim: "fadeIn", showOtherMonths: true, showOn: "button",
-                buttonImage: "images/calendar.gif", buttonImageOnly: true, buttonText: "Choose Date"})
         }
 
         function render_defined_relations(doc, field) {
-            // buffer current topic selection to compare it at submit time
-            var topics = PlainDocument.prototype.get_related_topics(doc, field)
-            topic_buffer[field.id] = topics
+            var value_div = $("<div>").addClass("field-value")
             //
-            var docs = db.view("deepamehta3/by_type", {key: field.model.related_type})
-            for (var i = 0, row; row = docs.rows[i]; i++) {
-                var attr = {type: "checkbox", id: row.id, name: "relation_" + field.id}
-                if (includes(topics, function(topic) {
-                        return topic.id == row.id
-                    })) {
-                    attr.checked = "checked"
+            switch (field.view.editor) {
+            case "checkboxes":
+                // buffer current topic selection to compare it at submit time
+                var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
+                topic_buffer[field.id] = topics
+                //
+                var docs = db.view("deepamehta3/by_type", {key: field.model.related_type})
+                for (var i = 0, row; row = docs.rows[i]; i++) {
+                    var attr = {type: "checkbox", id: row.id, name: "relation_" + field.id}
+                    if (includes(topics, function(topic) {
+                            return topic.id == row.id
+                        })) {
+                        attr.checked = "checked"
+                    }
+                    value_div.append($("<label>").append($("<input>").attr(attr)).append(row.value))
                 }
-                valuediv.append($("<label>").append($("<input>").attr(attr)).append(row.value))
+                break
+            default:
+                alert("render_defined_relations: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
             }
+            //
+            $("#detail-panel").append(value_div)
         }
     },
 
@@ -243,8 +191,8 @@ PlainDocument.prototype = {
     /**
      * Returns topics of a "relation" field.
      */
-    get_related_topics: function(doc, field) {
-        var doc_ids = related_doc_ids(doc._id)
+    get_related_topics: function(doc_id, field) {
+        var doc_ids = related_doc_ids(doc_id)
         return get_topics(doc_ids, field.model.related_type)
     },
 
@@ -252,31 +200,15 @@ PlainDocument.prototype = {
 
     update_document: function() {
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
-            switch (field.model.type) {
-                case "text":
-                    switch (field.view.editor) {
-                        case "single line":
-                        case "multi line":
-                            field.content = $.trim($("#field_" + field.id).val())
-                            break
-                        default:
-                            alert("update_document: unexpected field editor (" + field.view.editor + ")")
-                    }
-                    break
-                case "date":
-                    field.content = $.trim($("#field_" + field.id).val())
-                    break
-                case "relation":
-                    switch (field.view.editor) {
-                        case "checkboxes":
-                            PlainDocument.prototype.update_relation_field(current_doc, field)
-                            break
-                        default:
-                            alert("update_document: unexpected field editor (" + field.view.editor + ")")
-                    }
-                    break
-                default:
-                    alert("update_document: unexpected field type (" + field.model.type + ")")
+            if (field.model.type != "relation") {
+                var content = trigger_hook("get_field_content", field)[0]
+                if (content != undefined) {
+                    field.content = content
+                } else {
+                    alert("update_document: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
+                }
+            } else {
+                PlainDocument.prototype.update_relation_field(current_doc, field)
             }
         }
         // update DB
@@ -288,25 +220,31 @@ PlainDocument.prototype = {
     },
 
     update_relation_field: function(doc, field) {
-        $("input:checkbox[name=relation_" + field.id + "]").each(
-            function() {
-                var checkbox = this
-                var was_checked_before = includes(topic_buffer[field.id],
-                    function(topic) {
-                        return topic.id == checkbox.id
-                    }
-                )
-                if (checkbox.checked) {
-                    if (!was_checked_before) {
-                        create_relation(doc._id, checkbox.id)
-                    }
-                } else {
-                    if (was_checked_before) {
-                        delete_relation(get_relation_doc(doc._id, checkbox.id))
+        switch (field.view.editor) {
+        case "checkboxes":
+            $("input:checkbox[name=relation_" + field.id + "]").each(
+                function() {
+                    var checkbox = this
+                    var was_checked_before = includes(topic_buffer[field.id],
+                        function(topic) {
+                            return topic.id == checkbox.id
+                        }
+                    )
+                    if (checkbox.checked) {
+                        if (!was_checked_before) {
+                            create_relation(doc._id, checkbox.id)
+                        }
+                    } else {
+                        if (was_checked_before) {
+                            delete_relation(get_relation_doc(doc._id, checkbox.id))
+                        }
                     }
                 }
-            }
-        )
+            )
+            break
+        default:
+            alert("update_relation_field: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
+        }
     },
 
     cancel_editing: function() {
