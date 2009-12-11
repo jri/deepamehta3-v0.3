@@ -34,7 +34,7 @@ PlainDocument.prototype = {
                     // field name
                     PlainDocument.prototype.render_field_name(field)
                     // field value
-                    var html = trigger_hook("render_field", field)[0]
+                    var html = trigger_hook("render_field_content", field)[0]
                     if (html != undefined) {
                         $("#detail-panel").append($("<div>").addClass("field-value").html(html))
                     } else {
@@ -56,7 +56,7 @@ PlainDocument.prototype = {
                     $("#detail-panel").append($("<div>").addClass("field-value").append(render_topics(topics)))
                     break
                 default:
-                    alert("render_fields: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
+                    alert("render_defined_relations: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
                 }
             }
         }
@@ -97,7 +97,7 @@ PlainDocument.prototype = {
     },
 
     render_document_form: function() {
-        empty_detail_panel()
+        empty_detail_panel(true)
         topic_buffer = {}
         //
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
@@ -108,6 +108,7 @@ PlainDocument.prototype = {
                 var html = trigger_hook("render_form_field", field)[0]
                 if (html != undefined) {
                     $("#detail-panel").append($("<div>").addClass("field-value").append(html))
+                    trigger_hook("post_render_form_field", field)
                 } else {
                     alert("render_document_form: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
                 }

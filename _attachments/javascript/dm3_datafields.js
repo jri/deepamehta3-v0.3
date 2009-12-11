@@ -1,6 +1,6 @@
 function dm3_datafields() {
 
-    this.render_field = function(field) {
+    this.render_field_content = function(field) {
         switch (field.model.type) {
         case "text":
             switch (field.view.editor) {
@@ -8,7 +8,7 @@ function dm3_datafields() {
             case "multi line":
                 return render_text(field.content)
             default:
-                alert("render_field: unexpected field editor (" + field.view.editor + ")")
+                alert("render_field_content: unexpected field editor (" + field.view.editor + ")")
             }
             break
         case "date":

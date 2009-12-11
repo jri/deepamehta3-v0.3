@@ -49,6 +49,10 @@ body {
     margin-bottom: 1em;
 }
 
+.field-value p {
+    margin-top: 0;
+}
+
 .field-value label {
     display: block;
 }

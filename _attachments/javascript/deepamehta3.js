@@ -9,6 +9,7 @@ var ui = new UIHelper()
 var current_doc         // topic document being displayed, or null if no one is currently displayed
 var current_rel         // relation document being activated, or null if no one is currently activated
 var canvas              // the canvas that displays the topic map (a Canvas object)
+var is_form_shown       // true if a form is shown (used to fire the "post_submit_form" event)
 //
 var plugin_sources = []
 var plugins = []
@@ -28,8 +29,9 @@ if (debug) {
 
 // register core facilities
 doctype_implementation("javascript/plain_document.js")
-add_plugin("javascript/dm3_datafields.js")
 add_plugin("javascript/dm3_fulltext.js")
+add_plugin("javascript/dm3_datafields.js")
+add_plugin("javascript/dm3_tinymce.js")
 // css_stylesheet("style/main.css")     // layout flatters while loading
 
 $(document).ready(function() {
@@ -159,15 +161,15 @@ function show_document(doc_id) {
         }
     }
     // fetch document
-    var result = db.open(doc_id)
+    var doc = db.open(doc_id)
     //
-    if (result == null) {
+    if (doc == null) {
         return false
     }
-    // update global state
-    current_doc = result
     //
     empty_detail_panel()
+    // update global state
+    current_doc = doc
     //
     trigger_doctype_hook("render_document", current_doc)
     //
@@ -682,7 +684,12 @@ function create_image(src) {
 
 //
 
-function empty_detail_panel() {
+function empty_detail_panel(is_form) {
+    if (is_form_shown) {
+        trigger_hook("post_submit_form", current_doc)
+    }
+    is_form_shown = is_form
+    //
     $("#detail-panel").empty()
     $("#lower_toolbar").empty()
 }
