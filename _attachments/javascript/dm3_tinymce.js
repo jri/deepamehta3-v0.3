@@ -3,13 +3,12 @@ function dm3_tinymce() {
     tinymce_options = {
         theme: "advanced",
         content_css: "style/tinymce.css",
-        plugins: "autoresize",  // "table",
+        plugins: "autoresize",
         // Theme options
         theme_advanced_buttons1: "formatselect,|,bullist,numlist,|,bold,italic,underline,|,link,unlink,anchor,|,image,|,undo,redo",
-        theme_advanced_buttons2: "fontselect,fontsizeselect,forecolor,backcolor",   // ,|,tablecontrols",
+        theme_advanced_buttons2: "fontselect,fontsizeselect,forecolor,backcolor",
         theme_advanced_buttons3: "",
         theme_advanced_blockformats: "h1,h2,h3,p",
-        theme_advanced_toolbar_location: "top",
         theme_advanced_toolbar_align: "left"
     }
 
@@ -42,7 +41,7 @@ function dm3_tinymce() {
             tinymce_options.window = window
             tinymce_options.element_id = "field_" + field.id
             if (!tinyMCE.execCommand("mceAddFrameControl", false, tinymce_options)) {
-                alert("mceAddControl not executed")
+                alert("mceAddFrameControl not executed")
             }
         }
     }
