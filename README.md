@@ -12,10 +12,10 @@ DeepaMehta 3 will become a complete rewrite of DeepaMehta 2 (which is Java-based
 Requirements
 ------------
 
-* CouchDB (tested with 0.9 and 0.9.1, not yet tested with 0.10)  
+* CouchDB (tested with 0.9, 0.9.1, and 0.10)  
   <http://couchdb.apache.org/>
 
-* CouchApp (tested with 0.4)  
+* CouchApp (tested with 0.5.2)  
   <http://github.com/couchapp/couchapp/>
 
 * Python (tested with 2.6.4)  
@@ -25,7 +25,7 @@ Requirements
 * couchdb-lucene (tested with 0.4)  
   <http://github.com/rnewson/couchdb-lucene/>
 
-* Java (tested with JDK 1.4, preferred is JDK 1.5 or later)  
+* Java (tested with JDK 1.4 and 1.6, preferred is JDK 1.5 or later)  
   required to run couchdb-lucene  
   <http://java.sun.com/>
 
@@ -86,11 +86,11 @@ Installation
         cd deepamehta3
 
 2.  Upload DeepaMehta 3 to CouchDB:
-        couchapp init
+        couchapp init .
         couchapp push http://localhost:5984/deepamehta3-db
 
 3.  Optional: install DeepaMehta 3 plugins.
-    For the moment there are 7 general purpose plugins and 1 custom application available:
+    For the moment there are 8 general purpose plugins and 1 custom application available:
 
     <http://github.com/jri/dm3-time>  
     <http://github.com/jri/dm3-workspaces>  
@@ -99,6 +99,7 @@ Installation
     <http://github.com/jri/dm3-import>  
     <http://github.com/jri/dm3-accounts>  
     <http://github.com/jri/dm3-typing>  
+    <http://github.com/jri/dm3-project>  
 
     <http://github.com/jri/dm3-poemspace-app>  
 
@@ -130,4 +131,4 @@ Version History
 
 ------------
 Jörg Richter  
-Dec 1, 2009
+Dec 18, 2009
