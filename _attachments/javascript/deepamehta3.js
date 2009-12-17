@@ -80,8 +80,9 @@ function window_resized() {
     $("#detail-panel").height($("#canvas").height())
 }
 
-function set_searchmode(searchmode) {
-    var search_widget = trigger_hook("search_widget", searchmode.label)[0]
+function set_searchmode(menu_item) {
+    var searchmode = menu_item.label
+    var search_widget = trigger_hook("search_widget", searchmode)[0]
     //
     $("#search_widget").empty()
     $("#search_widget").append(search_widget)
@@ -470,7 +471,7 @@ function load_plugins() {
         log(".......... instantiating \"" + doctype_class + "\"")
         var doctype_impl = eval("new " + doctype_class)
         loaded_doctype_impls[doctype_class] = doctype_impl
-        trigger_doctype_hook("init", undefined, doctype_impl)
+        trigger_doctype_hook("init", undefined, doctype_impl)   // ### FIXME: document hook "init" not used anymore. Drop it?
     }
     // load CSS stylesheets
     log("Loading " + css_stylesheets.length + " CSS stylesheets:")

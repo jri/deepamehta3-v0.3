@@ -298,15 +298,14 @@ function Canvas() {
             //
             select_document(ct.doc_id)
             //
-            var impl = loaded_doctype_impls[current_doc.implementation]
-            var items = impl.context_menu_items()
+            var items = trigger_doctype_hook("context_menu_items")
             open_context_menu(items, "topic", event)
         } else {
             var ca = assoc_by_position(event)
             if (ca) {
                 current_rel = ca.doc
                 draw()
-                var items = [{label: "Delete", function: "delete_relation"}]
+                var items = [{label: "Delete", handler: "delete_relation"}]
                 open_context_menu(items, "assoc", event)
             }
         }
@@ -327,7 +326,7 @@ function Canvas() {
             default:
                 alert("open_context_menu: unexpected type \"" + type + "\"")
             }
-            var onclick = handler + "('" + item.function + "'); canvas.close_context_menu(); return false"
+            var onclick = handler + "('" + item.handler + "'); canvas.close_context_menu(); return false"
             var a = $("<a>").attr({href: "", onclick: onclick}).text(item.label)
             contextmenu.append(a)
         }

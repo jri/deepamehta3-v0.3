@@ -9,6 +9,7 @@ function dm3_tinymce() {
         theme_advanced_buttons2: "fontselect,fontsizeselect,forecolor,backcolor",
         theme_advanced_buttons3: "",
         theme_advanced_blockformats: "h1,h2,h3,p",
+        theme_advanced_toolbar_location: "top",
         theme_advanced_toolbar_align: "left"
     }
 

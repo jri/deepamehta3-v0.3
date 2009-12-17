@@ -21,7 +21,7 @@ SearchResult.prototype = {
 
     context_menu_items: function() {
         return [
-            {label: "Remove", function: "remove"}
+            {label: "Remove", handler: "remove"}
         ]
     },
 
