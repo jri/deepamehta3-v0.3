@@ -16,7 +16,7 @@ function UIHelper() {
         button.attr({type: "button", submit: is_submit})
         if (icon) {
             var icon_span = $("<span>").addClass("ui-icon").addClass("ui-icon-" + icon)
-            icon_span.css({float: "left", "margin-right": "5px"})
+            icon_span.css({"float": "left", "margin-right": "5px"})
             button.append(icon_span)
         }
         button.append(label)
