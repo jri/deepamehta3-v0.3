@@ -224,7 +224,7 @@ function UIHelper() {
                 // Note: type="button" is required. Otherwise the button acts as submit button (if contained in a form)
                 button = $("<button>").attr({type: "button"}).addClass("ui-state-default").click(button_clicked)
                 var icon_span = $("<span>").addClass("ui-icon").addClass("ui-icon-triangle-1-s")
-                icon_span.css({float: "right", "margin-left": "5px"})
+                icon_span.css({"float": "right", "margin-left": "5px"})
                 button.append(icon_span)
                 button.append("<span></span>")  // the 2nd span holds the menu title
                 add_hover_effect(button)
