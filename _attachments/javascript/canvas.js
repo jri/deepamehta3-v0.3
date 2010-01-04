@@ -41,15 +41,18 @@ function Canvas() {
 
 
 
-    this.add_document = function(doc, refresh_canvas, x, y) {
-        if (!topic_exists(doc._id)) {
+    this.add_topic = function(id, type, label, refresh_canvas, x, y) {
+        if (!topic_exists(id)) {
             // init geometry
             if (x == undefined && y == undefined) {
                 x = canvas_width * Math.random()
                 y = canvas_height * Math.random()
             }
             // add to canvas
-            canvas_topics.push(new CanvasTopic(doc, x, y))
+            var ct = new CanvasTopic(id, type, label, x, y)
+            canvas_topics.push(ct)
+            // trigger hook
+            trigger_hook("post_add_topic_to_canvas", ct)
         }
         //
         if (refresh_canvas) {
@@ -111,8 +114,8 @@ function Canvas() {
         }
     }
 
-    this.update_document = function(doc) {
-        topic_by_id(doc._id).update(doc)
+    this.set_topic_label = function(id, label) {
+        topic_by_id(id).set_label(label)
     }
 
     this.focus_topic = function(topic_id) {
@@ -200,7 +203,7 @@ function Canvas() {
             var h = ct.icon.height
             ctx.drawImage(ct.icon, ct.x - w / 2, ct.y - h / 2)
             // highlight
-            if (current_doc && current_doc._id == ct.doc_id) {
+            if (current_doc && current_doc._id == ct.id) {
                 ctx.strokeRect(ct.x - w / 2 - HIGHLIGHT_DIST, ct.y - h / 2 - HIGHLIGHT_DIST, w + 2 * HIGHLIGHT_DIST, h + 2 * HIGHLIGHT_DIST)
             }
         }
@@ -264,7 +267,8 @@ function Canvas() {
             //
             var ct = topic_by_position(event)
             if (ct) {
-                create_relation(current_doc._id, ct.doc_id, true)
+                var rel = create_relation("Relation", current_doc._id, ct.id)
+                canvas.add_relation(rel)
                 select_document(current_doc._id)
             } else {
                 draw()
@@ -272,13 +276,15 @@ function Canvas() {
         } else if (topic_move_in_progress) {
             // end move
             topic_move_in_progress = false
+            // trigger hook
+            trigger_hook("post_move_topic_on_canvas", action_topic)
         } else if (canvas_move_in_progress) {
             // end translation
             canvas_move_in_progress = false
         } else {
             var ct = topic_by_position(event)
             if (ct) {
-                select_document(ct.doc_id)
+                select_document(ct.id)
             }
         }
         // remove topic activation
@@ -296,7 +302,7 @@ function Canvas() {
         var ct = topic_by_position(event)
         if (ct) {
             //
-            select_document(ct.doc_id)
+            select_document(ct.id)
             //
             var items = trigger_doctype_hook("context_menu_items")
             open_context_menu(items, "topic", event)
@@ -342,7 +348,7 @@ function Canvas() {
 
     function topic_index(doc_id) {
         for (var i = 0, ct; ct = canvas_topics[i]; i++) {
-            if (ct.doc_id == doc_id) {
+            if (ct.id == doc_id) {
                 return i
             }
         }
@@ -471,22 +477,24 @@ function Canvas() {
 
     /* Helper Classes */
 
-    function CanvasTopic(doc, x, y) {
+    function CanvasTopic(id, type, label, x, y) {
 
-        this.doc_id = doc._id
-        this.x = x - trans_x
-        this.y = y - trans_y
-        var icon = get_type_icon(doc.topic_type)
+        var icon = get_type_icon(type)
         var w = icon.width
         var h = icon.height
+
+        this.id = id
+        this.type = type
+        this.label = label
+        this.x = x - trans_x
+        this.y = y - trans_y
         this.icon = icon
         this.width = w
         this.height = h
 
-        // label
+        // label div
         this.lox = -w / 2                       // label offset
         this.loy = h / 2 + LABEL_DIST_Y         // label offset
-        this.label = topic_label(doc)
         this.label_x = x + cox + this.lox
         this.label_y = y + coy + this.loy
         build_label(this)
@@ -512,8 +520,8 @@ function Canvas() {
             this.label_div.css(label_position_css(this))
         }
         
-        this.update = function(doc) {
-            this.label = topic_label(doc)
+        this.set_label = function(label) {
+            this.label = label
             this.label_div.text(this.label)
         }
 

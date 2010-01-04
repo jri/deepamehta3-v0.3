@@ -65,7 +65,7 @@ function dm3_datafields() {
             case "multi line":
                 return $.trim($("#field_" + field.id).val())
             default:
-                alert("update_document: unexpected field editor (" + field.view.editor + ")")
+                alert("get_field_content: unexpected field editor (" + field.view.editor + ")")
             }
             break
         case "date":

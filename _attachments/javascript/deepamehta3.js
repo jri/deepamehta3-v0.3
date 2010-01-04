@@ -96,7 +96,7 @@ function search() {
         //
         save_document(result_doc)
         show_document(result_doc._id)
-        canvas.add_document(current_doc, true)
+        add_topic_to_canvas(current_doc)
     } catch (e) {
         alert("Error while searching: " + JSON.stringify(e))
     }
@@ -122,16 +122,15 @@ function reveal_document(doc_id, do_relate) {
     }
     // create relation
     if (do_relate) {
-        var relation_doc = get_relation_doc(current_doc._id, doc_id)
-        if (!relation_doc) {
-            create_relation(current_doc._id, doc_id, true, "Auxiliary")
-        } else {
-            canvas.add_relation(relation_doc)
+        var relation = get_relation_doc(current_doc._id, doc_id)
+        if (!relation) {
+            relation = create_relation("Auxiliary", current_doc._id, doc_id)
         }
+        canvas.add_relation(relation)
     }
     // reveal document
     show_document(doc_id)
-    canvas.add_document(current_doc, true)
+    add_topic_to_canvas(current_doc)
     canvas.focus_topic(doc_id)
 }
 
@@ -206,7 +205,7 @@ function create_topic_from_menu() {
     var topic_type = ui.menu_item("type_select").label
     current_doc = create_topic(topic_type)
     // update GUI
-    canvas.add_document(current_doc, true)
+    add_topic_to_canvas(current_doc)
     // initiate editing
     edit_document()
 }
@@ -214,19 +213,17 @@ function create_topic_from_menu() {
 /**
  * Creates a topic document and stores it in the DB.
  *
- * @param   topic_type      the type as defined in the global type table ("types", see types.js).
- * @param   field_contents  optional - contents to override the default content (object, key: field id, value: content).
+ * @param   topic_type      The type as defined in the global type table ("types", see types.js).
+ * @param   field_contents  Optional - Contents to override the default content (object, key: field ID, value: content).
  *
- * @return  The topic document.
+ * @return  The topic document as stored in the DB.
  */
 function create_topic(topic_type, field_contents) {
     var typedef = clone(types[topic_type])
     var topic = create_raw_topic(topic_type, typedef.fields, typedef.view, typedef.implementation)
     // override default content
-    if (field_contents) {
-        for (var field_id in field_contents) {
-            get_field(topic, field_id).content = field_contents[field_id]
-        }
+    for (var field_id in field_contents) {
+        get_field(topic, field_id).content = field_contents[field_id]
     }
     //
     save_document(topic)
@@ -279,8 +276,8 @@ function save_document(doc) {
 /**
  * Returns topics by ID list. Optionally filtered by topic type.
  *
- * @param   doc_ids         Array of topic IDs
- * @param   type_filter     a topic type, e.g. "Note", "Workspace"
+ * @param   doc_ids         Array of topic IDs.
+ * @param   type_filter     Optional - a topic type, e.g. "Note", "Workspace".
  *
  * @return  Array of Topic objects
  */
@@ -299,6 +296,17 @@ function get_topics(doc_ids, type_filter) {
     }
     //
     return topics
+}
+
+/**
+ * Returns topics by type.
+ *
+ * @param   type_filter     A topic type, e.g. "Note", "Workspace".
+ *
+ * @return  The raw CouchDB result of the "by_type" view.
+ */
+function get_topics_by_type(type_filter) {
+    return db.view("deepamehta3/by_type", {key: type_filter})
 }
 
 /**
@@ -327,23 +335,27 @@ function remove_document(delete_from_db) {
 
 
 /**
- * Creates a relation in the DB and optionally adds it to the canvas model.
- * Note: the canvas view and the detail panel are not refreshed.
+ * Creates a relation document and stores it in the DB.
  *
- * @param   rel_type    The type for the new relation. If not specified, "Relation" is used.
+ * @param   rel_type        The relation type, e.g. "Relation", "Auxiliary".
+ * @param   extra_fields    Optional - Extra fields to be added to the relation (an object).
+ *
+ * @return  The relation document as stored in the DB.
  */
-function create_relation(doc1_id, doc2_id, add_to_canvas, rel_type) {
-    // update DB
-    var relation_doc = {
+function create_relation(rel_type, doc1_id, doc2_id, extra_fields) {
+    var relation = {
         type: "Relation",
-        rel_type: rel_type || "Relation",
+        rel_type: rel_type,
         rel_doc_ids: [doc1_id, doc2_id]
     }
-    save_document(relation_doc)
-    // update GUI model
-    if (add_to_canvas) {
-        canvas.add_relation(relation_doc)
+    // add extra fields
+    for (var key in extra_fields) {
+        relation[key] = extra_fields[key]
     }
+    //
+    save_document(relation)
+    //
+    return relation
 }
 
 /**
@@ -388,7 +400,7 @@ function related_doc_ids(doc_id) {
 
 /**
  * Returns all relations of the document. Optionally including auxiliary relations.
- * Auxialiary relations are not part of the knowledge base but help to visualize / navigate result sets.
+ * Hint: Auxialiary relations are not part of the knowledge base but help to visualize / navigate result sets.
  *
  * @return  Array of CouchDB view rows: id=relation ID, key=doc_id (the argument), value={rel_doc_id: , rel_doc_pos:, rel_type:}
  */
@@ -412,12 +424,21 @@ function delete_relation(rel_doc) {
     canvas.remove_relation(rel_doc._id)
 }
 
+/**
+ * Deletes all relations the topic (doc) is involved in.
+ */
 function remove_relations(doc, delete_from_db) {
     var rows = get_relations(doc._id, true)
     for (var i = 0, row; row = rows[i]; i++) {
         // update DB
         if (delete_from_db) {
-            db.deleteDoc(db.open(row.id))
+            var relation = db.open(row.id)
+            if (relation) {
+                db.deleteDoc(relation)
+            } else {
+                alert("ERROR at remove_relations: \"" + row.value.rel_type + "\" relation (" + row.id +
+                    ") of topic \"" + topic_label(doc) + "\" (" + doc._id + ") not found in DB.")
+            }
         }
         // update GUI
         canvas.remove_relation(row.id)
@@ -451,32 +472,32 @@ function javascript_source(source_path) {
 /**************************************** Helper ****************************************/
 
 function load_plugins() {
-    // load plugins
-    log("Loading " + plugin_sources.length + " plugins:")
+    // 1) load plugins
+    // log("Loading " + plugin_sources.length + " plugins:")
     for (var i = 0, plugin_source; plugin_source = plugin_sources[i]; i++) {
-        log("..... " + plugin_source)
+        // log("..... " + plugin_source)
         javascript_source(plugin_source)
         //
         var plugin_class = basename(plugin_source)
-        log(".......... instantiating \"" + plugin_class + "\"")
+        // log(".......... instantiating \"" + plugin_class + "\"")
         plugins.push(eval("new " + plugin_class))
     }
-    // load doctype implementations
-    log("Loading " + doctype_impls.length + " doctype implementations:")
+    // 2) load doctype implementations
+    // log("Loading " + doctype_impls.length + " doctype implementations:")
     for (var i = 0, doctype_impl; doctype_impl = doctype_impls[i]; i++) {
-        log("..... " + doctype_impl)
+        // log("..... " + doctype_impl)
         javascript_source(doctype_impl)
         //
         var doctype_class = to_camel_case(basename(doctype_impl))
-        log(".......... instantiating \"" + doctype_class + "\"")
+        // log(".......... instantiating \"" + doctype_class + "\"")
         var doctype_impl = eval("new " + doctype_class)
         loaded_doctype_impls[doctype_class] = doctype_impl
         trigger_doctype_hook("init", undefined, doctype_impl)   // ### FIXME: document hook "init" not used anymore. Drop it?
     }
-    // load CSS stylesheets
-    log("Loading " + css_stylesheets.length + " CSS stylesheets:")
+    // 2) load CSS stylesheets
+    // log("Loading " + css_stylesheets.length + " CSS stylesheets:")
     for (var i = 0, css_stylesheet; css_stylesheet = css_stylesheets[i]; i++) {
-        log("..... " + css_stylesheet)
+        // log("..... " + css_stylesheet)
         $("head").append($("<link>").attr({rel: "stylesheet", href: css_stylesheet, type: "text/css"}))
     }
 }
@@ -592,6 +613,12 @@ function create_result_topic(title, result, doctype_impl, result_function) {
     }
     //
     return result_topic
+}
+
+//
+
+function add_topic_to_canvas(doc) {
+    canvas.add_topic(doc._id, doc.topic_type, topic_label(doc), true)
 }
 
 //

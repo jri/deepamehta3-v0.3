@@ -134,7 +134,7 @@ PlainDocument.prototype = {
                 var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
                 topic_buffer[field.id] = topics
                 //
-                var docs = db.view("deepamehta3/by_type", {key: field.model.related_type})
+                var docs = get_topics_by_type(field.model.related_type)
                 for (var i = 0, row; row = docs.rows[i]; i++) {
                     var attr = {type: "checkbox", id: row.id, name: "relation_" + field.id}
                     if (includes(topics, function(topic) {
@@ -231,7 +231,7 @@ PlainDocument.prototype = {
         // update DB
         save_document(current_doc)
         // update GUI
-        canvas.update_document(current_doc)
+        canvas.set_topic_label(current_doc._id, topic_label(current_doc))
         canvas.refresh()
         show_document()
     },
@@ -249,7 +249,7 @@ PlainDocument.prototype = {
                     )
                     if (checkbox.checked) {
                         if (!was_checked_before) {
-                            create_relation(doc._id, checkbox.id)
+                            create_relation("Relation", doc._id, checkbox.id)
                         }
                     } else {
                         if (was_checked_before) {
