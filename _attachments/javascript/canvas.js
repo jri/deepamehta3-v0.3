@@ -13,16 +13,15 @@ function Canvas() {
     var LABEL_MAX_WIDTH = 120
 
     // Model
-    var canvas_topics = []
-    var canvas_assocs = []
-    var trans_x = 0, trans_y = 0    // canvas translation
+    var canvas_topics
+    var canvas_assocs
+    var trans_x, trans_y            // canvas translation
     
     // View (Canvas)
     var canvas_width
     var canvas_height
     var cox, coy                    // canvas offset: upper left position of the canvas element
     var ctx                         // the drawing context
-    build()
 
     // Short-term Interaction State
     var topic_move_in_progress      // true while topic move is in progress (boolean)
@@ -33,6 +32,10 @@ function Canvas() {
     var animation
     var animation_count
 
+    // build the canvas
+    init_model()
+    build_view()
+
 
 
     /**********************************************************************************************/
@@ -41,6 +44,11 @@ function Canvas() {
 
 
 
+    /**
+     * @param   refresh_canvas  Optional
+     * @param   x               Optional
+     * @param   y               Optional
+     */
     this.add_topic = function(id, type, label, refresh_canvas, x, y) {
         if (!topic_exists(id)) {
             // init geometry
@@ -60,10 +68,13 @@ function Canvas() {
         }
     }
 
-    this.add_relation = function(doc, refresh_canvas) {
-        // add to canvas
-        if (!assoc_exists(doc._id)) {
-            canvas_assocs.push(new CanvasAssoc(doc))
+    this.add_relation = function(id, doc1_id, doc2_id, refresh_canvas) {
+        if (!assoc_exists(id)) {
+            // add to canvas
+            var ca = new CanvasAssoc(id, doc1_id, doc2_id)
+            canvas_assocs.push(ca)
+            // trigger hook
+            trigger_hook("post_add_relation_to_canvas", ca)
         }
         //
         if (refresh_canvas) {
@@ -105,8 +116,8 @@ function Canvas() {
         // update model
         canvas_assocs.splice(i, 1)
         //
-        if (current_rel && current_rel._id == assoc_id) {
-            current_rel = null
+        if (current_rel_id == assoc_id) {
+            current_rel_id = null
         }
         // update GUI
         if (refresh_canvas) {
@@ -149,9 +160,17 @@ function Canvas() {
         action_topic = topic_by_id(doc_id)
     }
 
+    this.clear = function() {
+        // update GUI
+        translate(-trans_x, -trans_y)                       // reset translation
+        $("#canvas-panel .canvas-topic-label").remove()     // remove label divs
+        // update model
+        init_model()
+    }
+
     this.rebuild = function() {
         $("#canvas-panel").empty()
-        build()
+        build_view()
         ctx.translate(trans_x, trans_y)
         draw()
         rebuild_topic_labels()
@@ -180,7 +199,7 @@ function Canvas() {
                 continue
             }
             // hightlight
-            if (current_rel && current_rel._id == ca.id) {
+            if (current_rel_id == ca.id) {
                 draw_line(ct1.x, ct1.y, ct2.x, ct2.y, ACTIVE_ASSOC_WIDTH, ACTIVE_COLOR)
             }
             //
@@ -268,7 +287,7 @@ function Canvas() {
             var ct = topic_by_position(event)
             if (ct) {
                 var rel = create_relation("Relation", current_doc._id, ct.id)
-                canvas.add_relation(rel)
+                canvas.add_relation(rel._id, rel.rel_doc_ids[0], rel.rel_doc_ids[1])
                 select_document(current_doc._id)
             } else {
                 draw()
@@ -290,8 +309,8 @@ function Canvas() {
         // remove topic activation
         action_topic = null
         // remove assoc activation
-        if (current_rel) {
-            current_rel = null
+        if (current_rel_id) {
+            current_rel_id = null
             draw()
         }
     }
@@ -309,7 +328,7 @@ function Canvas() {
         } else {
             var ca = assoc_by_position(event)
             if (ca) {
-                current_rel = ca.doc
+                current_rel_id = ca.id
                 draw()
                 var items = [{label: "Delete", handler: "delete_relation"}]
                 open_context_menu(items, "assoc", event)
@@ -345,6 +364,14 @@ function Canvas() {
     }
 
     /**************************************** Helper ****************************************/
+
+    /*** Model Helper ***/
+
+    function init_model() {
+        canvas_topics = []
+        canvas_assocs = []
+        trans_x = 0, trans_y = 0
+    }
 
     function topic_index(doc_id) {
         for (var i = 0, ct; ct = canvas_topics[i]; i++) {
@@ -421,9 +448,9 @@ function Canvas() {
         return null
     }
 
-    /* GUI Helper */
+    /*** GUI Helper ***/
 
-    function build() {
+    function build_view() {
         calculate_size()
         var canvas_elem = $("<canvas>").attr({id: "canvas", width: canvas_width, height: canvas_height})
         $("#canvas-panel").append(canvas_elem)
@@ -475,7 +502,7 @@ function Canvas() {
         return event.pageY - coy - (consider_translation ? trans_y : 0)
     }
 
-    /* Helper Classes */
+    /*** Helper Classes ***/
 
     function CanvasTopic(id, type, label, x, y) {
 
@@ -533,7 +560,7 @@ function Canvas() {
             // Note: we must add the label div to the document (along with text content and max-width
             // setting) _before_ the clipping is applied. Otherwise the clipping can't be calculated
             // because the size of the label div is unknown.
-            ct.label_div = $("<div>").text(ct.label).css("max-width", LABEL_MAX_WIDTH + "px")
+            ct.label_div = $("<div>").addClass("canvas-topic-label").text(ct.label).css("max-width", LABEL_MAX_WIDTH + "px")
             $("#canvas-panel").append(ct.label_div)
             ct.label_div.css(label_position_css(ct))
         }
@@ -570,10 +597,9 @@ function Canvas() {
         }
     }
 
-    function CanvasAssoc(doc) {
-        this.doc = doc
-        this.id = doc._id
-        this.doc1_id = doc.rel_doc_ids[0]
-        this.doc2_id = doc.rel_doc_ids[1]
+    function CanvasAssoc(id, doc1_id, doc2_id) {
+        this.id = id
+        this.doc1_id = doc1_id
+        this.doc2_id = doc2_id
     }
 }

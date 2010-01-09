@@ -6,8 +6,8 @@ GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
 var db = new CouchDB(DB_NAME)
 var ui = new UIHelper()
 
-var current_doc         // topic document being displayed, or null if no one is currently displayed
-var current_rel         // relation document being activated, or null if no one is currently activated
+var current_doc         // topic document being displayed, or null if no one is currently displayed (a CouchDB document)
+var current_rel_id      // ID of relation being activated, or null if no one is currently activated
 var canvas              // the canvas that displays the topic map (a Canvas object)
 var is_form_shown       // true if a form is shown (used to fire the "post_submit_form" event)
 //
@@ -46,6 +46,10 @@ $(document).ready(function() {
     $("#special_select_placeholder").replaceWith(create_special_select())
     // the document form
     $("#document-form").submit(submit_document)
+    detail_panel_width = $("#detail-panel").width()
+    log("Detail panel width: " + detail_panel_width)
+    //
+    canvas = new Canvas()
     //
     // Note: in order to let a plugin DOM manipulate the GUI
     // the plugins must be loaded _after_ the GUI is set up.
@@ -59,9 +63,6 @@ $(document).ready(function() {
     ui.menu("searchmode_select", set_searchmode)
     ui.menu("special_select", special_selected, undefined, "Special")
     //
-    detail_panel_width = $("#detail-panel").width()
-    log("Detail panel width: " + detail_panel_width)
-    //
     create_type_icons()
     //
     // Note: in order to avoid the canvas geometry being confused by DOM-
@@ -70,7 +71,6 @@ $(document).ready(function() {
     // its creation by waiting for the window being loaded completely.)
     $(window).resize(window_resized)
     $(window).load(function() {
-        canvas = new Canvas()
         $("#detail-panel").height($("#canvas").height())
     })
 })
@@ -126,7 +126,7 @@ function reveal_document(doc_id, do_relate) {
         if (!relation) {
             relation = create_relation("Auxiliary", current_doc._id, doc_id)
         }
-        canvas.add_relation(relation)
+        canvas.add_relation(relation._id, relation.rel_doc_ids[0], relation.rel_doc_ids[1])
     }
     // reveal document
     show_document(doc_id)
@@ -310,6 +310,21 @@ function get_topics_by_type(type_filter) {
 }
 
 /**
+ * Returns all relations of the document. Optionally including auxiliary relations.
+ * Hint: Auxialiary relations are not part of the knowledge base but help to visualize / navigate result sets.
+ *
+ * @return  Array of CouchDB view rows: id=relation ID, key=doc_id (the argument), value={rel_doc_id: , rel_doc_pos:, rel_type:}
+ */
+function get_related_topics(doc_id, include_auxiliary) {
+    if (include_auxiliary) {
+        var options = {startkey: [doc_id, 0], endkey: [doc_id, 1]}
+    } else {
+        var options = {key: [doc_id, 0]}
+    }
+    return db.view("deepamehta3/related_topics", options).rows
+}
+
+/**
  * @param   delete_from_db  If true, the document (including its relations) is deleted permanently.
  *                          If false, the document (including its relations) is just removed from the view.
  */
@@ -359,6 +374,24 @@ function create_relation(rel_type, doc1_id, doc2_id, extra_fields) {
 }
 
 /**
+ * Returns relations by ID list.
+ *
+ * @param   rel_ids         Array of relation IDs.
+ *
+ * @return  Array of Relation objects
+ */
+function get_relations(rel_ids) {
+    var rows = db.view("deepamehta3/relations", null, rel_ids).rows
+    //
+    var relations = []
+    for (var i = 0, row; row = rows[i]; i++) {
+        relations.push(new Relation(row.id, row.value.rel_type, row.value.doc1_id, row.value.doc2_id))
+    }
+    //
+    return relations
+}
+
+/**
  * Returns the relation between the two documents. Optionally filtered by relation type.
  * If no such relation exists nothing is returned (undefined).
  * If more than one relation matches, only the first one is returned.
@@ -390,7 +423,7 @@ function get_relation_doc(doc1_id, doc2_id, rel_type) {
  * @return  Array of relation IDs.
  */
 function related_doc_ids(doc_id) {
-    var rows = get_relations(doc_id)
+    var rows = get_related_topics(doc_id)
     var rel_doc_ids = []
     for (var i = 0, row; row = rows[i]; i++) {
         rel_doc_ids.push(row.value.rel_doc_id)
@@ -399,36 +432,21 @@ function related_doc_ids(doc_id) {
 }
 
 /**
- * Returns all relations of the document. Optionally including auxiliary relations.
- * Hint: Auxialiary relations are not part of the knowledge base but help to visualize / navigate result sets.
- *
- * @return  Array of CouchDB view rows: id=relation ID, key=doc_id (the argument), value={rel_doc_id: , rel_doc_pos:, rel_type:}
- */
-function get_relations(doc_id, include_auxiliary) {
-    if (include_auxiliary) {
-        var options = {startkey: [doc_id, 0], endkey: [doc_id, 1]}
-    } else {
-        var options = {key: [doc_id, 0]}
-    }
-    return db.view("deepamehta3/relations", options).rows
-}
-
-/**
  * Deletes a relation from the DB, and from the canvas model.
  * Note: the canvas view and the detail panel are not refreshed.
  */
-function delete_relation(rel_doc) {
+function delete_relation(rel_id) {
     // update DB
-    db.deleteDoc(rel_doc)
+    db.deleteDoc(db.open(rel_id))
     // update GUI model
-    canvas.remove_relation(rel_doc._id)
+    canvas.remove_relation(rel_id)
 }
 
 /**
  * Deletes all relations the topic (doc) is involved in.
  */
 function remove_relations(doc, delete_from_db) {
-    var rows = get_relations(doc._id, true)
+    var rows = get_related_topics(doc._id, true)
     for (var i = 0, row; row = rows[i]; i++) {
         // update DB
         if (delete_from_db) {
@@ -535,7 +553,7 @@ function trigger_doctype_hook(hook_name, args, doctype_impl) {
 function call_relation_function(function_name) {
     if (function_name == "delete_relation") {
         // update model
-        delete_relation(current_rel)
+        delete_relation(current_rel_id)
         // update view
         canvas.refresh()
         show_document()
@@ -845,10 +863,17 @@ function format_date(date) {
     return date ? $.datepicker.formatDate("D, M d, yy", new Date(date)) : ""
 }
 
-//
+/*** Helper Classes ***/
 
 function Topic(id, type, label) {
     this.id = id
     this.type = type
     this.label = label
+}
+
+function Relation(id, type, doc1_id, doc2_id) {
+    this.id = id
+    this.type = type
+    this.doc1_id = doc1_id
+    this.doc2_id = doc2_id
 }
