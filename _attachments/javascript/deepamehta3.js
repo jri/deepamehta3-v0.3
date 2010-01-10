@@ -337,7 +337,7 @@ function remove_document(delete_from_db) {
         db.deleteDoc(current_doc)
     }
     // update GUI
-    canvas.remove_document(current_doc._id, true)
+    canvas.remove_topic(current_doc._id, true)
     show_document()
 }
 

@@ -56,13 +56,13 @@ function Canvas() {
                 x = canvas_width * Math.random()
                 y = canvas_height * Math.random()
             }
-            // add to canvas
+            // update model
             var ct = new CanvasTopic(id, type, label, x, y)
             canvas_topics.push(ct)
             // trigger hook
             trigger_hook("post_add_topic_to_canvas", ct)
         }
-        //
+        // update GUI
         if (refresh_canvas) {
             this.refresh()
         }
@@ -70,59 +70,64 @@ function Canvas() {
 
     this.add_relation = function(id, doc1_id, doc2_id, refresh_canvas) {
         if (!assoc_exists(id)) {
-            // add to canvas
+            // update model
             var ca = new CanvasAssoc(id, doc1_id, doc2_id)
             canvas_assocs.push(ca)
             // trigger hook
             trigger_hook("post_add_relation_to_canvas", ca)
         }
-        //
+        // update GUI
         if (refresh_canvas) {
             this.refresh()
         }
     }
 
-    this.remove_document = function(doc_id, refresh_canvas) {
-        var i = topic_index(doc_id)
+    this.remove_topic = function(id, refresh_canvas) {
+        var i = topic_index(id)
         // assertion
         if (i == -1) {
-            throw "remove_document: document not found on canvas (" + doc_id + ")"
+            throw "remove_topic: document not found on canvas (" + id + ")"
         }
-        // update GUI (DOM tree)
-        canvas_topics[i].label_div.remove()
         // update model
+        var ct = canvas_topics[i]
         canvas_topics.splice(i, 1)
         //
-        if (current_doc._id == doc_id) {
+        if (current_doc._id == id) {
             current_doc = null
         }
         // update GUI (canvas)
+        ct.label_div.remove()
         if (refresh_canvas) {
             this.refresh()
         }
+        // trigger hook
+        trigger_hook("post_remove_topic_from_canvas", ct)
     }
 
     /**
      * Removes a relation from the canvas (model) and optionally refreshes the canvas (view).
      * If the relation is not present on the canvas nothing is performed.
      *
-     * @param   refresh_canvas  Optional parameter: if true, the canvas is refreshed.
+     * @param   refresh_canvas  Optional - if true, the canvas is refreshed.
      */
-    this.remove_relation = function(assoc_id, refresh_canvas) {
-        var i = assoc_index(assoc_id)
+    this.remove_relation = function(id, refresh_canvas) {
+        var i = assoc_index(id)
         if (i == -1) {
             return
         }
         // update model
+        var ca = canvas_assocs[i]
         canvas_assocs.splice(i, 1)
         //
-        if (current_rel_id == assoc_id) {
+        if (current_rel_id == id) {
             current_rel_id = null
         }
         // update GUI
         if (refresh_canvas) {
             this.refresh()
         }
+        // trigger hook
+        trigger_hook("post_remove_relation_from_canvas", ca)
     }
 
     this.set_topic_label = function(id, label) {
