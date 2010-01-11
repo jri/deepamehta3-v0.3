@@ -54,6 +54,9 @@ $(document).ready(function() {
     // Note: in order to let a plugin DOM manipulate the GUI
     // the plugins must be loaded _after_ the GUI is set up.
     load_plugins()
+    //
+    create_type_icons()
+    //
     trigger_hook("init")
     //
     // the create form
@@ -63,12 +66,6 @@ $(document).ready(function() {
     ui.menu("searchmode_select", set_searchmode)
     ui.menu("special_select", special_selected, undefined, "Special")
     //
-    create_type_icons()
-    //
-    // Note: in order to avoid the canvas geometry being confused by DOM-
-    // manipulating plugins it must be created _after_ the plugins are loaded.
-    // (for some reason the canvas still gets confused, so we further postpone
-    // its creation by waiting for the window being loaded completely.)
     $(window).resize(window_resized)
     $(window).load(function() {
         $("#detail-panel").height($("#canvas").height())
@@ -325,8 +322,10 @@ function get_related_topics(doc_id, include_auxiliary) {
 }
 
 /**
- * @param   delete_from_db  If true, the document (including its relations) is deleted permanently.
- *                          If false, the document (including its relations) is just removed from the view.
+ * Removes the current document and all its relations.
+ *
+ * @param   delete_from_db  If true, the document and relations are deleted permanently.
+ *                          If false, the document and relations are just removed from the view (canvas).
  */
 function remove_document(delete_from_db) {
     // 1) delete relations
@@ -336,9 +335,18 @@ function remove_document(delete_from_db) {
     if (delete_from_db) {
         db.deleteDoc(current_doc)
     }
+    // update model
+    var topic_id = current_doc._id
+    current_doc = null
     // update GUI
-    canvas.remove_topic(current_doc._id, true)
+    canvas.remove_topic(topic_id, true)
     show_document()
+    // trigger hooks
+    if (delete_from_db) {
+        trigger_hook("post_delete_topic", topic_id)
+    } else {
+        trigger_hook("post_hide_topic_from_canvas", topic_id)
+    }
 }
 
 
@@ -432,18 +440,21 @@ function related_doc_ids(doc_id) {
 }
 
 /**
- * Deletes a relation from the DB, and from the canvas model.
+ * Deletes a relation from the DB, and from the view (canvas).
  * Note: the canvas view and the detail panel are not refreshed.
  */
 function delete_relation(rel_id) {
     // update DB
     db.deleteDoc(db.open(rel_id))
-    // update GUI model
+    // update GUI
     canvas.remove_relation(rel_id)
 }
 
 /**
- * Deletes all relations the topic (doc) is involved in.
+ * Removes all relations the topic (doc) is involved in.
+ *
+ * @param   delete_from_db  If true, the relations are deleted permanently.
+ *                          If false, the relations are just removed from the view (canvas).
  */
 function remove_relations(doc, delete_from_db) {
     var rows = get_related_topics(doc._id, true)
@@ -454,8 +465,14 @@ function remove_relations(doc, delete_from_db) {
             if (relation) {
                 db.deleteDoc(relation)
             } else {
-                alert("ERROR at remove_relations: \"" + row.value.rel_type + "\" relation (" + row.id +
-                    ") of topic \"" + topic_label(doc) + "\" (" + doc._id + ") not found in DB.")
+                // Note: this can happen, but is no problem, if topicmaps contain themself.
+                var text = "ERROR at remove_relations: \"" + row.value.rel_type + "\" relation (" + row.id +
+                    ") of topic \"" + topic_label(doc) + "\" (" + doc._id + ") not found in DB."
+                log(text)
+                // FIXME: the core should be independant from the DM3 Topicmaps plugin.
+                if (doc.topic_type != "Topicmap") {
+                    alert(text)
+                }
             }
         }
         // update GUI
@@ -512,7 +529,7 @@ function load_plugins() {
         loaded_doctype_impls[doctype_class] = doctype_impl
         trigger_doctype_hook("init", undefined, doctype_impl)   // ### FIXME: document hook "init" not used anymore. Drop it?
     }
-    // 2) load CSS stylesheets
+    // 3) load CSS stylesheets
     // log("Loading " + css_stylesheets.length + " CSS stylesheets:")
     for (var i = 0, css_stylesheet; css_stylesheet = css_stylesheets[i]; i++) {
         // log("..... " + css_stylesheet)
@@ -523,11 +540,22 @@ function load_plugins() {
 /**
  * Triggers the named hook of all installed plugins.
  */
-function trigger_hook(hook_name, args) {
+function trigger_hook(hook_name) {
     var result = []
     for (var i = 0, plugin; plugin = plugins[i]; i++) {
         if (plugin[hook_name]) {
-            var res = plugin[hook_name](args)
+            // trigger hook
+            if (arguments.length == 1) {
+                var res = plugin[hook_name]()
+            } else if (arguments.length == 2) {
+                var res = plugin[hook_name](arguments[1])
+            } else if (arguments.length == 3) {
+                var res = plugin[hook_name](arguments[1], arguments[2])
+            } else {
+                alert("ERROR at trigger_hook: too much arguments (" +
+                    arguments.length + "), maximum is 2. (hook=" + hook_name + ")")
+            }
+            // store result
             if (res != undefined) {
                 result.push(res)
             }

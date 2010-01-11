@@ -53,8 +53,8 @@ function Canvas() {
         if (!topic_exists(id)) {
             // init geometry
             if (x == undefined && y == undefined) {
-                x = canvas_width * Math.random()
-                y = canvas_height * Math.random()
+                x = canvas_width * Math.random() - trans_x
+                y = canvas_height * Math.random() - trans_y
             }
             // update model
             var ct = new CanvasTopic(id, type, label, x, y)
@@ -91,17 +91,11 @@ function Canvas() {
         // update model
         var ct = canvas_topics[i]
         canvas_topics.splice(i, 1)
-        //
-        if (current_doc._id == id) {
-            current_doc = null
-        }
-        // update GUI (canvas)
+        // update GUI
         ct.label_div.remove()
         if (refresh_canvas) {
             this.refresh()
         }
-        // trigger hook
-        trigger_hook("post_remove_topic_from_canvas", ct)
     }
 
     /**
@@ -518,8 +512,8 @@ function Canvas() {
         this.id = id
         this.type = type
         this.label = label
-        this.x = x - trans_x
-        this.y = y - trans_y
+        this.x = x
+        this.y = y
         this.icon = icon
         this.width = w
         this.height = h
@@ -527,16 +521,13 @@ function Canvas() {
         // label div
         this.lox = -w / 2                       // label offset
         this.loy = h / 2 + LABEL_DIST_Y         // label offset
-        this.label_x = x + cox + this.lox
-        this.label_y = y + coy + this.loy
+        init_label_pos(this)
         build_label(this)
 
-        // FIXME: not in use
-        this.move_to = function(event) {
-            this.x = cx(event, true)
-            this.y = cy(event, true)
-            this.label_x = event.pageX + this.lox
-            this.label_y = event.pageY + this.loy
+        this.move_to = function(x, y) {
+            this.x = x
+            this.y = y
+            init_label_pos(this)
             this.label_div.css(label_position_css(this))
         }
 
@@ -559,6 +550,11 @@ function Canvas() {
 
         this.build_label = function() {
             build_label(this)
+        }
+
+        function init_label_pos(ct) {
+            ct.label_x = ct.x + ct.lox + cox + trans_x
+            ct.label_y = ct.y + ct.loy + coy + trans_y
         }
 
         function build_label(ct) {

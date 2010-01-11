@@ -231,9 +231,13 @@ PlainDocument.prototype = {
         // update DB
         save_document(current_doc)
         // update GUI
-        canvas.set_topic_label(current_doc._id, topic_label(current_doc))
+        var topic_id = current_doc._id
+        var label = topic_label(current_doc)
+        canvas.set_topic_label(topic_id, label)
         canvas.refresh()
         show_document()
+        // trigger hook
+        trigger_hook("post_set_topic_label", topic_id, label)
     },
 
     update_relation_field: function(doc, field) {
