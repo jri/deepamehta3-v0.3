@@ -90,7 +90,7 @@ Installation
         couchapp push http://localhost:5984/deepamehta3-db
 
 3.  Optional: install DeepaMehta 3 plugins.
-    For the moment there are 8 general purpose plugins and 1 custom application available:
+    For the moment there are 9 general purpose plugins and 1 custom application available:
 
     <http://github.com/jri/dm3-time>  
     <http://github.com/jri/dm3-workspaces>  
@@ -100,6 +100,7 @@ Installation
     <http://github.com/jri/dm3-accounts>  
     <http://github.com/jri/dm3-typing>  
     <http://github.com/jri/dm3-project>  
+    <http://github.com/jri/dm3-topicmaps>  
 
     <http://github.com/jri/dm3-poemspace-app>  
 
@@ -111,6 +112,19 @@ Running
 
 Visit DeepaMehta 3 in Firefox:  
 <http://localhost:5984/deepamehta3-db/_design/deepamehta3/index.html>
+
+
+Updating
+--------
+
+1.  Go to your DeepaMehta 3 installation directory:
+        cd deepamehta3
+
+2.  Update from Git repository:
+        git pull
+
+3.  Upload changes to CouchDB:
+        couchapp push http://localhost:5984/deepamehta3-db
 
 
 Version History
@@ -131,4 +145,4 @@ Version History
 
 ------------
 Jörg Richter  
-Dec 18, 2009
+Jan 14, 2010
