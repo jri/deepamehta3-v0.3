@@ -13,10 +13,11 @@ var is_form_shown       // true if a form is shown (used to fire the "post_submi
 //
 var plugin_sources = []
 var plugins = []
-var doctype_impls = []
-var loaded_doctype_impls = {}
+var doctype_impl_sources = []
+var doctype_impls = {}
 var css_stylesheets = []
 //
+var topic_types = {}        // key: Type ID, value: type definition (instance_template attribute)
 var topic_type_icons = {}   // key: Type ID, value: icon (JavaScript Image object)
 var generic_topic_icon = create_image(GENERIC_TOPIC_ICON_SRC)
 topic_type_icons["Search Result"] = create_image("images/bucket.png")
@@ -27,14 +28,20 @@ if (debug) {
     var debug_window = window.open()
 }
 
-// register core facilities
-doctype_implementation("javascript/plain_document.js")
-add_plugin("javascript/dm3_fulltext.js")
-add_plugin("javascript/dm3_datafields.js")
-add_plugin("javascript/dm3_tinymce.js")
-// css_stylesheet("style/main.css")     // layout flatters while loading
-
 $(document).ready(function() {
+    // --- register core facilities ---
+    // Note: to load the PlainDocument implementation the user method "doctype_implementation" doesn't work.
+    // We must use the intern "load_doctype_impl" method to instantiate immediately. The instance is required
+    // to enable the document hook "pre_create" being triggered. This in turn is required if plugins create
+    // topics while their initialization phases.
+    load_doctype_impl("javascript/plain_document.js")
+    //
+    add_plugin("javascript/dm3_fulltext.js")
+    add_plugin("javascript/dm3_datafields.js")
+    add_plugin("javascript/dm3_types.js")
+    add_plugin("javascript/dm3_tinymce.js")
+    // css_stylesheet("style/main.css")     // layout flatters while loading
+    //
     // --- setup GUI ---
     $("#upper-toolbar").addClass("ui-widget-header").addClass("ui-corner-all")
     // the search form
@@ -53,8 +60,10 @@ $(document).ready(function() {
     //
     // Note: in order to let a plugin DOM manipulate the GUI
     // the plugins must be loaded _after_ the GUI is set up.
+    // alert("Plugins:\n" + plugin_sources.join("\n"))
     load_plugins()
     //
+    load_topic_types()
     create_type_icons()
     //
     trigger_hook("init")
@@ -185,10 +194,6 @@ function submit_document() {
     return false
 }
 
-function document_exists(doc_id) {
-    return db.open(doc_id) != null
-}
-
 
 
 /****************************************************************************************/
@@ -210,13 +215,13 @@ function create_topic_from_menu() {
 /**
  * Creates a topic document and stores it in the DB.
  *
- * @param   topic_type      The type as defined in the global type table ("types", see types.js).
+ * @param   topic_type      The type ID, e.g. "Note".
  * @param   field_contents  Optional - Contents to override the default content (object, key: field ID, value: content).
  *
  * @return  The topic document as stored in the DB.
  */
 function create_topic(topic_type, field_contents) {
-    var typedef = clone(types[topic_type])
+    var typedef = clone(topic_types[topic_type])
     var topic = create_raw_topic(topic_type, typedef.fields, typedef.view, typedef.implementation)
     // override default content
     for (var field_id in field_contents) {
@@ -229,10 +234,7 @@ function create_topic(topic_type, field_contents) {
 }
 
 /**
- * Creates a topic document in memory.
- *
- * This low-level approach allows to create a topic of a type which is not necessarily
- * defined in the global type table ("types", see types.js).
+ * Creates a topic document in memory. Low-level method.
  *
  * @return  The topic document.
  */
@@ -253,6 +255,9 @@ function save_document(doc) {
             trigger_hook("pre_update", doc)
             var update = true
         } else {
+            if (doc.type == "Topic") {
+                trigger_doctype_hook("pre_create", doc, doctype_impls[doc.implementation])
+            }
             trigger_hook("pre_create", doc)
         }
         //
@@ -266,7 +271,7 @@ function save_document(doc) {
             trigger_hook("post_create", doc)
         }
     } catch (e) {
-        alert("Error while saving: " + JSON.stringify(e))
+        alert("Error while saving: " + JSON.stringify(e).replace(/\\n/g, "\n"))
     }
 }
 
@@ -492,8 +497,17 @@ function add_plugin(source_path) {
     plugin_sources.push(source_path)
 }
 
+function add_topic_type(type_id, typedef) {
+    if (!topic_type_exists(type_id)) {
+        var topic_type = type_template(type_id)
+        topic_type.instance_template = typedef
+        //
+        save_document(topic_type)
+    }
+}
+
 function doctype_implementation(source_path) {
-    doctype_impls.push(source_path)
+    doctype_impl_sources.push(source_path)
 }
 
 function css_stylesheet(css_path) {
@@ -518,16 +532,9 @@ function load_plugins() {
         plugins.push(eval("new " + plugin_class))
     }
     // 2) load doctype implementations
-    // log("Loading " + doctype_impls.length + " doctype implementations:")
-    for (var i = 0, doctype_impl; doctype_impl = doctype_impls[i]; i++) {
-        // log("..... " + doctype_impl)
-        javascript_source(doctype_impl)
-        //
-        var doctype_class = to_camel_case(basename(doctype_impl))
-        // log(".......... instantiating \"" + doctype_class + "\"")
-        var doctype_impl = eval("new " + doctype_class)
-        loaded_doctype_impls[doctype_class] = doctype_impl
-        trigger_doctype_hook("init", undefined, doctype_impl)   // ### FIXME: document hook "init" not used anymore. Drop it?
+    // log("Loading " + doctype_impl_sources.length + " doctype implementations:")
+    for (var i = 0, doctype_impl_src; doctype_impl_src = doctype_impl_sources[i]; i++) {
+        load_doctype_impl(doctype_impl_src)
     }
     // 3) load CSS stylesheets
     // log("Loading " + css_stylesheets.length + " CSS stylesheets:")
@@ -535,6 +542,31 @@ function load_plugins() {
         // log("..... " + css_stylesheet)
         $("head").append($("<link>").attr({rel: "stylesheet", href: css_stylesheet, type: "text/css"}))
     }
+}
+
+function load_doctype_impl(doctype_impl_src) {
+    // log("..... " + doctype_impl_src)
+    javascript_source(doctype_impl_src)
+    //
+    var doctype_class = to_camel_case(basename(doctype_impl_src))
+    // log(".......... instantiating \"" + doctype_class + "\"")
+    var doctype_impl = eval("new " + doctype_class)
+    doctype_impls[doctype_class] = doctype_impl
+    trigger_doctype_hook("init", undefined, doctype_impl)   // ### FIXME: document hook "init" not used anymore. Drop it?
+}
+
+function type_template(type_id) {
+    // IMPORTANT: if you make changes here, you must change dm3_types.js accordingly ("Topic Type" declaration).
+    return create_raw_topic("Topic Type",
+        [{
+            id: "type-id",
+            model: {type: "text"},
+            view: {editor: "single line", label: "Type ID"},
+            content: type_id
+        }],
+        {},
+        "PlainDocument" // FIXME: "TopicTypeDocument"
+    )
 }
 
 /**
@@ -569,7 +601,7 @@ function trigger_hook(hook_name) {
 function trigger_doctype_hook(hook_name, args, doctype_impl) {
     // if no doctype implementation is specified the one of the current document is used.
     if (!doctype_impl) {
-        doctype_impl = loaded_doctype_impls[current_doc.implementation]
+        doctype_impl = doctype_impls[current_doc.implementation]
     }
     // trigger the hook only if it is defined (a doctype implementation must not define all hooks).
     // alert("trigger_doctype_hook: doctype=" + doctype_impl.name + " hook_name=" + hook_name + " hook=" + doctype_impl[hook_name])
@@ -608,6 +640,23 @@ function to_camel_case(str) {
     return res
 }
 
+// --- DB ---
+
+function document_exists(doc_id) {
+    return db.open(doc_id) != null
+}
+
+function topic_type_exists(type_id) {
+    return db.view("deepamehta3/topictypes", {key: type_id}).rows.length
+}
+
+function load_topic_types() {
+    var rows = db.view("deepamehta3/topictypes").rows
+    for (var i = 0, row; row = rows[i]; i++) {
+        topic_types[row.key] = row.value
+    }
+}
+
 // --- GUI ---
 
 function searchmode_select() {
@@ -616,7 +665,7 @@ function searchmode_select() {
 
 function create_type_menu(menu_id) {
     var type_menu = ui.menu(menu_id)
-    for (var type in types) {
+    for (var type in topic_types) {
         // add type to menu
         ui.add_menu_item(menu_id, {label: type, icon: get_icon_src(type)})
     }
@@ -624,7 +673,7 @@ function create_type_menu(menu_id) {
 }
 
 function create_type_icons() {
-    for (var type in types) {
+    for (var type in topic_types) {
         // create type icon
         topic_type_icons[type] = create_image(get_icon_src(type))
     }
@@ -731,9 +780,9 @@ function image_tag(src, class) {
 function get_icon_src(type) {
     if (type == "Workspace") {
         return "vendor/dm3-workspaces/images/star.png"  // ### TODO: make Workspace a regular type
-    // Note: types[type] is undefined if plugin is deactivated and content still exist.
-    } else if (types[type] && types[type].view && types[type].view.icon_src) {
-        return types[type].view.icon_src
+    // Note: topic_types[type] is undefined if plugin is deactivated and content still exist.
+    } else if (topic_types[type] && topic_types[type].view && topic_types[type].view.icon_src) {
+        return topic_types[type].view.icon_src
     } else {
         return GENERIC_TOPIC_ICON_SRC
     }
