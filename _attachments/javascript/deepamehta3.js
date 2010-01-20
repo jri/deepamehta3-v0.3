@@ -28,20 +28,18 @@ if (debug) {
     var debug_window = window.open()
 }
 
+// --- register core plugins ---
+// Note: the core plugins must be registered _before_ the vendor plugins (so, we must not
+// put the add_plugin calls in the document ready handler).
+// The DM3 Time plugin, e.g. derives its TimeSearchResult from SearchResult (part of
+// DM3 Fulltext core plugin). The base class must load first.
+add_plugin("javascript/dm3_fulltext.js")
+add_plugin("javascript/dm3_datafields.js")
+add_plugin("javascript/dm3_types.js")
+add_plugin("javascript/dm3_tinymce.js")
+// css_stylesheet("style/main.css")     // layout flatters while loading
+
 $(document).ready(function() {
-    // --- register core facilities ---
-    // Note: to load the PlainDocument implementation the user method "doctype_implementation" doesn't work.
-    // We must use the intern "load_doctype_impl" method to instantiate immediately. The instance is required
-    // to enable the document hook "pre_create" being triggered. This in turn is required if plugins create
-    // topics while their initialization phases.
-    load_doctype_impl("javascript/plain_document.js")
-    //
-    add_plugin("javascript/dm3_fulltext.js")
-    add_plugin("javascript/dm3_datafields.js")
-    add_plugin("javascript/dm3_types.js")
-    add_plugin("javascript/dm3_tinymce.js")
-    // css_stylesheet("style/main.css")     // layout flatters while loading
-    //
     // --- setup GUI ---
     $("#upper-toolbar").addClass("ui-widget-header").addClass("ui-corner-all")
     // the search form
@@ -57,6 +55,15 @@ $(document).ready(function() {
     log("Detail panel width: " + detail_panel_width)
     //
     canvas = new Canvas()
+    //
+    // Note: to load the PlainDocument implementation the user method "doctype_implementation"
+    // doesn't work as it postpones doctype instantiation after the plugin has loaded.
+    // 1) We must use the intern "load_doctype_impl" method to instantiate immediately.
+    // The instance is required to enable the document hook "pre_create" being triggered.
+    // This in turn is required if plugins create topics while their initialization phases.
+    // 2) We must do the "load_doctype_impl" call in the document ready handler because
+    // PlainDocument's constructor manipulates the DOM.
+    load_doctype_impl("javascript/plain_document.js")
     //
     // Note: in order to let a plugin DOM manipulate the GUI
     // the plugins must be loaded _after_ the GUI is set up.
@@ -522,41 +529,42 @@ function javascript_source(source_path) {
 
 function load_plugins() {
     // 1) load plugins
-    // log("Loading " + plugin_sources.length + " plugins:")
+    log("Loading " + plugin_sources.length + " plugins:")
     for (var i = 0, plugin_source; plugin_source = plugin_sources[i]; i++) {
-        // log("..... " + plugin_source)
+        log("..... " + plugin_source)
         javascript_source(plugin_source)
         //
         var plugin_class = basename(plugin_source)
-        // log(".......... instantiating \"" + plugin_class + "\"")
+        log(".......... instantiating \"" + plugin_class + "\"")
         plugins.push(eval("new " + plugin_class))
     }
     // 2) load doctype implementations
-    // log("Loading " + doctype_impl_sources.length + " doctype implementations:")
+    log("Loading " + doctype_impl_sources.length + " doctype implementations:")
     for (var i = 0, doctype_impl_src; doctype_impl_src = doctype_impl_sources[i]; i++) {
         load_doctype_impl(doctype_impl_src)
     }
     // 3) load CSS stylesheets
-    // log("Loading " + css_stylesheets.length + " CSS stylesheets:")
+    log("Loading " + css_stylesheets.length + " CSS stylesheets:")
     for (var i = 0, css_stylesheet; css_stylesheet = css_stylesheets[i]; i++) {
-        // log("..... " + css_stylesheet)
+        log("..... " + css_stylesheet)
         $("head").append($("<link>").attr({rel: "stylesheet", href: css_stylesheet, type: "text/css"}))
     }
 }
 
 function load_doctype_impl(doctype_impl_src) {
-    // log("..... " + doctype_impl_src)
+    log("..... " + doctype_impl_src)
     javascript_source(doctype_impl_src)
     //
     var doctype_class = to_camel_case(basename(doctype_impl_src))
-    // log(".......... instantiating \"" + doctype_class + "\"")
+    log(".......... instantiating \"" + doctype_class + "\"")
     var doctype_impl = eval("new " + doctype_class)
     doctype_impls[doctype_class] = doctype_impl
     trigger_doctype_hook("init", undefined, doctype_impl)   // ### FIXME: document hook "init" not used anymore. Drop it?
 }
 
 function type_template(type_id) {
-    // IMPORTANT: if you make changes here, you must change dm3_types.js accordingly ("Topic Type" declaration).
+    // IMPORTANT: if you make changes here, you must change DM3 Typing plugin
+    // accordingly ("Topic Type" declaration in dm3_typing.js).
     return create_raw_topic("Topic Type",
         [{
             id: "type-id",
