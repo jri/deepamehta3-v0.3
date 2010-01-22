@@ -42,11 +42,11 @@ PlainDocument.prototype = {
                     // field name
                     PlainDocument.prototype.render_field_name(field)
                     // field value
-                    var html = trigger_hook("render_field_content", field)[0]
+                    var html = trigger_hook("render_field_content", field, doc)[0]
                     if (html != undefined) {
                         $("#detail-panel").append($("<div>").addClass("field-value").html(html))
                     } else {
-                        alert("render_fields: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
+                        alert("ERROR at PlainDocument.render_fields: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
                     }
                 } else {
                     render_defined_relations(field)
@@ -64,7 +64,7 @@ PlainDocument.prototype = {
                     $("#detail-panel").append($("<div>").addClass("field-value").append(render_topics(topics)))
                     break
                 default:
-                    alert("render_defined_relations: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
+                    alert("ERROR at PlainDocument.render_defined_relations: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
                 }
             }
         }
@@ -104,24 +104,24 @@ PlainDocument.prototype = {
         }
     },
 
-    render_document_form: function() {
+    render_form: function(doc) {
         empty_detail_panel(true)
         topic_buffer = {}
         //
-        for (var i = 0, field; field = current_doc.fields[i]; i++) {
+        for (var i = 0, field; field = doc.fields[i]; i++) {
             // field name
             this.render_field_name(field)
             // field value
             if (field.model.type != "relation") {
-                var html = trigger_hook("render_form_field", field)[0]
+                var html = trigger_hook("render_form_field", field, doc)[0]
                 if (html != undefined) {
                     $("#detail-panel").append($("<div>").addClass("field-value").append(html))
                     trigger_hook("post_render_form_field", field)
                 } else {
-                    alert("render_document_form: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
+                    alert("ERROR at PlainDocument.render_form: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
                 }
             } else {
-                render_defined_relations(current_doc, field)
+                render_defined_relations(doc, field)
             }
         }
 
@@ -146,14 +146,14 @@ PlainDocument.prototype = {
                 }
                 break
             default:
-                alert("render_defined_relations: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
+                alert("ERROR at PlainDocument.render_defined_relations: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
             }
             //
             $("#detail-panel").append(value_div)
         }
     },
 
-    post_render_form: function() {
+    post_render_form: function(doc) {
         // buttons
         $("#lower_toolbar").append("<button id='save_button'>")
         $("#lower_toolbar").append("<button id='cancel_button'>")
@@ -216,13 +216,21 @@ PlainDocument.prototype = {
     /* ---------------------------------------- Private Methods ---------------------------------------- */
 
     update_document: function() {
+        //
+        trigger_hook("pre_submit_form", current_doc)
+        //
         for (var i = 0, field; field = current_doc.fields[i]; i++) {
             if (field.model.type != "relation") {
                 var content = trigger_hook("get_field_content", field)[0]
-                if (content != undefined) {
-                    field.content = content
+                // Note: undefined content is an error (means: field type not handled by any plugin).
+                // null is a valid hook result (means: plugin prevents the field from being updated).
+                // typeof is required because null==undefined !
+                if (typeof(content) != "undefined") {
+                    if (content != null) {
+                        field.content = content
+                    }
                 } else {
-                    alert("update_document: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
+                    alert("ERROR at PlainDocument.update_document: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
                 }
             } else {
                 PlainDocument.prototype.update_relation_field(current_doc, field)
@@ -264,7 +272,7 @@ PlainDocument.prototype = {
             )
             break
         default:
-            alert("update_relation_field: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
+            alert("ERROR at PlainDocument.update_relation_field: field \"" + field.id + "\" has unexpected editor (\"" + field.view.editor + "\")")
         }
     },
 
@@ -314,7 +322,7 @@ PlainDocument.prototype = {
         }
         // assertion
         if (this.id.substr(0, 6) != "field_") {
-            alert("autocomplete: document " + current_doc._id + "\n" +
+            alert("ERROR at PlainDocument.autocomplete: document " + current_doc._id + "\n" +
                 "has unexpected element id (" + this.id + ").\n" +
                 "It is expected to begin with \"field_\"")
             return
@@ -347,7 +355,7 @@ PlainDocument.prototype = {
                         // --- Add item to model ---
                         autocomplete_items.push(item)
                         // --- Add item to view ---
-                        var ac_item = trigger_doctype_hook("render_autocomplete_item", item)
+                        var ac_item = trigger_doctype_hook(current_doc, "render_autocomplete_item", item)
                         var a = $("<a>").attr({href: "", id: item_id++}).append(ac_item)
                         a.mousemove(PlainDocument.prototype.item_hovered)
                         a.mousedown(PlainDocument.prototype.process_selection)
@@ -411,7 +419,7 @@ PlainDocument.prototype = {
         if (autocomplete_item != -1) {
             var input_element = PlainDocument.prototype.get_input_element()
             // trigger hook to get the item (string) to insert into the input element
-            var item = trigger_doctype_hook("process_autocomplete_selection", autocomplete_items[autocomplete_item])
+            var item = trigger_doctype_hook(current_doc, "process_autocomplete_selection", autocomplete_items[autocomplete_item])
             //
             var field = PlainDocument.prototype.get_field(input_element)
             if (field.view.autocomplete_style == "item list") {

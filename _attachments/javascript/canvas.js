@@ -322,7 +322,7 @@ function Canvas() {
             //
             select_document(ct.id)
             //
-            var items = trigger_doctype_hook("context_menu_items")
+            var items = trigger_doctype_hook(current_doc, "context_menu_items")
             open_context_menu(items, "topic", event)
         } else {
             var ca = assoc_by_position(event)
@@ -338,19 +338,23 @@ function Canvas() {
 
     // type: "topic" / "assoc"
     function open_context_menu(items, type, event) {
-        var contextmenu = $("<div>").addClass("contextmenu").css({position: "absolute", top: event.pageY + "px", left: event.pageX + "px"})
+        var contextmenu = $("<div>").addClass("contextmenu").css({
+            position: "absolute",
+            top:  event.pageY + "px",
+            left: event.pageX + "px"
+        })
         for (var i = 0, item; item = items[i]; i++) {
             switch (type) {
             case "topic":
-                var handler = "trigger_doctype_hook"
+                var handler = "trigger_doctype_hook(current_doc, '" + item.handler + "')"
                 break
             case "assoc":
-                var handler = "call_relation_function"
+                var handler = "call_relation_function('" + item.handler + "')"
                 break
             default:
                 alert("open_context_menu: unexpected type \"" + type + "\"")
             }
-            var onclick = handler + "('" + item.handler + "'); canvas.close_context_menu(); return false"
+            var onclick = handler + "; canvas.close_context_menu(); return false"
             var a = $("<a>").attr({href: "", onclick: onclick}).text(item.label)
             contextmenu.append(a)
         }

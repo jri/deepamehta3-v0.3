@@ -28,11 +28,12 @@ if (debug) {
     var debug_window = window.open()
 }
 
-// --- register core plugins ---
+// --- register core facilities ---
 // Note: the core plugins must be registered _before_ the vendor plugins (so, we must not
 // put the add_plugin calls in the document ready handler).
 // The DM3 Time plugin, e.g. derives its TimeSearchResult from SearchResult (part of
 // DM3 Fulltext core plugin). The base class must load first.
+doctype_implementation("javascript/plain_document.js")
 add_plugin("javascript/dm3_fulltext.js")
 add_plugin("javascript/dm3_datafields.js")
 add_plugin("javascript/dm3_types.js")
@@ -56,21 +57,11 @@ $(document).ready(function() {
     //
     canvas = new Canvas()
     //
-    // Note: to load the PlainDocument implementation the user method "doctype_implementation"
-    // doesn't work as it postpones doctype instantiation after the plugin has loaded.
-    // 1) We must use the intern "load_doctype_impl" method to instantiate immediately.
-    // The instance is required to enable the document hook "pre_create" being triggered.
-    // This in turn is required if plugins create topics while their initialization phases.
-    // 2) We must do the "load_doctype_impl" call in the document ready handler because
-    // PlainDocument's constructor manipulates the DOM.
-    load_doctype_impl("javascript/plain_document.js")
-    //
     // Note: in order to let a plugin DOM manipulate the GUI
     // the plugins must be loaded _after_ the GUI is set up.
     // alert("Plugins:\n" + plugin_sources.join("\n"))
     load_plugins()
     //
-    load_topic_types()
     create_type_icons()
     //
     trigger_hook("init")
@@ -184,14 +175,14 @@ function show_document(doc_id) {
     // update global state
     current_doc = doc
     //
-    trigger_doctype_hook("render_document", current_doc)
+    trigger_doctype_hook(current_doc, "render_document", current_doc)
     //
     return true
 }
 
 function edit_document() {
-    trigger_doctype_hook("render_document_form")
-    trigger_doctype_hook("post_render_form")
+    trigger_doctype_hook(current_doc,      "render_form", current_doc)
+    trigger_doctype_hook(current_doc, "post_render_form", current_doc)
 }
 
 function submit_document() {
@@ -222,17 +213,22 @@ function create_topic_from_menu() {
 /**
  * Creates a topic document and stores it in the DB.
  *
- * @param   topic_type      The type ID, e.g. "Note".
- * @param   field_contents  Optional - Contents to override the default content (object, key: field ID, value: content).
+ * @param   topic_type          The type ID, e.g. "Note".
+ * @param   field_contents      Optional - Contents to override the default content (object, key: field ID, value: content).
+ * @param   extra_attributes    Optional - Proprietary attributes to be added to the topic (object).
  *
  * @return  The topic document as stored in the DB.
  */
-function create_topic(topic_type, field_contents) {
+function create_topic(topic_type, field_contents, extra_attributes) {
     var typedef = clone(topic_types[topic_type])
     var topic = create_raw_topic(topic_type, typedef.fields, typedef.view, typedef.implementation)
     // override default content
     for (var field_id in field_contents) {
         get_field(topic, field_id).content = field_contents[field_id]
+    }
+    // add extra attributes
+    for (var attr_name in extra_attributes) {
+        topic[attr_name] = extra_attributes[attr_name]
     }
     //
     save_document(topic)
@@ -262,9 +258,6 @@ function save_document(doc) {
             trigger_hook("pre_update", doc)
             var update = true
         } else {
-            if (doc.type == "Topic") {
-                trigger_doctype_hook("pre_create", doc, doctype_impls[doc.implementation])
-            }
             trigger_hook("pre_create", doc)
         }
         //
@@ -505,12 +498,7 @@ function add_plugin(source_path) {
 }
 
 function add_topic_type(type_id, typedef) {
-    if (!topic_type_exists(type_id)) {
-        var topic_type = type_template(type_id)
-        topic_type.instance_template = typedef
-        //
-        save_document(topic_type)
-    }
+    topic_types[type_id] = typedef
 }
 
 function doctype_implementation(source_path) {
@@ -559,32 +547,21 @@ function load_doctype_impl(doctype_impl_src) {
     log(".......... instantiating \"" + doctype_class + "\"")
     var doctype_impl = eval("new " + doctype_class)
     doctype_impls[doctype_class] = doctype_impl
-    trigger_doctype_hook("init", undefined, doctype_impl)   // ### FIXME: document hook "init" not used anymore. Drop it?
 }
 
-function type_template(type_id) {
-    // IMPORTANT: if you make changes here, you must change DM3 Typing plugin
-    // accordingly ("Topic Type" declaration in dm3_typing.js).
-    return create_raw_topic("Topic Type",
-        [{
-            id: "type-id",
-            model: {type: "text"},
-            view: {editor: "single line", label: "Type ID"},
-            content: type_id
-        }],
-        {},
-        "PlainDocument" // FIXME: "TopicTypeDocument"
-    )
-}
+// ---
 
 /**
  * Triggers the named hook of all installed plugins.
+ *
+ * @param   hook_name   Name of the plugin hook to trigger.
+ * @param   <varargs>   Variable number of arguments. Passed to the hook.
  */
 function trigger_hook(hook_name) {
     var result = []
     for (var i = 0, plugin; plugin = plugins[i]; i++) {
         if (plugin[hook_name]) {
-            // trigger hook
+            // 1) Trigger hook
             if (arguments.length == 1) {
                 var res = plugin[hook_name]()
             } else if (arguments.length == 2) {
@@ -595,8 +572,10 @@ function trigger_hook(hook_name) {
                 alert("ERROR at trigger_hook: too much arguments (" +
                     arguments.length + "), maximum is 2. (hook=" + hook_name + ")")
             }
-            // store result
-            if (res != undefined) {
+            // 2) Store result
+            // Note: undefined is not added to the result, but null is.
+            // typeof is required because null==undefined !
+            if (typeof(res) != "undefined") {
                 result.push(res)
             }
         }
@@ -604,14 +583,10 @@ function trigger_hook(hook_name) {
     return result
 }
 
-//
-
-function trigger_doctype_hook(hook_name, args, doctype_impl) {
-    // if no doctype implementation is specified the one of the current document is used.
-    if (!doctype_impl) {
-        doctype_impl = doctype_impls[current_doc.implementation]
-    }
-    // trigger the hook only if it is defined (a doctype implementation must not define all hooks).
+function trigger_doctype_hook(doc, hook_name, args) {
+    // Lookup implementation
+    var doctype_impl = doctype_impls[doc.implementation]
+    // Trigger the hook only if it is defined (a doctype implementation must not define all hooks).
     // alert("trigger_doctype_hook: doctype=" + doctype_impl.name + " hook_name=" + hook_name + " hook=" + doctype_impl[hook_name])
     if (doctype_impl[hook_name]) {
         return doctype_impl[hook_name](args)
@@ -652,17 +627,6 @@ function to_camel_case(str) {
 
 function document_exists(doc_id) {
     return db.open(doc_id) != null
-}
-
-function topic_type_exists(type_id) {
-    return db.view("deepamehta3/topictypes", {key: type_id}).rows.length
-}
-
-function load_topic_types() {
-    var rows = db.view("deepamehta3/topictypes").rows
-    for (var i = 0, row; row = rows[i]; i++) {
-        topic_types[row.key] = row.value
-    }
 }
 
 // --- GUI ---
@@ -845,6 +809,34 @@ function get_field(doc, field_id) {
     }
 }
 
+// FIXME: not in use
+function get_field_index(doc, field_id) {
+    for (var i = 0, field; field = doc.fields[i]; i++) {
+        if (field.id == field_id) {
+            return i
+        }
+    }
+}
+
+// FIXME: not in use
+function remove_field(doc, field_id) {
+    var i = get_field_index(doc, field_id)
+    // error check 1
+    if (i == undefined) {
+        alert("ERROR at remove_field: field with ID \"" + field_id +
+            "\" not found in fields " + JSON.stringify(doc.fields))
+        return
+    }
+    //
+    doc.fields.splice(i, 1)
+    // error check 2
+    if (get_field_index(doc, field_id) >= 0) {
+        alert("ERROR at remove_field: more than one field with ID \"" +
+            field_id + "\" found")
+        return
+    }
+}
+
 /**
  * Returns the label for the topic.
  */
@@ -886,6 +878,14 @@ function keys(object) {
         a.push(key)
     }
     return a
+}
+
+function size(object) {
+    var size = 0
+    for (var key in object) {
+        size++
+    }
+    return size
 }
 
 function inspect(object) {

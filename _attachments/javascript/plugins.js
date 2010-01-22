@@ -10,3 +10,4 @@
 // add_plugin("vendor/dm3-typing/script/dm3_typing.js")
 // add_plugin("vendor/dm3-project/script/dm3_project.js")
 // add_plugin("vendor/dm3-topicmaps/script/dm3_topicmaps.js")
+// add_plugin("vendor/dm3-typeeditor/script/dm3_typeeditor.js")

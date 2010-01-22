@@ -7,9 +7,19 @@ function UIHelper() {
     /***************/
 
 
-    
+
+    /**
+     * @param   id      ID of the <button> element that is transformed to a jQuery UI button. If no such DOM element exists
+     *                  in the document, a button element is created and the caller is responsible for adding the returned
+     *                  button to the DOM tree.
+     *
+     * @return          The button (a jQuery object).
+     */
     this.button = function(id, handler, label, icon, is_submit) {
         var button = $("#" + id)
+        if (button.length == 0) {
+            button = $("<button>").attr("id", id)
+        }
         button.addClass("ui-state-default").addClass("ui-corner-all")
         // Note: type="button" is required. Otherwise the button acts as submit button (if contained in a form)
         // Note: pseudo-attribute "submit" TODO: explain
@@ -22,6 +32,7 @@ function UIHelper() {
         button.append(label)
         button.click(handler)
         add_hover_effect(button)
+        return button
     }
 
 
@@ -38,8 +49,8 @@ function UIHelper() {
     /**
      * @param   menu_id     The Menu ID. Used to identify the menu for subsequent calls, e.g. for adding items to it.
      *                      If a DOM element with such an ID exists it is replaced by the menu-triggering button.
-     *                      If no such DOM element exists, the caller is responsible for adding the menu-triggering button
-     *                      to the DOM tree.
+     *                      If no such DOM element exists, the caller is responsible for adding the returned menu-triggering
+     *                      button to the DOM tree.
      * @param   handler     Optional: The callback function. 2 arguments are passed to it:
      *                      1) The selected menu item (an object with "value" and "label" elements).
      *                      2) The menu ID.
