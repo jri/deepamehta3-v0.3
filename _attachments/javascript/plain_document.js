@@ -116,7 +116,7 @@ PlainDocument.prototype = {
                 var html = trigger_hook("render_form_field", field, doc)[0]
                 if (html != undefined) {
                     $("#detail-panel").append($("<div>").addClass("field-value").append(html))
-                    trigger_hook("post_render_form_field", field)
+                    trigger_hook("post_render_form_field", field, doc)
                 } else {
                     alert("ERROR at PlainDocument.render_form: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
                 }

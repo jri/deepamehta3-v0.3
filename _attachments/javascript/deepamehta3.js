@@ -17,7 +17,7 @@ var doctype_impl_sources = []
 var doctype_impls = {}
 var css_stylesheets = []
 //
-var topic_types = {}        // key: Type ID, value: type definition (instance_template attribute)
+var topic_types = {}        // key: Type ID, value: type definition (object with "fields", "view", and "implementation" attributes)
 var topic_type_icons = {}   // key: Type ID, value: icon (JavaScript Image object)
 var generic_topic_icon = create_image(GENERIC_TOPIC_ICON_SRC)
 topic_type_icons["Search Result"] = create_image("images/bucket.png")
@@ -605,24 +605,6 @@ function call_relation_function(function_name) {
     }
 }
 
-// ---
-
-// "vendor/dm3-time/script/dm3-time.js" -> "dm3-time"
-function basename(path) {
-    path.match(/.*\/(.*)\..*/)
-    return RegExp.$1
-}
-
-function to_camel_case(str) {
-    var res = ""
-    var words = str.split("_")
-    for (var i = 0, word; word = words[i]; i++) {
-        res += word[0].toUpperCase()
-        res += word.substr(1)
-    }
-    return res
-}
-
 // --- DB ---
 
 function document_exists(doc_id) {
@@ -809,7 +791,6 @@ function get_field(doc, field_id) {
     }
 }
 
-// FIXME: not in use
 function get_field_index(doc, field_id) {
     for (var i = 0, field; field = doc.fields[i]; i++) {
         if (field.id == field_id) {
@@ -818,7 +799,6 @@ function get_field_index(doc, field_id) {
     }
 }
 
-// FIXME: not in use
 function remove_field(doc, field_id) {
     var i = get_field_index(doc, field_id)
     // error check 1
@@ -852,7 +832,13 @@ function topic_label(doc) {
     return doc.fields[0].content
 }
 
-// --- Utilities ---
+
+
+// *****************
+// *** Utilities ***
+// *****************
+
+
 
 /**
  * Filters array elements that match a filter function.
@@ -880,13 +866,14 @@ function keys(object) {
     return a
 }
 
+/* FIXME: not in use
 function size(object) {
     var size = 0
     for (var key in object) {
         size++
     }
     return size
-}
+} */
 
 function inspect(object) {
     var str = "\n"
@@ -935,8 +922,37 @@ function log(text) {
     }
 }
 
+// === Text Utilities ===
+
 function render_text(text) {
     return text.replace(/\n/g, "<br>")
+}
+
+/**
+ * "vendor/dm3-time/script/dm3-time.js" -> "dm3-time"
+ */
+function basename(path) {
+    path.match(/.*\/(.*)\..*/)
+    return RegExp.$1
+}
+
+function to_camel_case(str) {
+    var res = ""
+    var words = str.split("_")
+    for (var i = 0, word; word = words[i]; i++) {
+        res += word[0].toUpperCase()
+        res += word.substr(1)
+    }
+    return res
+}
+
+/**
+ * "Type ID" -> "type-id"
+ */
+function to_id(str) {
+    str = str.toLowerCase()
+    str = str.replace(/ /g, "-")
+    return str
 }
 
 /**
