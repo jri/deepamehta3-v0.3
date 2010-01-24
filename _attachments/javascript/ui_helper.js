@@ -47,10 +47,11 @@ function UIHelper() {
     var menus = {}          // key: menu ID, value: a Menu object
 
     /**
+     * Creates a menu.
+     *
      * @param   menu_id     The Menu ID. Used to identify the menu for subsequent calls, e.g. for adding items to it.
-     *                      If a DOM element with such an ID exists it is replaced by the menu-triggering button.
-     *                      If no such DOM element exists, the caller is responsible for adding the returned menu-triggering
-     *                      button to the DOM tree.
+     *                      If a DOM element with such an ID exists it is replaced by the menu.
+     *                      If no such DOM element exists, the caller is responsible for adding the menu to the DOM tree.
      * @param   handler     Optional: The callback function. 2 arguments are passed to it:
      *                      1) The selected menu item (an object with "value" and "label" elements).
      *                      2) The menu ID.
@@ -63,12 +64,13 @@ function UIHelper() {
      *                      If specified a stateless action-trigger menu with a static menu title is created.
      *                      If not specified a stateful select-like menu is created with the selected item as "menu title".
      *
-     * @return              The menu-triggering button (a jQuery object).
+     * @return              The created menu (a Menu object). The caller can add the menu to the page by accessing the menu's
+     *                      "dom" attribute (a jQuery object).
      */
     this.menu = function(menu_id, handler, items, menu_title) {
 
         menus[menu_id] = new Menu()
-        return menus[menu_id].dom
+        return menus[menu_id]
 
         function Menu() {
 

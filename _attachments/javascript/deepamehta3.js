@@ -621,9 +621,9 @@ function create_type_menu(menu_id) {
     var type_menu = ui.menu(menu_id)
     for (var type in topic_types) {
         // add type to menu
-        ui.add_menu_item(menu_id, {label: type, icon: get_icon_src(type)})
+        type_menu.add_item({label: type, icon: get_icon_src(type)})
     }
-    return type_menu
+    return type_menu.dom
 }
 
 function create_type_icons() {
@@ -832,6 +832,11 @@ function topic_label(doc) {
     return doc.fields[0].content
 }
 
+function field_label(field) {
+    // Note: the "view" element is optional, e.g. for a "date" field
+    return field.view && field.view.label ? field.view.label : field.id
+}
+
 
 
 // *****************
@@ -909,7 +914,7 @@ function clone(obj) {
     try {
         return JSON.parse(JSON.stringify(obj))
     } catch (e) {
-        log("### Error while cloning: " + JSON.stringify(e))
+        alert("ERROR while cloning: " + JSON.stringify(e))
     }
 }
 

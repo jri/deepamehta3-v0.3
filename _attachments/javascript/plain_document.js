@@ -44,7 +44,7 @@ PlainDocument.prototype = {
                     // field value
                     var html = trigger_hook("render_field_content", field, doc)[0]
                     if (html != undefined) {
-                        $("#detail-panel").append($("<div>").addClass("field-value").html(html))
+                        $("#detail-panel").append($("<div>").addClass("field-value").append(html))
                     } else {
                         alert("ERROR at PlainDocument.render_fields: field \"" + field.id + "\" has unexpected type (\"" + field.model.type + "\")")
                     }
@@ -196,8 +196,7 @@ PlainDocument.prototype = {
         if (typeof(field) == "string") {
             name = field
         } else {
-            // Note: the "view" element is optional, e.g. for a "date" field
-            name = field.view && field.view.label ? field.view.label : field.id
+            name = field_label(field)
             if (suffix) {
                 name += suffix
             }
