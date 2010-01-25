@@ -275,7 +275,8 @@ function UIHelper() {
                         return item
                     }
                 }
-                alert("find_item: item with value \"" + value + "\" not found in menu \"" + menu_id + "\"")
+                alert("ERROR in Menu.find_item: item with value \"" + value + "\" not found in menu \"" +
+                    menu_id + "\".\nHint: items are selected _by value_, NOT by label.")
             }
 
             function anchor_id(item_id) {
