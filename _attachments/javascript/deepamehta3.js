@@ -67,7 +67,7 @@ $(document).ready(function() {
     trigger_hook("init")
     //
     // the create form
-    $("#type_select_placeholder").replaceWith(create_type_menu("type_select").dom)
+    $("#create-type-menu-placeholder").replaceWith(create_type_menu("create-type-menu").dom)
     ui.button("create_button", create_topic_from_menu, "Create", "plus")
     //
     ui.menu("searchmode_select", set_searchmode)
@@ -202,7 +202,7 @@ function submit_document() {
 
 function create_topic_from_menu() {
     // update DB
-    var topic_type = ui.menu_item("type_select").label
+    var topic_type = ui.menu_item("create-type-menu").label
     current_doc = create_topic(topic_type)
     // update GUI
     add_topic_to_canvas(current_doc)
@@ -624,6 +624,12 @@ function create_type_menu(menu_id, handler) {
         type_menu.add_item({label: type, value: type, icon: get_icon_src(type)})
     }
     return type_menu
+}
+
+function rebuild_type_menu(menu_id) {
+    var selection = ui.menu_item(menu_id).value
+    $("#" + menu_id).replaceWith(create_type_menu(menu_id))
+    ui.select_menu_item(menu_id, selection)
 }
 
 function create_type_icons() {

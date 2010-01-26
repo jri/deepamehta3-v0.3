@@ -47,9 +47,19 @@ function UIHelper() {
     var menus = {}          // key: menu ID, value: a Menu object
 
     /**
-     * Creates a menu.
+     * Creates and returns a menu.
      *
-     * @param   menu_id     The Menu ID. Used to identify the menu for subsequent calls, e.g. for adding items to it.
+     * The menu's DOM structure is as follows:
+     *      <span id="menu_id">     - the top-level container (get the provided menu ID).
+     *          <button>            - the menu-triggering button
+     *              <span>          - the button's icon (a triangle)
+     *              <span>          - the button's label
+     *          <div>               - the actual menu (hidden until triggered)
+     *              <a>             - a menu item
+     *
+     * The menu's DOM structure is accessible through the menu's "dom" attribute (a jQuery object).
+     *
+     * @param   menu_id     The menu ID. Can be used later on to identify the menu, e.g. for adding items to it.
      *                      If a DOM element with such an ID exists it is replaced by the menu.
      *                      If no such DOM element exists, the caller is responsible for adding the menu to the DOM tree.
      * @param   handler     Optional: The callback function. 2 arguments are passed to it:
@@ -69,8 +79,7 @@ function UIHelper() {
      */
     this.menu = function(menu_id, handler, items, menu_title) {
 
-        menus[menu_id] = new Menu()
-        return menus[menu_id]
+        return menus[menu_id] = new Menu()
 
         function Menu() {
 
@@ -263,7 +272,7 @@ function UIHelper() {
             /****************************** The Compound ******************************/
 
             function add_to_page() {
-                dom = $("<span>").append(button).append(menu)
+                dom = $("<span>").attr("id", menu_id).append(button).append(menu)
                 $("#" + menu_id).replaceWith(dom)
             }
 
