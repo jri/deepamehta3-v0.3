@@ -341,16 +341,16 @@ function remove_document(delete_from_db) {
         db.deleteDoc(current_doc)
     }
     // update model
-    var topic_id = current_doc._id
+    var tmp_doc = current_doc
     current_doc = null
     // update GUI
-    canvas.remove_topic(topic_id, true)
+    canvas.remove_topic(tmp_doc._id, true)
     show_document()
     // trigger hooks
     if (delete_from_db) {
-        trigger_hook("post_delete_topic", topic_id)
+        trigger_hook("post_delete", tmp_doc)
     } else {
-        trigger_hook("post_hide_topic_from_canvas", topic_id)
+        trigger_hook("post_hide_topic_from_canvas", tmp_doc._id)
     }
 }
 
@@ -499,6 +499,10 @@ function add_plugin(source_path) {
 
 function add_topic_type(type_id, typedef) {
     topic_types[type_id] = typedef
+}
+
+function remove_topic_type(type_id) {
+    delete topic_types[type_id]
 }
 
 function doctype_implementation(source_path) {
@@ -823,6 +827,10 @@ function remove_field(doc, field_id) {
     }
 }
 
+function get_value(doc, field_id) {
+    return get_field(doc, field_id).content
+}
+
 /**
  * Returns the label for the topic.
  */
@@ -831,7 +839,7 @@ function topic_label(doc) {
     if (doc.view) {
         var field_id = doc.view.label_field
         if (field_id) {
-            return get_field(doc, field_id).content
+            return get_value(doc, field_id)
         }
     }
     // fallback: use the content of the first field
