@@ -90,7 +90,7 @@ Installation
         couchapp push http://localhost:5984/deepamehta3-db
 
 3.  Optional: install DeepaMehta 3 plugins.
-    For the moment there are 9 general purpose plugins and 1 custom application available:
+    For the moment there are 10 general purpose plugins and 1 custom application available:
 
     <http://github.com/jri/dm3-time>  
     <http://github.com/jri/dm3-workspaces>  
@@ -101,6 +101,7 @@ Installation
     <http://github.com/jri/dm3-typing>  
     <http://github.com/jri/dm3-project>  
     <http://github.com/jri/dm3-topicmaps>  
+    <http://github.com/jri/dm3-typeeditor>  
 
     <http://github.com/jri/dm3-poemspace-app>  
 
@@ -145,4 +146,4 @@ Version History
 
 ------------
 Jörg Richter  
-Jan 14, 2010
+Feb 5, 2010
