@@ -1,6 +1,6 @@
 function dm3_datafields() {
 
-    this.render_field_content = function(field) {
+    this.render_field_content = function(field, doc) {
         switch (field.model.type) {
         case "text":
             switch (field.view.editor) {
@@ -13,16 +13,29 @@ function dm3_datafields() {
             break
         case "date":
             return format_date(field.content)
+        case "relation":
+            return render_relation_content(field, doc)
+        }
+
+        function render_relation_content(field, doc) {
+            switch (field.view.editor) {
+            case "checkboxes":
+                var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
+                PlainDocument.prototype.defined_relation_topics = PlainDocument.prototype.defined_relation_topics.concat(topics)
+                return render_topics(topics)
+            }
         }
     }
 
-    this.render_form_field = function(field) {
+    this.render_form_field = function(field, doc) {
 
         switch (field.model.type) {
         case "text":
             return render_text_field(field)
         case "date":
             return render_date_field(field)
+        case "relation":
+            return render_relation_field(field, doc)
         }
 
         function render_text_field(field) {
@@ -55,9 +68,31 @@ function dm3_datafields() {
                 buttonImage: "images/calendar.gif", buttonImageOnly: true, buttonText: "Choose Date"})
             return date_div
         }
+
+        function render_relation_field(field, doc) {
+            switch (field.view.editor) {
+            case "checkboxes":
+                // buffer current topic selection to compare it at submit time
+                var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
+                PlainDocument.prototype.topic_buffer[field.id] = topics
+                //
+                var docs = get_topics_by_type(field.model.related_type)
+                var relation_div = $("<div>")
+                for (var i = 0, row; row = docs.rows[i]; i++) {
+                    var attr = {type: "checkbox", id: row.id, name: "relation_" + field.id}
+                    if (includes(topics, function(topic) {
+                            return topic.id == row.id
+                        })) {
+                        attr.checked = "checked"
+                    }
+                    relation_div.append($("<label>").append($("<input>").attr(attr)).append(row.value))
+                }
+                return relation_div
+            }
+        }
     }
 
-    this.get_field_content = function(field) {
+    this.get_field_content = function(field, doc) {
         switch (field.model.type) {
         case "text":
             switch (field.view.editor) {
@@ -70,6 +105,35 @@ function dm3_datafields() {
             break
         case "date":
             return $("#field_" + field.id).val()
+        case "relation":
+            return update_relation_field(field, doc)
+        }
+
+        function update_relation_field(field, doc) {
+            switch (field.view.editor) {
+            case "checkboxes":
+                $("input:checkbox[name=relation_" + field.id + "]").each(
+                    function() {
+                        var checkbox = this
+                        var was_checked_before = includes(PlainDocument.prototype.topic_buffer[field.id],
+                            function(topic) {
+                                return topic.id == checkbox.id
+                            }
+                        )
+                        if (checkbox.checked) {
+                            if (!was_checked_before) {
+                                create_relation("Relation", doc._id, checkbox.id)
+                            }
+                        } else {
+                            if (was_checked_before) {
+                                delete_relation(get_relation_doc(doc._id, checkbox.id)._id)
+                            }
+                        }
+                    }
+                )
+                // prevent this field from being updated by the caller
+                return null
+            }
         }
     }
 }
