@@ -28,7 +28,7 @@ function dm3_fulltext() {
             var searchterm = $.trim($("#search_field").val())
             var result = db.fulltext_search("search", searchterm + "*")
             // 2) create result topic
-            return create_result_topic(searchterm, result, "SearchResult", function(row) {
+            return create_result_topic(searchterm, result.rows, "SearchResult", function(row) {
                 return {
                     id:    row.id,
                     type:  row.fields.topic_type,

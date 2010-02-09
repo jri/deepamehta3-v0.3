@@ -41,12 +41,20 @@ PlainDocument.prototype = {
                 // field name
                 PlainDocument.prototype.render_field_name(field)
                 // field value
-                var html = trigger_hook("render_field_content", field, doc)[0]
+                var html = trigger_hook("render_field_content", field, doc, related_topics(field))[0]
                 if (html != undefined) {
                     $("#detail-panel").append($("<div>").addClass("field-value").append(html))
                 } else {
                     alert("ERROR at PlainDocument.render_document: field \"" + field.id + "\" not handled by any plugin.\n" +
                         "field model=" + JSON.stringify(field.model) + "\nfield view=" + JSON.stringify(field.view))
+                }
+            }
+
+            function related_topics(field) {
+                if (field.model.type == "relation") {
+                    var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
+                    PlainDocument.prototype.defined_relation_topics = PlainDocument.prototype.defined_relation_topics.concat(topics)
+                    return topics
                 }
             }
         }
@@ -94,13 +102,23 @@ PlainDocument.prototype = {
             // field name
             this.render_field_name(field)
             // field value
-            var html = trigger_hook("render_form_field", field, doc)[0]
+            var html = trigger_hook("render_form_field", field, doc, related_topics(field))[0]
             if (html != undefined) {
                 $("#detail-panel").append($("<div>").addClass("field-value").append(html))
                 trigger_hook("post_render_form_field", field, doc)
             } else {
                 alert("ERROR at PlainDocument.render_form: field \"" + field.id + "\" not handled by any plugin.\n" +
                     "field model=" + JSON.stringify(field.model) + "\nfield view=" + JSON.stringify(field.view))
+            }
+        }
+
+        function related_topics(field) {
+            if (field.model.type == "relation") {
+                var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
+                // buffer current topic selection to compare it at submit time
+                PlainDocument.prototype.topic_buffer[field.id] = topics
+                //
+                return topics
             }
         }
     },
@@ -158,6 +176,8 @@ PlainDocument.prototype = {
 
     /**
      * Returns topics of a "relation" field.
+     *
+     * @return  Array of Topic objects.
      */
     get_related_topics: function(doc_id, field) {
         var doc_ids = related_doc_ids(doc_id)

@@ -62,8 +62,6 @@ $(document).ready(function() {
     // alert("Plugins:\n" + plugin_sources.join("\n"))
     load_plugins()
     //
-    create_type_icons()
-    //
     trigger_hook("init")
     //
     // the create form
@@ -115,7 +113,7 @@ function special_selected(menu_item) {
 /**
  * Reveals a document and optionally relate it to the current document.
  *
- * @param   do_relate   Optionally (boolean): if true a relation of type "Auxiliary" is created between
+ * @param   do_relate   Optional (boolean): if true a relation of type "Auxiliary" is created between
  *                      the document and the current document. If not specified false is assumed.
  */
 function reveal_document(doc_id, do_relate) {
@@ -214,8 +212,8 @@ function create_topic_from_menu() {
  * Creates a topic document and stores it in the DB.
  *
  * @param   topic_type          The type ID, e.g. "Note".
- * @param   field_contents      Optional - Contents to override the default content (object, key: field ID, value: content).
- * @param   extra_attributes    Optional - Proprietary attributes to be added to the topic (object).
+ * @param   field_contents      Optional: contents to override the default content (object, key: field ID, value: content).
+ * @param   extra_attributes    Optional: proprietary attributes to be added to the topic (object).
  *
  * @return  The topic document as stored in the DB.
  */
@@ -279,9 +277,9 @@ function save_document(doc) {
  * Returns topics by ID list. Optionally filtered by topic type.
  *
  * @param   doc_ids         Array of topic IDs.
- * @param   type_filter     Optional - a topic type, e.g. "Note", "Workspace".
+ * @param   type_filter     Optional: a topic type, e.g. "Note", "Workspace".
  *
- * @return  Array of Topic objects
+ * @return  Array of Topic objects.
  */
 function get_topics(doc_ids, type_filter) {
     var rows = db.view("deepamehta3/topics", null, doc_ids).rows
@@ -305,10 +303,17 @@ function get_topics(doc_ids, type_filter) {
  *
  * @param   type_filter     A topic type, e.g. "Note", "Workspace".
  *
- * @return  The raw CouchDB result of the "by_type" view.
+ * @return  Array of Topic objects.
  */
 function get_topics_by_type(type_filter) {
-    return db.view("deepamehta3/by_type", {key: type_filter})
+    var rows = db.view("deepamehta3/by_type", {key: type_filter}).rows
+    //
+    var topics = []
+    for (var i = 0, row; row = rows[i]; i++) {
+        topics.push(new Topic(row.id, row.key, row.value))
+    }
+    //
+    return topics
 }
 
 /**
@@ -366,7 +371,7 @@ function remove_document(delete_from_db) {
  * Creates a relation document and stores it in the DB.
  *
  * @param   rel_type        The relation type, e.g. "Relation", "Auxiliary".
- * @param   extra_fields    Optional - Extra fields to be added to the relation (an object).
+ * @param   extra_fields    Optional: extra fields to be added to the relation (an object).
  *
  * @return  The relation document as stored in the DB.
  */
@@ -499,6 +504,7 @@ function add_plugin(source_path) {
 
 function add_topic_type(type_id, typedef) {
     topic_types[type_id] = typedef
+    topic_type_icons[type_id] = create_image(get_icon_src(type_id))
 }
 
 function remove_topic_type(type_id) {
@@ -572,9 +578,11 @@ function trigger_hook(hook_name) {
                 var res = plugin[hook_name](arguments[1])
             } else if (arguments.length == 3) {
                 var res = plugin[hook_name](arguments[1], arguments[2])
+            } else if (arguments.length == 4) {
+                var res = plugin[hook_name](arguments[1], arguments[2], arguments[3])
             } else {
                 alert("ERROR at trigger_hook: too much arguments (" +
-                    arguments.length + "), maximum is 2. (hook=" + hook_name + ")")
+                    (arguments.length - 1) + "), maximum is 2.\nhook=" + hook_name)
             }
             // 2) Store result
             // Note: undefined is not added to the result, but null is.
@@ -636,13 +644,6 @@ function rebuild_type_menu(menu_id) {
     ui.select_menu_item(menu_id, selection)
 }
 
-function create_type_icons() {
-    for (var type in topic_types) {
-        // create type icon
-        topic_type_icons[type] = create_image(get_icon_src(type))
-    }
-}
-
 function create_special_select() {
     return $("<select>").attr("id", "special_select")
 }
@@ -652,11 +653,15 @@ function create_special_select() {
 /**
  * Creates a search result topic.
  *
- * @param   title           the title of the search result.
- * @param   result          the search result: either a CouchDB view result or a fulltext result.
- * @param   doctype_impl    the result topic's document type implementation.
- * @param   result_function a function that transforms a result row into a result item. A result item
- *                          object must contain the elements "id", "type", and "label" at least.
+ * @param   title               The title of the search result.
+ * @param   result              The search result: either
+ *                              1) a CouchDB view result (array of row objects),
+ *                              2) a fulltext result (array of row objects),
+ *                              3) an array of Topic objects.
+ * @param   doctype_impl        The result topic's document type implementation.
+ * @param   result_function     Optional: a function that transforms a result row into a result item.
+ *                              A result item object must at least contain the attributes "id", "type", and "label".
+ *                              If not specified, the result objects are expected to be valid result items already.
  *
  * @return  the result topic (a CouchDB document of type "Search Result")
  */
@@ -667,8 +672,8 @@ function create_result_topic(title, result, doctype_impl, result_function) {
     var result_topic = create_raw_topic("Search Result", fields, view, doctype_impl)
     // add result items
     result_topic.items = []
-    for (var i = 0, row; row = result.rows[i]; i++) {
-        result_topic.items.push(result_function(row))
+    for (var i = 0, row; row = result[i]; i++) {
+        result_topic.items.push(result_function && result_function(row) || row)
     }
     //
     return result_topic
@@ -883,6 +888,14 @@ function keys(object) {
         a.push(key)
     }
     return a
+}
+
+function id_list(array) {
+    var ids = []
+    for (var i = 0, e; e = array[i]; i++) {
+        ids.push(e.id)
+    }
+    return ids
 }
 
 /* FIXME: not in use

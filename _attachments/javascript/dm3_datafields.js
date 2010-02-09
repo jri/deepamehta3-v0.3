@@ -1,6 +1,18 @@
+/**
+ * DeepaMehta 3 core plugin.
+ * Handles data fields of type "text", "date", and "relation".
+ */
 function dm3_datafields() {
 
-    this.render_field_content = function(field, doc) {
+
+
+    /**************************************************************************************************/
+    /**************************************** Overriding Hooks ****************************************/
+    /**************************************************************************************************/
+
+
+
+    this.render_field_content = function(field, doc, rel_topics) {
         switch (field.model.type) {
         case "text":
             switch (field.view.editor) {
@@ -14,20 +26,14 @@ function dm3_datafields() {
         case "date":
             return format_date(field.content)
         case "relation":
-            return render_relation_content(field, doc)
-        }
-
-        function render_relation_content(field, doc) {
             switch (field.view.editor) {
             case "checkboxes":
-                var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
-                PlainDocument.prototype.defined_relation_topics = PlainDocument.prototype.defined_relation_topics.concat(topics)
-                return render_topics(topics)
+                return render_topics(rel_topics)
             }
         }
     }
 
-    this.render_form_field = function(field, doc) {
+    this.render_form_field = function(field, doc, rel_topics) {
 
         switch (field.model.type) {
         case "text":
@@ -35,7 +41,7 @@ function dm3_datafields() {
         case "date":
             return render_date_field(field)
         case "relation":
-            return render_relation_field(field, doc)
+            return render_relation_field(field, doc, rel_topics)
         }
 
         function render_text_field(field) {
@@ -69,23 +75,19 @@ function dm3_datafields() {
             return date_div
         }
 
-        function render_relation_field(field, doc) {
+        function render_relation_field(field, doc, rel_topics) {
             switch (field.view.editor) {
             case "checkboxes":
-                // buffer current topic selection to compare it at submit time
-                var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
-                PlainDocument.prototype.topic_buffer[field.id] = topics
-                //
-                var docs = get_topics_by_type(field.model.related_type)
+                var topics = get_topics_by_type(field.model.related_type)
                 var relation_div = $("<div>")
-                for (var i = 0, row; row = docs.rows[i]; i++) {
-                    var attr = {type: "checkbox", id: row.id, name: "relation_" + field.id}
-                    if (includes(topics, function(topic) {
-                            return topic.id == row.id
+                for (var i = 0, topic; topic = topics[i]; i++) {
+                    var attr = {type: "checkbox", id: topic.id, name: "relation_" + field.id}
+                    if (includes(rel_topics, function(t) {
+                            return t.id == topic.id
                         })) {
                         attr.checked = "checked"
                     }
-                    relation_div.append($("<label>").append($("<input>").attr(attr)).append(row.value))
+                    relation_div.append($("<label>").append($("<input>").attr(attr)).append(topic.label))
                 }
                 return relation_div
             }
@@ -131,9 +133,18 @@ function dm3_datafields() {
                         }
                     }
                 )
-                // prevent this field from being updated by the caller
+                // prevent this field from being updated
                 return null
             }
         }
     }
+
+
+
+    /************************************************************************************************/
+    /**************************************** Custom Methods ****************************************/
+    /************************************************************************************************/
+
+
+
 }

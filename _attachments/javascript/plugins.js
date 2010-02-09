@@ -8,7 +8,9 @@
 // add_plugin("vendor/dm3-poemspace-app/script/dm3_poemspace.js")
 // add_plugin("vendor/dm3-accounts/script/dm3_accounts.js")
 // add_plugin("vendor/dm3-project/script/dm3_project.js")
-// add_plugin("vendor/dm3-topicmaps/script/dm3_topicmaps.js")
+// Note: DM3 Type Editor must be added before DM3 Topicmaps to ensure all type definitions are loaded when rendering the topicmap
+// Note: DM3 Type Editor must be added before DM3 Typing to ensure the type definitions are up-to-date when building the type search menu
 // add_plugin("vendor/dm3-typeeditor/script/dm3_typeeditor.js")
-// Note: add DM3 Typing after DM3 Type Editor to let the former's type menu update properly
+// add_plugin("vendor/dm3-topicmaps/script/dm3_topicmaps.js")
 // add_plugin("vendor/dm3-typing/script/dm3_typing.js")
+// add_plugin("vendor/dm3-icons/script/dm3_icons.js")
