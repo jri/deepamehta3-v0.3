@@ -219,10 +219,14 @@ function Canvas() {
             var ct = canvas_topics[i]
             var w = ct.icon.width
             var h = ct.icon.height
-            ctx.drawImage(ct.icon, ct.x - w / 2, ct.y - h / 2)
-            // highlight
-            if (current_doc && current_doc._id == ct.id) {
-                ctx.strokeRect(ct.x - w / 2 - HIGHLIGHT_DIST, ct.y - h / 2 - HIGHLIGHT_DIST, w + 2 * HIGHLIGHT_DIST, h + 2 * HIGHLIGHT_DIST)
+            try {
+                ctx.drawImage(ct.icon, ct.x - w / 2, ct.y - h / 2)
+                // highlight
+                if (current_doc && current_doc._id == ct.id) {
+                    ctx.strokeRect(ct.x - w / 2 - HIGHLIGHT_DIST, ct.y - h / 2 - HIGHLIGHT_DIST, w + 2 * HIGHLIGHT_DIST, h + 2 * HIGHLIGHT_DIST)
+                }
+            } catch (e) {
+                log("ERROR at Canvas.draw_topics:\nicon.src=" + ct.icon.src + "\nicon.width=" + ct.icon.width + "\nicon.height=" + ct.icon.height /* + "\n" + JSON.stringify(e) */)
             }
         }
     }
