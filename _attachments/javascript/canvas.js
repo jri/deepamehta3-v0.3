@@ -226,7 +226,8 @@ function Canvas() {
                     ctx.strokeRect(ct.x - w / 2 - HIGHLIGHT_DIST, ct.y - h / 2 - HIGHLIGHT_DIST, w + 2 * HIGHLIGHT_DIST, h + 2 * HIGHLIGHT_DIST)
                 }
             } catch (e) {
-                log("ERROR at Canvas.draw_topics:\nicon.src=" + ct.icon.src + "\nicon.width=" + ct.icon.width + "\nicon.height=" + ct.icon.height /* + "\n" + JSON.stringify(e) */)
+                log("ERROR at Canvas.draw_topics:\nicon.src=" + ct.icon.src + "\nicon.width=" + ct.icon.width +
+                    "\nicon.height=" + ct.icon.height  + "\nicon.complete=" + ct.icon.complete/* + "\n" + JSON.stringify(e) */)
             }
         }
     }

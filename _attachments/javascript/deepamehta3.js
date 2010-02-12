@@ -770,7 +770,12 @@ function get_type_icon(type) {
 
 function create_image(src) {
     var img = new Image()
-    img.src = src
+    img.src = src   // Note: if src is a relative URL JavaScript extends img.src to an absolute URL
+    img.onload = function(arg0) {
+        // Note: "this" is the image. The argument is the "load" event.
+        log("Image ready: " + src /* + " " + img.src + "\n..... this=" + inspect(this) + "\n..... arg0=" + inspect(arg0) */)
+        notify_image_trackers()
+    }
     return img
 }
 
@@ -1009,4 +1014,37 @@ function Relation(id, type, doc1_id, doc2_id) {
     this.type = type
     this.doc1_id = doc1_id
     this.doc2_id = doc2_id
+}
+
+// === Image Tracker ===
+
+var image_tracker
+
+function create_image_tracker(callback_func) {
+
+    return image_tracker = new ImageTracker()
+
+    function ImageTracker() {
+
+        var types = []      // topic types whose images are tracked
+
+        this.add_type = function(type) {
+            if (types.indexOf(type) == -1) {
+                types.push(type)
+            }
+        }
+
+        // Checks if the tracked images are loaded completely.
+        // If so, the callback is triggered and this tracker is removed.
+        this.check = function() {
+            if (types.every(function(type) {return get_type_icon(type).complete})) {
+                callback_func()
+                image_tracker = undefined
+            }
+        }
+    }
+}
+
+function notify_image_trackers() {
+    image_tracker && image_tracker.check()
 }
