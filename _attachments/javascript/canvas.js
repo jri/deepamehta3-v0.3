@@ -16,6 +16,7 @@ function Canvas() {
     var canvas_topics
     var canvas_assocs
     var trans_x, trans_y            // canvas translation
+    var highlight_topic_id
     
     // View (Canvas)
     var canvas_width
@@ -45,11 +46,12 @@ function Canvas() {
 
 
     /**
-     * @param   refresh_canvas  Optional
-     * @param   x               Optional
-     * @param   y               Optional
+     * @param   highlight_topic     Optional: if true, set topic is highlighted.
+     * @param   refresh_canvas      Optional: if true, the canvas is refreshed.
+     * @param   x                   Optional
+     * @param   y                   Optional
      */
-    this.add_topic = function(id, type, label, refresh_canvas, x, y) {
+    this.add_topic = function(id, type, label, highlight_topic, refresh_canvas, x, y) {
         if (!topic_exists(id)) {
             // init geometry
             if (x == undefined && y == undefined) {
@@ -61,6 +63,10 @@ function Canvas() {
             canvas_topics.push(ct)
             // trigger hook
             trigger_hook("post_add_topic_to_canvas", ct)
+        }
+        // highlight topic
+        if (highlight_topic) {
+            set_highlight_topic(id)
         }
         // update GUI
         if (refresh_canvas) {
@@ -222,7 +228,7 @@ function Canvas() {
             try {
                 ctx.drawImage(ct.icon, ct.x - w / 2, ct.y - h / 2)
                 // highlight
-                if (current_doc && current_doc._id == ct.id) {
+                if (highlight_topic_id == ct.id) {
                     ctx.strokeRect(ct.x - w / 2 - HIGHLIGHT_DIST, ct.y - h / 2 - HIGHLIGHT_DIST, w + 2 * HIGHLIGHT_DIST, h + 2 * HIGHLIGHT_DIST)
                 }
             } catch (e) {
@@ -292,7 +298,7 @@ function Canvas() {
             if (ct) {
                 var rel = create_relation("Relation", current_doc._id, ct.id)
                 canvas.add_relation(rel._id, rel.rel_doc_ids[0], rel.rel_doc_ids[1])
-                select_document(current_doc._id)
+                select_topic(current_doc._id)
             } else {
                 draw()
             }
@@ -307,7 +313,7 @@ function Canvas() {
         } else {
             var ct = topic_by_position(event)
             if (ct) {
-                select_document(ct.id)
+                select_topic(ct.id)
             }
         }
         // remove topic activation
@@ -325,7 +331,7 @@ function Canvas() {
         var ct = topic_by_position(event)
         if (ct) {
             //
-            select_document(ct.id)
+            select_topic(ct.id, true)
             //
             var items = trigger_doctype_hook(current_doc, "context_menu_items")
             open_context_menu(items, "topic", event)
@@ -375,11 +381,29 @@ function Canvas() {
 
     /*** Model Helper ***/
 
+    // Mutator methods
+
     function init_model() {
         canvas_topics = []
         canvas_assocs = []
         trans_x = 0, trans_y = 0
     }
+
+    function select_topic(doc_id, synchronous) {
+        set_highlight_topic(doc_id)
+        draw()
+        if (synchronous) {
+            show_document(doc_id)
+        } else {
+            setTimeout(show_document, 0, doc_id)
+        }
+    }
+
+    function set_highlight_topic(topic_id) {
+        highlight_topic_id = topic_id
+    }
+
+    // Accessor methods
 
     function topic_index(doc_id) {
         for (var i = 0, ct; ct = canvas_topics[i]; i++) {

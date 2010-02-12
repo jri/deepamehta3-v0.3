@@ -137,15 +137,6 @@ function reveal_document(doc_id, do_relate) {
 }
 
 /**
- * Selects a document which is already visible on the canvas.
- * The document is displayed on the content panel and highlighted on the canvas.
- */
-function select_document(doc_id) {
-    show_document(doc_id)
-    canvas.refresh()
-}
-
-/**
  * Fetches the document and displays it on the content panel. Updates global state (current_doc),
  * provided the document could be fetched successfully.
  * If no document is specified, the current document is re-fetched.
@@ -173,7 +164,7 @@ function show_document(doc_id) {
     // update global state
     current_doc = doc
     //
-    setTimeout(trigger_doctype_hook, 0, current_doc, "render_document", current_doc)
+    trigger_doctype_hook(current_doc, "render_document", current_doc)
     //
     return true
 }
@@ -681,8 +672,13 @@ function create_result_topic(title, result, doctype_impl, result_function) {
 
 //
 
+/**
+ * Adds the topic to the canvas, highlights it, and refreshes the canvas.
+ *
+ * @param   doc     a topic document
+ */
 function add_topic_to_canvas(doc) {
-    canvas.add_topic(doc._id, doc.topic_type, topic_label(doc), true)
+    canvas.add_topic(doc._id, doc.topic_type, topic_label(doc), true, true)
 }
 
 //
