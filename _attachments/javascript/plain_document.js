@@ -85,12 +85,12 @@ PlainDocument.prototype = {
         }
 
         function render_buttons() {
-            $("#lower_toolbar").append("<button id='edit_button'>")
-            $("#lower_toolbar").append("<button id='attach_button'>")
-            $("#lower_toolbar").append("<button id='delete_button'>")
-            ui.button("edit_button", edit_document, "Edit", "pencil")
-            ui.button("attach_button", PlainDocument.prototype.attach_file, "Upload Attachment", "document")
-            ui.button("delete_button", PlainDocument.prototype.confirm_delete, "Delete", "trash")
+            $("#lower-toolbar").append("<button id='edit-button'>")
+            $("#lower-toolbar").append("<button id='attach-button'>")
+            $("#lower-toolbar").append("<button id='delete-button'>")
+            ui.button("edit-button", edit_document, "Edit", "pencil")
+            ui.button("attach-button", PlainDocument.prototype.attach_file, "Upload Attachment", "document")
+            ui.button("delete-button", PlainDocument.prototype.confirm_delete, "Delete", "trash")
         }
     },
 
@@ -125,10 +125,10 @@ PlainDocument.prototype = {
 
     post_render_form: function(doc) {
         // buttons
-        $("#lower_toolbar").append("<button id='save_button'>")
-        $("#lower_toolbar").append("<button id='cancel_button'>")
-        ui.button("save_button", this.update_document, "Save", "circle-check", true)
-        ui.button("cancel_button", this.cancel_editing, "Cancel")
+        $("#lower-toolbar").append("<button id='save-button'>")
+        $("#lower-toolbar").append("<button id='cancel-button'>")
+        ui.button("save-button", this.update_document, "Save", "circle-check", true)
+        ui.button("cancel-button", this.cancel_editing, "Cancel")
     },
 
     context_menu_items: function() {

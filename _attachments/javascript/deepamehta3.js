@@ -173,7 +173,7 @@ function show_document(doc_id) {
     // update global state
     current_doc = doc
     //
-    trigger_doctype_hook(current_doc, "render_document", current_doc)
+    setTimeout(trigger_doctype_hook, 0, current_doc, "render_document", current_doc)
     //
     return true
 }
@@ -788,7 +788,7 @@ function empty_detail_panel(is_form) {
     is_form_shown = is_form
     //
     $("#detail-panel").empty()
-    $("#lower_toolbar").empty()
+    $("#lower-toolbar").empty()
 }
 
 function render_object(object) {
