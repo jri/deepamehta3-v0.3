@@ -46,7 +46,7 @@ function Canvas() {
 
 
     /**
-     * @param   highlight_topic     Optional: if true, set topic is highlighted.
+     * @param   highlight_topic     Optional: if true, the topic is highlighted.
      * @param   refresh_canvas      Optional: if true, the canvas is refreshed.
      * @param   x                   Optional
      * @param   y                   Optional
@@ -494,6 +494,8 @@ function Canvas() {
         canvas_elem.click(clicked)
         canvas_elem.mousedown(mousedown)
         canvas_elem.mousemove(mousemove)
+        canvas_elem.mouseout(function() {log("Canvas left => mouseout")})
+        canvas_elem.mouseleave(function() {log("Canvas left => mouseleave")})
         canvas_elem.get(0).oncontextmenu = contextmenu
     }
 

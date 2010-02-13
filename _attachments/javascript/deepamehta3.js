@@ -1,7 +1,10 @@
 // Settings
-DB_NAME = "deepamehta3-db"
-SEARCH_FIELD_WIDTH = 16    // in chars
-GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
+var DB_NAME = "deepamehta3-db"
+var SEARCH_FIELD_WIDTH = 16    // in chars
+var GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
+
+var OPEN_LOG_WINDOW = true
+var LOG_PLUGIN_LOADING = false
 
 var db = new CouchDB(DB_NAME)
 var ui = new UIHelper()
@@ -22,10 +25,9 @@ var topic_type_icons = {}   // key: Type ID, value: icon (JavaScript Image objec
 var generic_topic_icon = create_image(GENERIC_TOPIC_ICON_SRC)
 topic_type_icons["Search Result"] = create_image("images/bucket.png")
 
-// debug window
-var debug = false
-if (debug) {
-    var debug_window = window.open()
+// log window
+if (OPEN_LOG_WINDOW) {
+    var log_window = window.open()
 }
 
 // --- register core facilities ---
@@ -518,34 +520,34 @@ function javascript_source(source_path) {
 
 function load_plugins() {
     // 1) load plugins
-    log("Loading " + plugin_sources.length + " plugins:")
+    if (LOG_PLUGIN_LOADING) log("Loading " + plugin_sources.length + " plugins:")
     for (var i = 0, plugin_source; plugin_source = plugin_sources[i]; i++) {
-        log("..... " + plugin_source)
+        if (LOG_PLUGIN_LOADING) log("..... " + plugin_source)
         javascript_source(plugin_source)
         //
         var plugin_class = basename(plugin_source)
-        log(".......... instantiating \"" + plugin_class + "\"")
+        if (LOG_PLUGIN_LOADING) log(".......... instantiating \"" + plugin_class + "\"")
         plugins.push(eval("new " + plugin_class))
     }
     // 2) load doctype implementations
-    log("Loading " + doctype_impl_sources.length + " doctype implementations:")
+    if (LOG_PLUGIN_LOADING) log("Loading " + doctype_impl_sources.length + " doctype implementations:")
     for (var i = 0, doctype_impl_src; doctype_impl_src = doctype_impl_sources[i]; i++) {
         load_doctype_impl(doctype_impl_src)
     }
     // 3) load CSS stylesheets
-    log("Loading " + css_stylesheets.length + " CSS stylesheets:")
+    if (LOG_PLUGIN_LOADING) log("Loading " + css_stylesheets.length + " CSS stylesheets:")
     for (var i = 0, css_stylesheet; css_stylesheet = css_stylesheets[i]; i++) {
-        log("..... " + css_stylesheet)
+        if (LOG_PLUGIN_LOADING) log("..... " + css_stylesheet)
         $("head").append($("<link>").attr({rel: "stylesheet", href: css_stylesheet, type: "text/css"}))
     }
 }
 
 function load_doctype_impl(doctype_impl_src) {
-    log("..... " + doctype_impl_src)
+    if (LOG_PLUGIN_LOADING) log("..... " + doctype_impl_src)
     javascript_source(doctype_impl_src)
     //
     var doctype_class = to_camel_case(basename(doctype_impl_src))
-    log(".......... instantiating \"" + doctype_class + "\"")
+    if (LOG_PLUGIN_LOADING) log(".......... instantiating \"" + doctype_class + "\"")
     var doctype_impl = eval("new " + doctype_class)
     doctype_impls[doctype_class] = doctype_impl
 }
@@ -947,10 +949,10 @@ function clone(obj) {
 }
 
 function log(text) {
-    if (debug) {
-        // Note: the debug window might be closed meanwhile
-        if (debug_window.document) {
-            debug_window.document.writeln(render_text(text) + "<br>")
+    if (OPEN_LOG_WINDOW) {
+        // Note: the log window might be closed meanwhile
+        if (log_window.document) {
+            log_window.document.writeln(render_text(text) + "<br>")
         }
     }
 }
