@@ -5,6 +5,7 @@ var GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
 
 var OPEN_LOG_WINDOW = false
 var LOG_PLUGIN_LOADING = false
+var LOG_IMAGE_LOADING = false
 
 var db = new CouchDB(DB_NAME)
 var ui = new UIHelper()
@@ -771,7 +772,7 @@ function create_image(src) {
     img.src = src   // Note: if src is a relative URL JavaScript extends img.src to an absolute URL
     img.onload = function(arg0) {
         // Note: "this" is the image. The argument is the "load" event.
-        // log("Image ready: " + src /* + " " + img.src + "\n..... this=" + inspect(this) + "\n..... arg0=" + inspect(arg0) */)
+        if (LOG_IMAGE_LOADING) log("Image ready: " + src)
         notify_image_trackers()
     }
     return img

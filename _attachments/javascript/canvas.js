@@ -532,7 +532,7 @@ function Canvas() {
         $("#canvas-panel").mouseleave(mouseleave)
         cox = canvas_elem.offset().left
         coy = canvas_elem.offset().top
-        log("Canvas offset: x=" + cox + " y=" + coy)
+        log("..... new canvas offset: x=" + cox + " y=" + coy)
         ctx = canvas_elem.get(0).getContext("2d")
         // bind events
         canvas_elem.click(clicked)
@@ -545,9 +545,9 @@ function Canvas() {
         var w_w = window.innerWidth
         var w_h = window.innerHeight
         var t_h = $("#upper-toolbar").height()
-        canvas_width = w_w - detail_panel_width - 36
-        canvas_height = w_h - t_h - 60
-        log("calculate_size: window size=" + w_w + "x" + w_h + " toolbar height=" + t_h)
+        canvas_width = w_w - detail_panel_width - 35    // 35px = 1.2em + 2 * 8px = 19(.2)px + 16px
+        canvas_height = w_h - t_h - 76                  // was 60, then 67 (healing login dialog), then 76 (healing datepicker)
+        log("Calculating canvas size: window size=" + w_w + "x" + w_h + " toolbar height=" + t_h)
         log("..... new canvas size=" + canvas_width + "x" + canvas_height)
     }
 
