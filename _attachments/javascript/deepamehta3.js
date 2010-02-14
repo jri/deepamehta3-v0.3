@@ -3,7 +3,7 @@ var DB_NAME = "deepamehta3-db"
 var SEARCH_FIELD_WIDTH = 16    // in chars
 var GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
 
-var OPEN_LOG_WINDOW = true
+var OPEN_LOG_WINDOW = false
 var LOG_PLUGIN_LOADING = false
 
 var db = new CouchDB(DB_NAME)
@@ -771,7 +771,7 @@ function create_image(src) {
     img.src = src   // Note: if src is a relative URL JavaScript extends img.src to an absolute URL
     img.onload = function(arg0) {
         // Note: "this" is the image. The argument is the "load" event.
-        log("Image ready: " + src /* + " " + img.src + "\n..... this=" + inspect(this) + "\n..... arg0=" + inspect(arg0) */)
+        // log("Image ready: " + src /* + " " + img.src + "\n..... this=" + inspect(this) + "\n..... arg0=" + inspect(arg0) */)
         notify_image_trackers()
     }
     return img

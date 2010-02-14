@@ -26,8 +26,8 @@ function Canvas() {
 
     // Short-term Interaction State
     var topic_move_in_progress      // true while topic move is in progress (boolean)
-    var assoc_create_in_progress    // true while new association is pulled (boolean)
     var canvas_move_in_progress     // true while canvas translation is in progress (boolean)
+    var relation_in_progress        // true while new association is pulled (boolean)
     var action_topic                // topic being moved / related (a CanvasTopic)
     var tmp_x, tmp_y                // coordinates while action is in progress
     var animation
@@ -160,9 +160,13 @@ function Canvas() {
         close_context_menu()
     }
 
-    this.begin_relation = function(doc_id) {
-        assoc_create_in_progress = true
+    this.begin_relation = function(doc_id, event) {
+        relation_in_progress = true
         action_topic = topic_by_id(doc_id)
+        //
+        tmp_x = cx(event)
+        tmp_y = cy(event)
+        draw()
     }
 
     this.clear = function() {
@@ -211,7 +215,7 @@ function Canvas() {
             draw_line(ct1.x, ct1.y, ct2.x, ct2.y, ASSOC_WIDTH, ASSOC_COLOR)
         }
         // 2) relation in progress
-        if (assoc_create_in_progress) {
+        if (relation_in_progress) {
             draw_line(action_topic.x, action_topic.y, tmp_x - trans_x, tmp_y - trans_y, ASSOC_WIDTH, ACTIVE_COLOR)
         }
         // 3) topics
@@ -257,7 +261,7 @@ function Canvas() {
             var ct = topic_by_position(event)
             if (ct) {
                 action_topic = ct
-            } else if (!assoc_create_in_progress) {
+            } else if (!relation_in_progress) {
                 canvas_move_in_progress = true
             }
         }
@@ -265,7 +269,7 @@ function Canvas() {
 
     function mousemove(event) {
         if (action_topic || canvas_move_in_progress) {
-            if (assoc_create_in_progress) {
+            if (relation_in_progress) {
                 tmp_x = cx(event)
                 tmp_y = cy(event)
             } else if (canvas_move_in_progress) {
@@ -286,13 +290,25 @@ function Canvas() {
         }
     }
 
+    function mouseleave(event) {
+        log("Mouse leaving canvas")
+        if (relation_in_progress) {
+            end_relation_in_progress()
+            draw()
+        } else if (topic_move_in_progress) {
+            end_topic_move()
+        } else if (canvas_move_in_progress) {
+            end_canvas_move()
+        }
+        end_interaction()
+    }
+
     function clicked(event) {
         //
         close_context_menu()
         //
-        if (assoc_create_in_progress) {
-            // end relation in progress
-            assoc_create_in_progress = false
+        if (relation_in_progress) {
+            end_relation_in_progress()
             //
             var ct = topic_by_position(event)
             if (ct) {
@@ -303,19 +319,33 @@ function Canvas() {
                 draw()
             }
         } else if (topic_move_in_progress) {
-            // end move
-            topic_move_in_progress = false
-            // trigger hook
-            trigger_hook("post_move_topic_on_canvas", action_topic)
+            end_topic_move()
         } else if (canvas_move_in_progress) {
-            // end translation
-            canvas_move_in_progress = false
+            end_canvas_move()
         } else {
             var ct = topic_by_position(event)
             if (ct) {
                 select_topic(ct.id)
             }
         }
+        end_interaction()
+    }
+
+    function end_topic_move() {
+        topic_move_in_progress = false
+        // trigger hook
+        trigger_hook("post_move_topic_on_canvas", action_topic)
+    }
+
+    function end_canvas_move() {
+        canvas_move_in_progress = false
+    }
+
+    function end_relation_in_progress() {
+        relation_in_progress = false
+    }
+
+    function end_interaction() {
         // remove topic activation
         action_topic = null
         // remove assoc activation
@@ -328,6 +358,9 @@ function Canvas() {
     /**************************************** Context Menu ****************************************/
 
     function contextmenu(event) {
+        //
+        close_context_menu()
+        //
         var ct = topic_by_position(event)
         if (ct) {
             //
@@ -347,7 +380,9 @@ function Canvas() {
         return false
     }
 
-    // type: "topic" / "assoc"
+    /**
+     * @param   type    "topic" / "assoc"
+     */
     function open_context_menu(items, type, event) {
         var contextmenu = $("<div>").addClass("contextmenu").css({
             position: "absolute",
@@ -355,21 +390,29 @@ function Canvas() {
             left: event.pageX + "px"
         })
         for (var i = 0, item; item = items[i]; i++) {
-            switch (type) {
-            case "topic":
-                var handler = "trigger_doctype_hook(current_doc, '" + item.handler + "')"
-                break
-            case "assoc":
-                var handler = "call_relation_function('" + item.handler + "')"
-                break
-            default:
-                alert("open_context_menu: unexpected type \"" + type + "\"")
-            }
-            var onclick = handler + "; canvas.close_context_menu(); return false"
-            var a = $("<a>").attr({href: "", onclick: onclick}).text(item.label)
+            var handler = context_menu_handler(type, item.handler)
+            var a = $("<a>").attr("href", "").click(handler).text(item.label)
             contextmenu.append(a)
         }
         $("#canvas-panel").append(contextmenu)
+    }
+
+    function context_menu_handler(type, handler) {
+        if (type == "topic") {
+            return function(event) {
+                trigger_doctype_hook(current_doc, handler, event)
+                canvas.close_context_menu()
+                return false
+            }
+        } else if (type == "assoc") {
+            return function() {
+                call_relation_function(handler)
+                canvas.close_context_menu()
+                return false
+            }
+        } else {
+            alert("context_menu_handler: unexpected type \"" + type + "\"")
+        }
     }
 
     function close_context_menu() {
@@ -486,6 +529,7 @@ function Canvas() {
         calculate_size()
         var canvas_elem = $("<canvas>").attr({id: "canvas", width: canvas_width, height: canvas_height})
         $("#canvas-panel").append(canvas_elem)
+        $("#canvas-panel").mouseleave(mouseleave)
         cox = canvas_elem.offset().left
         coy = canvas_elem.offset().top
         log("Canvas offset: x=" + cox + " y=" + coy)
@@ -494,8 +538,6 @@ function Canvas() {
         canvas_elem.click(clicked)
         canvas_elem.mousedown(mousedown)
         canvas_elem.mousemove(mousemove)
-        canvas_elem.mouseout(function() {log("Canvas left => mouseout")})
-        canvas_elem.mouseleave(function() {log("Canvas left => mouseleave")})
         canvas_elem.get(0).oncontextmenu = contextmenu
     }
 
@@ -597,8 +639,10 @@ function Canvas() {
             // setting) _before_ the clipping is applied. Otherwise the clipping can't be calculated
             // because the size of the label div is unknown.
             ct.label_div = $("<div>").addClass("canvas-topic-label").text(ct.label).css("max-width", LABEL_MAX_WIDTH + "px")
+            ct.label_div.mousemove(mousemove)   // to not block mouse gestures when moving over the label div
             $("#canvas-panel").append(ct.label_div)
             ct.label_div.css(label_position_css(ct))
+            // Note: we must add the label div as a canvas sibling. As a canvas child element it doesn't appear.
         }
 
         /**

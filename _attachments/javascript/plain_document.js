@@ -152,8 +152,8 @@ PlainDocument.prototype = {
         remove_document(false)
     },
 
-    relate: function() {
-        canvas.begin_relation(current_doc._id)
+    relate: function(event) {
+        canvas.begin_relation(current_doc._id, event)
     },
 
     /* Helper */
