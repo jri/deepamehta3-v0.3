@@ -291,7 +291,7 @@ function Canvas() {
     }
 
     function mouseleave(event) {
-        log("Mouse leaving canvas")
+        // log("Mouse leaving canvas")
         if (relation_in_progress) {
             end_relation_in_progress()
             draw()

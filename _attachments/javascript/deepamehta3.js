@@ -80,6 +80,89 @@ $(document).ready(function() {
     })
 })
 
+// --- CouchDB API extensions ---
+
+db.openAttachment = function(docId, attachment_name) {
+    this.last_req = this.request("GET", this.uri + encodeURIComponent(docId) + "/" + attachment_name)
+    if (this.last_req.status == 404)
+        return null
+    CouchDB.maybeThrowError(this.last_req)
+    return this.last_req.responseText
+}
+
+db.openBinaryAttachment = function(docId, attachment_name) {
+    this.last_req = request("GET", this.uri + encodeURIComponent(docId) + "/" + attachment_name)
+    if (this.last_req.status == 404)
+        return null
+    CouchDB.maybeThrowError(this.last_req)
+    return to_binary(this.last_req.responseText)
+
+    // Modified (and simplified) version of couch.js's CouchDB.request method to reveive binary data
+    function request(method, uri) {
+        var req = new XMLHttpRequest()
+        req.open(method, uri, false)
+        // Overriding the MIME type returned by the server, forcing Firefox to treat it as plain text, using a user-
+        // defined character set. This tells Firefox not to parse it, and to let the bytes pass through unprocessed.
+        // See https://developer.mozilla.org/En/Using_XMLHttpRequest
+        //     https://developer.mozilla.org/en/XMLHttpRequest
+        req.overrideMimeType("text/plain; charset=x-user-defined")
+        req.send("")
+        return req
+    }
+}
+
+// FIXME: doesn't work. Binary data gets corrupted while PUT.
+/* db.saveBinaryAttachmentAJAX = function(doc, attachment_name, attachment_data) {
+    var result = $.ajax({
+        async: false,
+        contentType: mime_type(attachment_name),
+        data: to_binary(attachment_data),
+        dataType: "json",
+        processData: false,
+        type: "PUT",
+        url: this.uri + encodeURIComponent(doc._id) + "/" + attachment_name + "?rev=" + doc._rev
+    }).responseText
+    doc._rev = result.rev
+    return result
+} */
+
+// FIXME: doesn't work. Binary data gets corrupted while PUT.
+// xhr.sendAsBinary() is probably the solution, but exists only in Firefox 3.
+/* db.saveBinaryAttachment = function(doc, attachment_name, attachment_data) {
+    var url = this.uri + encodeURIComponent(doc._id) + "/" + attachment_name + "?rev=" + doc._rev
+    var binary_data = to_binary(attachment_data)
+    var headers = {
+        "Content-Length": attachment_data.length,
+        "Content-Type": mime_type(attachment_name),
+        "Content-Transfer-Encoding": "binary"
+    }
+    log("Saving attachment " + url)
+    log("..... data size: " + attachment_data.length + " bytes, binary size: " + binary_data.length + " bytes")
+    log("..... headers=" + JSON.stringify(headers) + " content length=" + attachment_data.length)
+    this.last_req = request("PUT", url, {headers: headers, body: binary_data})
+    CouchDB.maybeThrowError(this.last_req)
+    var result = JSON.parse(this.last_req.responseText)
+    doc._rev = result.rev
+    return result
+
+    // Modified (and simplified) version of couch.js's CouchDB.request method to send binary data
+    function request(method, uri, options) {
+        var req = new XMLHttpRequest()
+        req.open(method, uri, false)
+        if (options.headers) {
+            var headers = options.headers
+            for (var headerName in headers) {
+                if (!headers.hasOwnProperty(headerName)) continue
+                req.setRequestHeader(headerName, headers[headerName])
+            }
+        }
+        req.send(options.body)
+        return req
+    }
+} */
+
+//
+
 function window_resized() {
     canvas.rebuild()
     $("#detail-panel").height($("#canvas").height())
@@ -364,20 +447,20 @@ function remove_document(delete_from_db) {
 /**
  * Creates a relation document and stores it in the DB.
  *
- * @param   rel_type        The relation type, e.g. "Relation", "Auxiliary".
- * @param   extra_fields    Optional: extra fields to be added to the relation (an object).
+ * @param   rel_type            The relation type, e.g. "Relation", "Auxiliary".
+ * @param   extra_attributes    Optional: proprietary attributes to be added to the relation (object).
  *
  * @return  The relation document as stored in the DB.
  */
-function create_relation(rel_type, doc1_id, doc2_id, extra_fields) {
+function create_relation(rel_type, doc1_id, doc2_id, extra_attributes) {
     var relation = {
         type: "Relation",
         rel_type: rel_type,
         rel_doc_ids: [doc1_id, doc2_id]
     }
-    // add extra fields
-    for (var key in extra_fields) {
-        relation[key] = extra_fields[key]
+    // add extra attributes
+    for (var attr_name in extra_attributes) {
+        relation[attr_name] = extra_attributes[attr_name]
     }
     //
     save_document(relation)
@@ -972,6 +1055,10 @@ function basename(path) {
     return RegExp.$1
 }
 
+function filename_ext(path) {
+    return path.substr(path.lastIndexOf(".") + 1)
+}
+
 function to_camel_case(str) {
     var res = ""
     var words = str.split("_")
@@ -998,6 +1085,27 @@ function to_id(str) {
 function format_date(date) {
     // For possible format strings see http://docs.jquery.com/UI/Datepicker/formatDate
     return date ? $.datepicker.formatDate("D, M d, yy", new Date(date)) : ""
+}
+
+function mime_type(path) {
+    switch (filename_ext(path)) {
+    case "gif":
+        return "image/gif"
+    case "jpg":
+        return "image/jpeg"
+    case "png":
+        return "image/png"
+    default:
+        alert("ERROR at mime_type: unexpected file type (" + path + ")")
+    }
+}
+
+function to_binary(str) {
+    var binary = ""
+    for (var i = 0; i < str.length; i++) {
+        binary += String.fromCharCode(str.charCodeAt(i) & 0xFF)
+    }
+    return binary
 }
 
 /*** Helper Classes ***/
