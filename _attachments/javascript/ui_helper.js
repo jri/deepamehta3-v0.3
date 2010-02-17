@@ -84,11 +84,15 @@ function UIHelper() {
 
         function Menu() {
 
+            // Model
+            // Note: the surrounding "menu_id", "handler", "items", and "menu_title" are also part of the menu's model.
             var stateful = !menu_title
-            var menu        // jQuery <div> object
-            var button      // the menu-triggering button (jQuery <button> object)
             var selection   // selected item (object with "value" and "label" elements). Used only for stateful select-like menus.
-            var dom
+
+            // GUI
+            var menu        // the actual menu (jQuery <div> object)
+            var button      // the menu-triggering button (jQuery <button> object)
+            var dom         // the top-level container (jQuery <span> object)
 
             // Note: the button must be build _before_ the menu is build
             // because adding menu items might affect the button label (in case of a stateful select-like menu).
@@ -119,7 +123,10 @@ function UIHelper() {
             }
 
             this.empty = function() {
+                // update GUI
                 menu.empty()
+                // update model
+                items = []
                 remove_selection()
             }
 
@@ -176,16 +183,6 @@ function UIHelper() {
                     // Note: this sets also the button label (in case of stateful select-like menus)
                     select_item(item)
                 }
-            }
-
-            /**
-             * ### FIXME: not used for DeepaMehta 3
-             *
-             * @param   index   the index of the item to select. Starts with 0. Note: separators do not count.
-             *                  If no such item exists nothing is performed.
-             */
-            function select(index) {
-                select_item(items[index])
             }
 
             /**
