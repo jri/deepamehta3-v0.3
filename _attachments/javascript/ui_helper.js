@@ -189,11 +189,11 @@ function UIHelper() {
             }
 
             /**
-             * @param   item    object with "value" and "label" elements.
+             * @param   item    object with "value" and "label" elements. If undefined nothing is performed.
              */
             function select_item(item) {
                 // Note: only select-like menus have selection state.
-                if (stateful && !item.is_trigger) {
+                if (stateful && item && !item.is_trigger) {
                     // update model
                     selection = item
                     // update GUI
@@ -280,14 +280,17 @@ function UIHelper() {
 
             /****************************** Helper ******************************/
 
+            /**
+             * Finds the menu item with the provided value.
+             *
+             * @return  the found item or undefined
+             */
             function find_item(value) {
                 for (var i = 0, item; item = items[i]; i++) {
                     if (item.value == value) {
                         return item
                     }
                 }
-                alert("ERROR in Menu.find_item: item with value \"" + value + "\" not found in menu \"" +
-                    menu_id + "\".\nHint: items are selected _by value_, NOT by label.")
             }
 
             function anchor_id(item_id) {
