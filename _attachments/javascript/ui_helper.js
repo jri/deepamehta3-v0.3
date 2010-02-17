@@ -58,6 +58,7 @@ function UIHelper() {
      *              <a>             - a menu item
      *
      * The menu's DOM structure is accessible through the menu's "dom" attribute (a jQuery object).
+     * Note: the top-level container's id attribute allows easy DOM selection of the menu, e.g. to replace it with another menu.
      *
      * @param   menu_id     The menu ID. Can be used later on to identify the menu, e.g. for adding items to it.
      *                      If a DOM element with such an ID exists it is replaced by the menu.
@@ -261,6 +262,7 @@ function UIHelper() {
             }
 
             function button_clicked() {
+                // log("Button of menu \"" + menu_id + "\" clicked")
                 if (menu.css("display") == "none") {
                     hide_all_menus()
                     show()

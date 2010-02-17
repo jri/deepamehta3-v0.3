@@ -71,7 +71,7 @@ $(document).ready(function() {
     $("#create-type-menu-placeholder").replaceWith(create_type_menu("create-type-menu").dom)
     ui.button("create_button", create_topic_from_menu, "Create", "plus")
     //
-    ui.menu("searchmode_select", set_searchmode)
+    ui.menu("searchmode_select", searchmode_selected)
     ui.menu("special_select", special_selected, undefined, "Special")
     //
     $(window).resize(window_resized)
@@ -168,11 +168,16 @@ function window_resized() {
     $("#detail-panel").height($("#canvas").height())
 }
 
-function set_searchmode(menu_item) {
+function searchmode_selected(menu_item) {
+    // Note: we must empty the current search widget _before_ the new search widget is build. Otherwise the
+    // search widget's event handlers might get lost.
+    // Consider this case: the "by Type" searchmode is currently selected and the user selects it again. The
+    // ui_menu() call for building the type menu will unnecessarily add the menu to the DOM because it finds
+    // an element with the same ID on the page. A subsequent empty() would dispose the just added type menu
+    // -- including its event handlers -- and the append() would eventually add the crippled type menu.
+    $("#search_widget").empty()
     var searchmode = menu_item.label
     var search_widget = trigger_hook("search_widget", searchmode)[0]
-    //
-    $("#search_widget").empty()
     $("#search_widget").append(search_widget)
 }
 
