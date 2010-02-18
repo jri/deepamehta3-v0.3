@@ -4,8 +4,11 @@ function dm3_tinymce() {
         theme: "advanced",
         content_css: "style/tinymce.css",
         plugins: "autoresize",
+        extended_valid_elements: "iframe[align<bottom?left?middle?right?top|class|frameborder|height|id|" +
+            "longdesc|marginheight|marginwidth|name|scrolling<auto?no?yes|src|style|title|width]",
         // Theme options
-        theme_advanced_buttons1: "formatselect,|,bullist,numlist,|,bold,italic,underline,|,link,unlink,anchor,|,image,|,undo,redo",
+        theme_advanced_buttons1: "formatselect,|,bullist,numlist,|,bold,italic,underline,|,link,unlink,anchor,|," +
+            "image,code,|,undo,redo",
         theme_advanced_buttons2: "fontselect,fontsizeselect,forecolor,backcolor",
         theme_advanced_buttons3: "",
         theme_advanced_blockformats: "h1,h2,h3,p",
