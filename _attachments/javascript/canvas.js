@@ -197,28 +197,13 @@ function Canvas() {
 
     function draw() {
         ctx.clearRect(-trans_x, -trans_y, canvas_width, canvas_height)
-        // 1) assocs
-        for (var i in canvas_assocs) {
-            var ca = canvas_assocs[i]
-            var ct1 = topic_by_id(ca.doc1_id)
-            var ct2 = topic_by_id(ca.doc2_id)
-            // assertion
-            if (!ct1 || !ct2) {
-                alert("draw: invalid association " + ca.id + " (endpoint doesn't exist)")
-                continue
-            }
-            // hightlight
-            if (current_rel_id == ca.id) {
-                draw_line(ct1.x, ct1.y, ct2.x, ct2.y, ACTIVE_ASSOC_WIDTH, ACTIVE_COLOR)
-            }
-            //
-            draw_line(ct1.x, ct1.y, ct2.x, ct2.y, ASSOC_WIDTH, ASSOC_COLOR)
-        }
-        // 2) relation in progress
+        //
+        draw_relations()
+        //
         if (relation_in_progress) {
             draw_line(action_topic.x, action_topic.y, tmp_x - trans_x, tmp_y - trans_y, ASSOC_WIDTH, ACTIVE_COLOR)
         }
-        // 3) topics
+        //
         draw_topics()
     }
 
@@ -239,6 +224,27 @@ function Canvas() {
                 log("ERROR at Canvas.draw_topics:\nicon.src=" + ct.icon.src + "\nicon.width=" + ct.icon.width +
                     "\nicon.height=" + ct.icon.height  + "\nicon.complete=" + ct.icon.complete/* + "\n" + JSON.stringify(e) */)
             }
+        }
+    }
+
+    function draw_relations() {
+        for (var i in canvas_assocs) {
+            var ca = canvas_assocs[i]
+            var ct1 = topic_by_id(ca.doc1_id)
+            var ct2 = topic_by_id(ca.doc2_id)
+            // assertion
+            if (!ct1 || !ct2) {
+                // TODO: deleted relations must be removed from all topicmaps.
+                log("ERROR in draw_relations: relation " + ca.id + " is missing a topic")
+                delete canvas_assocs[i]
+                continue
+            }
+            // hightlight
+            if (current_rel_id == ca.id) {
+                draw_line(ct1.x, ct1.y, ct2.x, ct2.y, ACTIVE_ASSOC_WIDTH, ACTIVE_COLOR)
+            }
+            //
+            draw_line(ct1.x, ct1.y, ct2.x, ct2.y, ASSOC_WIDTH, ASSOC_COLOR)
         }
     }
 
