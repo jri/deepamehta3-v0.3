@@ -557,11 +557,12 @@ function remove_relations(doc, delete_from_db) {
             if (relation) {
                 db.deleteDoc(relation)
             } else {
-                // Note: this can happen, but is no problem, if topicmaps contain themself.
+                // Note: this happens, but is no problem, if the current topicmap is deleted
+                // (the topicmap contains itself in this case).
                 var text = "ERROR at remove_relations: \"" + row.value.rel_type + "\" relation (" + row.id +
                     ") of topic \"" + topic_label(doc) + "\" (" + doc._id + ") not found in DB."
-                log(text)
-                // FIXME: the core should be independant from the DM3 Topicmaps plugin.
+                log("### " + text)
+                // FIXME: the core should not be aware of the DM3 Topicmaps plugin.
                 if (doc.topic_type != "Topicmap") {
                     alert(text)
                 }
@@ -990,14 +991,13 @@ function id_list(array) {
     return ids
 }
 
-/* FIXME: not in use
 function size(object) {
     var size = 0
     for (var key in object) {
         size++
     }
     return size
-} */
+}
 
 function inspect(object) {
     var str = "\n"

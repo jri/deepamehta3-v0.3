@@ -221,7 +221,7 @@ function Canvas() {
                     ctx.strokeRect(ct.x - w / 2 - HIGHLIGHT_DIST, ct.y - h / 2 - HIGHLIGHT_DIST, w + 2 * HIGHLIGHT_DIST, h + 2 * HIGHLIGHT_DIST)
                 }
             } catch (e) {
-                log("ERROR at Canvas.draw_topics:\nicon.src=" + ct.icon.src + "\nicon.width=" + ct.icon.width +
+                log("### ERROR at Canvas.draw_topics:\nicon.src=" + ct.icon.src + "\nicon.width=" + ct.icon.width +
                     "\nicon.height=" + ct.icon.height  + "\nicon.complete=" + ct.icon.complete/* + "\n" + JSON.stringify(e) */)
             }
         }
@@ -235,7 +235,7 @@ function Canvas() {
             // assertion
             if (!ct1 || !ct2) {
                 // TODO: deleted relations must be removed from all topicmaps.
-                log("ERROR in draw_relations: relation " + ca.id + " is missing a topic")
+                log("### ERROR in draw_relations: relation " + ca.id + " is missing a topic")
                 delete canvas_assocs[i]
                 continue
             }

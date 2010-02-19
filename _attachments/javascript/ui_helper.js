@@ -119,6 +119,7 @@ function UIHelper() {
             }
 
             this.add_separator = function() {
+                // update GUI
                 menu.append("<hr>")
             }
 
