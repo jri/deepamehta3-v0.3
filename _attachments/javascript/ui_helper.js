@@ -9,6 +9,13 @@ function UIHelper() {
 
 
     /**
+     * Creates and returns a button.
+     *
+     * The button's DOM structure is as follows:
+     *      <button id="button_id">     - the top-level container (get the provided menu ID)
+     *          <span>                  - the button's icon (provided it has an icon)
+     *          button_label            - the button's label (a text node)
+     *
      * @param   id      ID of the <button> element that is transformed to a jQuery UI button. If no such DOM element exists
      *                  in the document, a button element is created and the caller is responsible for adding the returned
      *                  button to the DOM tree.
@@ -26,7 +33,9 @@ function UIHelper() {
         button.attr({type: "button", submit: is_submit})
         if (icon) {
             var icon_span = $("<span>").addClass("ui-icon").addClass("ui-icon-" + icon)
-            icon_span.css({"float": "left", "margin-right": "5px"})
+            if (label) {
+                icon_span.css({"float": "left", "margin-right": "5px"})
+            }
             button.append(icon_span)
         }
         button.append(label)
@@ -50,7 +59,7 @@ function UIHelper() {
      * Creates and returns a menu.
      *
      * The menu's DOM structure is as follows:
-     *      <span id="menu_id">     - the top-level container (get the provided menu ID).
+     *      <span id="menu_id">     - the top-level container (get the provided menu ID)
      *          <button>            - the menu-triggering button
      *              <span>          - the button's icon (a triangle)
      *              <span>          - the button's label
