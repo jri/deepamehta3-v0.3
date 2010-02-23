@@ -10,7 +10,7 @@ function Canvas() {
     var CANVAS_ANIMATION_STEPS = 30
     var HIGHLIGHT_DIST = 5
     var LABEL_DIST_Y = 5
-    var LABEL_MAX_WIDTH = 120
+    var LABEL_MAX_WIDTH = "10em"
 
     // Model
     var canvas_topics
@@ -644,7 +644,7 @@ function Canvas() {
             // Note: we must add the label div to the document (along with text content and max-width
             // setting) _before_ the clipping is applied. Otherwise the clipping can't be calculated
             // because the size of the label div is unknown.
-            ct.label_div = $("<div>").addClass("canvas-topic-label").text(ct.label).css("max-width", LABEL_MAX_WIDTH + "px")
+            ct.label_div = $("<div>").addClass("canvas-topic-label").text(ct.label).css("max-width", LABEL_MAX_WIDTH)
             ct.label_div.mousemove(mousemove)   // to not block mouse gestures when moving over the label div
             $("#canvas-panel").append(ct.label_div)
             ct.label_div.css(label_position_css(ct))
