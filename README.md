@@ -69,7 +69,7 @@ Installation
 4.  Configure CouchDB for use with couchdb-lucene as described in the couchdb-lucene README for version 0.4:  
     <http://github.com/rnewson/couchdb-lucene/tree/v0.4>
 
-    (You also get there from the project's main page <http://github.com/rnewson/couchdb-lucene/> by choosing `v0.4` from the `all tags` menu.)
+    (You also get there from the project's main page <http://github.com/rnewson/couchdb-lucene/> by choosing `v0.4` from the `Switch Tags` menu.)
 
 5.  Start CouchDB server
         sudo -u couchdb couchdb
@@ -125,14 +125,24 @@ Updating
 2.  Update from Git repository:
         git pull
 
-3.  Upload changes to CouchDB:
+3.  Update your installed DeepaMehta 3 plugins by following the instructions on the respective plugin pages.
+
+4.  Upload changes to CouchDB:
         couchapp push http://localhost:5984/deepamehta3-db
 
 
 Version History
 ---------------
 
-**v0.2** -- Dec  1, 2009
+**v0.3** -- Mar 5, 2010
+
+* Persistent topicmaps (plugin *DM3 Topicmaps*)
+* Type editor (plugin *DM3 Type Editor*)
+* Icon picker (plugin *DM3 Icons*)
+* New topic type "To Do" (plugin *DM3 Project*)
+* More flexible plugin developer framework
+
+**v0.2** -- Dec 1, 2009
 
 * Framework for plugin developers
 * Autocompletion facility
@@ -147,4 +157,4 @@ Version History
 
 ------------
 Jörg Richter  
-Feb 9, 2010
+Mar 5, 2010
