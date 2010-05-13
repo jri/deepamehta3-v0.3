@@ -1,0 +1,17 @@
+<web-app>
+	<servlet>
+		<servlet-name>DeepaMehta Server</servlet-name>
+		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+		<init-param>
+			<param-name>com.sun.jersey.config.property.packages</param-name>
+			<param-value>de.deepamehta.service.resources</param-value>
+		</init-param>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>DeepaMehta Server</servlet-name>
+		<url-pattern>/rest/*</url-pattern>
+	</servlet-mapping>
+	<listener>
+		<listener-class>de.deepamehta.service.ServletListener</listener-class>
+	</listener>
+</web-app>

@@ -3,3 +3,4 @@
 vendor/dm3-*
 views/dm3-*
 fulltext/dm3-*
+target/
