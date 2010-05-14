@@ -1,4 +1,6 @@
-package de.deepamehta.service;
+package de.deepamehta.service.rest;
+
+import de.deepamehta.service.EmbeddedService;
 
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletContextEvent;
@@ -13,7 +15,6 @@ public class ServletListener implements ServletContextListener {
 
 	public void contextDestroyed(ServletContextEvent sce) {
 		System.out.println("### Servlet context destroyed: " + sce.getServletContext().getContextPath());
-		System.out.println("### Shutdown Neo4j DB");
-		DeepaMehtaService.DMS.shutdown();
+		EmbeddedService.SERVICE.shutdown();
 	}
 }

@@ -10,8 +10,6 @@ var LOG_IMAGE_LOADING = false
 var db = new DeepaMehtaService(DB_NAME)
 var ui = new UIHelper()
 
-db.getTopic()
-
 var current_doc         // topic document being displayed, or null if no one is currently displayed (a CouchDB document)
 var current_rel_id      // ID of relation being activated, or null if no one is currently activated
 var canvas              // the canvas that displays the topic map (a Canvas object)
@@ -344,7 +342,11 @@ function save_document(doc) {
         }
         //
         // update DB
-        db.save(doc)
+        if (update) {
+            db.setTopicProperties(doc)
+        } else {
+            db.createTopic(doc)
+        }
         //
         // trigger hook
         if (update) {
@@ -1042,7 +1044,7 @@ function clone(obj) {
 function log(text) {
     if (OPEN_LOG_WINDOW) {
         // Note: the log window might be closed meanwhile,
-		// or it might not apened at all due to browser security restrictions.
+        // or it might not apened at all due to browser security restrictions.
         if (log_window && log_window.document) {
             log_window.document.writeln(render_text(text) + "<br>")
         }
