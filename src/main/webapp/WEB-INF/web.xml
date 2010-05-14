@@ -1,29 +1,29 @@
 <web-app>
 
-	<servlet>
-		<servlet-name>DeepaMehta REST Service</servlet-name>
-		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
-		<init-param>
-			<param-name>com.sun.jersey.config.property.packages</param-name>
-			<param-value>de.deepamehta.service.rest.resources</param-value>
-		</init-param>
-	</servlet>
-	<servlet-mapping>
-		<servlet-name>DeepaMehta REST Service</servlet-name>
-		<url-pattern>/rest/*</url-pattern>
-	</servlet-mapping>
+    <servlet>
+        <servlet-name>DeepaMehta REST Service</servlet-name>
+        <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+        <init-param>
+            <param-name>com.sun.jersey.config.property.packages</param-name>
+            <param-value>de.deepamehta.service.rest.resources</param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>DeepaMehta REST Service</servlet-name>
+        <url-pattern>/rest/*</url-pattern>
+    </servlet-mapping>
 
-	<filter>
-		<filter-name>Logger Filter</filter-name>
-		<filter-class>de.deepamehta.service.rest.ServletFilter</filter-class>
-	</filter>
-	<filter-mapping>
-		<filter-name>Logger Filter</filter-name>
-		<servlet-name>DeepaMehta REST Service</servlet-name>
-	</filter-mapping>
+    <filter>
+        <filter-name>Logger Filter</filter-name>
+        <filter-class>de.deepamehta.service.rest.ServletFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>Logger Filter</filter-name>
+        <servlet-name>DeepaMehta REST Service</servlet-name>
+    </filter-mapping>
 
-	<listener>
-		<listener-class>de.deepamehta.service.rest.ServletListener</listener-class>
-	</listener>
+    <listener>
+        <listener-class>de.deepamehta.service.rest.ServletListener</listener-class>
+    </listener>
 
 </web-app>

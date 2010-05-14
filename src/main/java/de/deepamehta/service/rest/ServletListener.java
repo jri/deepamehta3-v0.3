@@ -9,12 +9,12 @@ import javax.servlet.ServletContextEvent;
 
 public class ServletListener implements ServletContextListener {
 
-	public void contextInitialized(ServletContextEvent sce) {
-		System.out.println("### Servlet context initialized: " + sce.getServletContext().getContextPath());
-	}
+    public void contextInitialized(ServletContextEvent sce) {
+        System.out.println("### Servlet context initialized: " + sce.getServletContext().getContextPath());
+    }
 
-	public void contextDestroyed(ServletContextEvent sce) {
-		System.out.println("### Servlet context destroyed: " + sce.getServletContext().getContextPath());
-		EmbeddedService.SERVICE.shutdown();
-	}
+    public void contextDestroyed(ServletContextEvent sce) {
+        System.out.println("### Servlet context destroyed: " + sce.getServletContext().getContextPath());
+        EmbeddedService.SERVICE.shutdown();
+    }
 }

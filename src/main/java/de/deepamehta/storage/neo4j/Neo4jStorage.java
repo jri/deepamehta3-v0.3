@@ -16,42 +16,42 @@ import java.util.Map;
 
 public class Neo4jStorage implements Storage {
 
-	private GraphDatabaseService graphDb;
+    private GraphDatabaseService graphDb;
 
-	public Neo4jStorage(String dbPath) {
-		System.out.println("### Creating storage based on Neo4j");
-		graphDb = new EmbeddedGraphDatabase(dbPath);
-	}
+    public Neo4jStorage(String dbPath) {
+        System.out.println("### Creating storage based on Neo4j");
+        graphDb = new EmbeddedGraphDatabase(dbPath);
+    }
 
     // Storage implementation
 
-	public Topic createTopic(String type, Map properties) {
-		Node node = null;
-		Transaction tx = graphDb.beginTx();
-		try {
-			node = graphDb.createNode();
-			System.out.println("### Creating node, ID=" + node.getId());
-			//
-			setNodeType(node, type);
-			setNodeProperties(node, properties);
-			//
-			tx.success();
-		} catch (Throwable e) {
-			System.out.println("### ERROR while creating node: " + e);
-		} finally {
-			tx.finish();
-			return new Topic(node.getId(), type, properties);
-		}
-	}
-
-	public void setTopicProperties(long id, Map properties) {
-		System.out.println("### Set node properties, ID=" + id);
+    public Topic createTopic(String type, Map properties) {
+        Node node = null;
+        Transaction tx = graphDb.beginTx();
+        try {
+            node = graphDb.createNode();
+            System.out.println("### Creating node, ID=" + node.getId());
+            //
+            setNodeType(node, type);
+            setNodeProperties(node, properties);
+            //
+            tx.success();
+        } catch (Throwable e) {
+            System.out.println("### ERROR while creating node: " + e);
+        } finally {
+            tx.finish();
+            return new Topic(node.getId(), type, properties);
+        }
     }
 
-	public void shutdown() {
-		System.out.println("### Shutdown Neo4j storage");
-		graphDb.shutdown();
-	}
+    public void setTopicProperties(long id, Map properties) {
+        System.out.println("### Set node properties, ID=" + id);
+    }
+
+    public void shutdown() {
+        System.out.println("### Shutdown Neo4j storage");
+        graphDb.shutdown();
+    }
 
     // Helper
 
