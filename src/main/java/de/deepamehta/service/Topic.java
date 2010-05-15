@@ -9,13 +9,13 @@ import java.util.Map;
 
 public class Topic {
 
-    long id;
-    String type;
-    Map<String, String> properties;
+    public long id;
+    public String type_id;
+    public Map<String, String> properties;
 
-    public Topic(long id, String type, Map properties) {
+    public Topic(long id, String type_id, Map properties) {
         this.id = id;
-        this.type = type;
+        this.type_id = type_id;
         this.properties = properties;
     }
 
@@ -27,7 +27,7 @@ public class Topic {
             }
             JSONObject o = new JSONObject();
             o.put("id", this.id);
-            o.put("type", this.type);
+            o.put("type_id", this.type_id);
             o.put("properties", properties);
             return o;
         } catch (JSONException je) {

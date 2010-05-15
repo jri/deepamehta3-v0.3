@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Enumeration;
 
 
@@ -25,15 +26,16 @@ public class ServletFilter implements Filter {
             HttpServletRequest r = (HttpServletRequest) request;
             System.out.println("### " + r.getMethod() + " " + r.getRequestURI() + " " + r.getQueryString());
             // header
-            Enumeration e1 = r.getHeaderNames();
-            while (e1.hasMoreElements()) {
-                String headerName = (String) e1.nextElement();
+            // Enumeration e1 = r.getHeaderNames();
+            for (String headerName : Arrays.asList("content-type", "accept")) {
+                // String headerName = (String) e1.nextElement();
                 Enumeration e2 = r.getHeaders(headerName);
                 while (e2.hasMoreElements()) {
                     String header = (String) e2.nextElement();
                     System.out.println("  # " + headerName + ": " + header);
                 }
             }
+            //
             /* body
             System.out.println("  #");
             BufferedReader in = request.getReader();

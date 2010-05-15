@@ -11,6 +11,7 @@ public class ServletListener implements ServletContextListener {
 
     public void contextInitialized(ServletContextEvent sce) {
         System.out.println("### Servlet context initialized: " + sce.getServletContext().getContextPath());
+        EmbeddedService.SERVICE.setServletContext(sce.getServletContext());
     }
 
     public void contextDestroyed(ServletContextEvent sce) {

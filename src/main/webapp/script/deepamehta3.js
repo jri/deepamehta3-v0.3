@@ -120,7 +120,7 @@ db.openBinaryAttachment = function(docId, attachment_name) {
         dataType: "json",
         processData: false,
         type: "PUT",
-        url: this.uri + encodeURIComponent(doc._id) + "/" + attachment_name + "?rev=" + doc._rev
+        url: this.uri + encodeURIComponent(doc.id) + "/" + attachment_name + "?rev=" + doc._rev
     }).responseText
     doc._rev = result.rev
     return result
@@ -129,7 +129,7 @@ db.openBinaryAttachment = function(docId, attachment_name) {
 // FIXME: doesn't work. Binary data gets corrupted while PUT.
 // xhr.sendAsBinary() is probably the solution, but exists only in Firefox 3.
 /* db.saveBinaryAttachment = function(doc, attachment_name, attachment_data) {
-    var url = this.uri + encodeURIComponent(doc._id) + "/" + attachment_name + "?rev=" + doc._rev
+    var url = this.uri + encodeURIComponent(doc.id) + "/" + attachment_name + "?rev=" + doc._rev
     var binary_data = to_binary(attachment_data)
     var headers = {
         "Content-Length": attachment_data.length,
@@ -188,7 +188,7 @@ function search() {
         var result_doc = trigger_hook("search", searchmode)[0]
         //
         save_document(result_doc)
-        show_document(result_doc._id)
+        show_document(result_doc.id)
         add_topic_to_canvas(current_doc)
     } catch (e) {
         alert("Error while searching: " + JSON.stringify(e))
@@ -215,11 +215,11 @@ function reveal_document(doc_id, do_relate) {
     }
     // create relation
     if (do_relate) {
-        var relation = get_relation_doc(current_doc._id, doc_id)
+        var relation = get_relation_doc(current_doc.id, doc_id)
         if (!relation) {
-            relation = create_relation("Auxiliary", current_doc._id, doc_id)
+            relation = create_relation("Auxiliary", current_doc.id, doc_id)
         }
-        canvas.add_relation(relation._id, relation.rel_doc_ids[0], relation.rel_doc_ids[1])
+        canvas.add_relation(relation.id, relation.rel_doc_ids[0], relation.rel_doc_ids[1])
     }
     // reveal document
     show_document(doc_id)
@@ -238,7 +238,7 @@ function reveal_document(doc_id, do_relate) {
 function show_document(doc_id) {
     if (doc_id == undefined) {
         if (current_doc) {
-            doc_id = current_doc._id
+            doc_id = current_doc.id
         } else {
             empty_detail_panel()
             return false
@@ -293,48 +293,74 @@ function create_topic_from_menu() {
 /**
  * Creates a topic document and stores it in the DB.
  *
- * @param   topic_type          The type ID, e.g. "Note".
- * @param   field_contents      Optional: contents to override the default content (object, key: field ID, value: content).
- * @param   extra_attributes    Optional: proprietary attributes to be added to the topic (object).
+ * @param   type_id         The type ID, e.g. "Note".
+ * @param   properties      Optional: contents to override the default content (object, key: field ID, value: content).
  *
- * @return  The topic document as stored in the DB.
+ * @return  The topic as stored in the DB.
  */
-function create_topic(topic_type, field_contents, extra_attributes) {
-    var typedef = clone(topic_types[topic_type])
-    var topic = create_raw_topic(topic_type, typedef.fields, typedef.view, typedef.implementation)
-    // override default content
-    for (var field_id in field_contents) {
-        get_field(topic, field_id).content = field_contents[field_id]
-    }
-    // add extra attributes
-    for (var attr_name in extra_attributes) {
-        topic[attr_name] = extra_attributes[attr_name]
-    }
-    //
-    save_document(topic)
-    //
+function create_topic(type_id, properties) {
+    var topic = create_raw_topic(type_id, properties)
+    var topic_id = create_topic_in_db(topic)
+    topic.id = topic_id
     return topic
 }
 
 /**
- * Creates a topic document in memory. Low-level method.
+ * Creates a topic in memory. Low-level method.
  *
- * @return  The topic document.
+ * @return  The topic.
  */
-function create_raw_topic(topic_type, fields, view, implementation) {
+function create_raw_topic(type_id, properties) {
     return {
-        type: "Topic",
-        topic_type: topic_type,
-        fields: fields,
-        view: view,
-        implementation: implementation
+        type_id: type_id,
+        properties: properties || {}
+    }
+}
+
+/**
+ * @param   an object with "type" and "properties" attributes.
+ *
+ * @return  the ID of the created topic.
+ */
+function create_topic_in_db(topic) {
+    alert("create_topic_in_db: " + JSON.stringify(topic))
+    try {
+        // trigger hook
+        trigger_hook("pre_create", topic)
+        //
+        // update DB
+        var topic_id = db.createTopic(topic)
+        //
+        // trigger hook
+        trigger_hook("post_create", topic)
+        //
+        return topic_id
+    } catch (e) {
+        alert("ERROR at create_topic_in_db: " + JSON.stringify(e).replace(/\\n/g, "\n"))
+    }
+}
+
+function update_document_in_db(doc) {
+    alert("update_document_in_db: " + JSON.stringify(doc))
+    try {
+        // trigger hook
+        trigger_hook("pre_update", doc)
+        //
+        // update DB
+        db.setTopicProperties(doc)
+        //
+        // trigger hook
+        trigger_hook("post_update", doc)
+    } catch (e) {
+        alert("ERROR at update_document_in_db: " + JSON.stringify(e).replace(/\\n/g, "\n"))
     }
 }
 
 function save_document(doc) {
+    alert("save_document: " + JSON.stringify(doc))
     try {
         // trigger hook
-        if (doc._id) {
+        if (doc.id) {
             trigger_hook("pre_update", doc)
             var update = true
         } else {
@@ -435,13 +461,13 @@ function remove_document(delete_from_db) {
     var tmp_doc = current_doc
     current_doc = null
     // update GUI
-    canvas.remove_topic(tmp_doc._id, true)
+    canvas.remove_topic(tmp_doc.id, true)
     show_document()
     // trigger hooks
     if (delete_from_db) {
         trigger_hook("post_delete", tmp_doc)
     } else {
-        trigger_hook("post_hide_topic_from_canvas", tmp_doc._id)
+        trigger_hook("post_hide_topic_from_canvas", tmp_doc.id)
     }
 }
 
@@ -553,7 +579,7 @@ function delete_relation(rel_id) {
  *                          If false, the relations are just removed from the view (canvas).
  */
 function remove_relations(doc, delete_from_db) {
-    var rows = get_related_topics(doc._id, true)
+    var rows = get_related_topics(doc.id, true)
     for (var i = 0, row; row = rows[i]; i++) {
         // update DB
         if (delete_from_db) {
@@ -564,7 +590,7 @@ function remove_relations(doc, delete_from_db) {
                 // Note: this happens, but is no problem, if the current topicmap is deleted
                 // (the topicmap contains itself in this case).
                 var text = "ERROR at remove_relations: \"" + row.value.rel_type + "\" relation (" + row.id +
-                    ") of topic \"" + topic_label(doc) + "\" (" + doc._id + ") not found in DB."
+                    ") of topic \"" + topic_label(doc) + "\" (" + doc.id + ") not found in DB."
                 log("### " + text)
                 // FIXME: the core should not be aware of the DM3 Topicmaps plugin.
                 if (doc.topic_type != "Topicmap") {
@@ -684,7 +710,7 @@ function trigger_hook(hook_name) {
 
 function trigger_doctype_hook(doc, hook_name, args) {
     // Lookup implementation
-    var doctype_impl = doctype_impls[doc.implementation]
+    var doctype_impl = doctype_impls[get_type(doc).implementation]
     // Trigger the hook only if it is defined (a doctype implementation must not define all hooks).
     // alert("trigger_doctype_hook: doctype=" + doctype_impl.name + " hook_name=" + hook_name + " hook=" + doctype_impl[hook_name])
     if (doctype_impl[hook_name]) {
@@ -773,8 +799,8 @@ function create_result_topic(title, result, doctype_impl, result_function) {
  *
  * @param   doc     a topic document
  */
-function add_topic_to_canvas(doc) {
-    canvas.add_topic(doc._id, doc.topic_type, topic_label(doc), true, true)
+function add_topic_to_canvas(topic) {
+    canvas.add_topic(topic.id, topic.type_id, topic_label(topic), true, true)
 }
 
 //
@@ -895,6 +921,10 @@ function render_object(object) {
 
 //
 
+function get_type(topic) {
+    return topic_types[topic.type_id]
+}
+
 function get_field(doc, field_id) {
     for (var i = 0, field; field = doc.fields[i]; i++) {
         if (field.id == field_id) {
@@ -936,16 +966,17 @@ function get_value(doc, field_id) {
 /**
  * Returns the label for the topic.
  */
-function topic_label(doc) {
+function topic_label(topic) {
+    var type = get_type(topic)
     // if there is a view.label_field declaration use the content of that field
-    if (doc.view) {
-        var field_id = doc.view.label_field
+    if (type.view) {
+        var field_id = type.view.label_field
         if (field_id) {
-            return get_value(doc, field_id)
+            return topic.properties[field_id] || ""
         }
     }
     // fallback: use the content of the first field
-    return doc.fields[0].content
+    return topic.properties[type.fields[0].id] || ""
 }
 
 function field_label(field) {

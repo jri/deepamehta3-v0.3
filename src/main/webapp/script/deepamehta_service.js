@@ -1,23 +1,24 @@
 function DeepaMehtaService(uri) {
 
-    this.createTopic = function(doc) {
-        var data = {type: doc.topic_type, properties: properties(doc)}
-        request("POST", uri + "topic", data)
+    this.createTopic = function(topic) {
+        var response = request("POST", uri + "topic", topic)
+        return response.topic_id
     }
 
-    this.setTopicProperties = function(doc) {
-        request("PUT", uri + "topic/" + doc._id, properties(doc))
+    this.setTopicProperties = function(topic) {
+        request("PUT", uri + "topic/" + topic.id, topic.properties)
     }
 
-    function properties(doc) {
+    /* function properties(doc) {
         var properties = {}
         for (var i = 0, field; field = doc.fields[i]; i++) {
             properties[field.id] = field.content
         }
         return properties
-    }
+    } */
 
     function request(method, uri, data) {
+        var responseData
         $.ajax({
             type: method,
             url: uri,
@@ -29,6 +30,7 @@ function DeepaMehtaService(uri) {
                 alert("AJAX SUCCESS\nserver status: " + textStatus +
                     "\nXHR status: " + xhr.status + " " + xhr.statusText +
                     "\nresponse data:\n" + JSON.stringify(data))
+                responseData = data
             },
             error: function(xhr, textStatus, exception) {
                 alert("AJAX ERROR\nserver status: " + textStatus +
@@ -36,5 +38,6 @@ function DeepaMehtaService(uri) {
                     "\nexception: " + JSON.stringify(exception))
             }
         })
+        return responseData
     }
 }

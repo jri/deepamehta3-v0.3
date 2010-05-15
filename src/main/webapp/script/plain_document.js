@@ -52,7 +52,7 @@ PlainDocument.prototype = {
 
             function related_topics(field) {
                 if (field.model.type == "relation") {
-                    var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
+                    var topics = PlainDocument.prototype.get_related_topics(doc.id, field)
                     PlainDocument.prototype.defined_relation_topics = PlainDocument.prototype.defined_relation_topics.concat(topics)
                     return topics
                 }
@@ -64,7 +64,7 @@ PlainDocument.prototype = {
                 PlainDocument.prototype.render_field_name("Attachments")
                 var field_value = $("<div>").addClass("field-value")
                 for (var attach in doc._attachments) {
-                    var a = $("<a>").attr("href", db.uri + doc._id + "/" + attach).text(attach)
+                    var a = $("<a>").attr("href", db.uri + doc.id + "/" + attach).text(attach)
                     field_value.append(a).append("<br>")
                 }
                 $("#detail-panel").append(field_value)
@@ -72,7 +72,7 @@ PlainDocument.prototype = {
         }
 
         function render_relations() {
-            var topics = get_topics(related_doc_ids(doc._id))
+            var topics = get_topics(related_doc_ids(doc.id))
             // don't render topics already rendered via "defined relations"
             substract(topics, PlainDocument.prototype.defined_relation_topics, function(topic, drt) {
                 return topic.id == drt.id
@@ -94,18 +94,18 @@ PlainDocument.prototype = {
         }
     },
 
-    render_form: function(doc) {
+    render_form: function(topic) {
         PlainDocument.prototype.topic_buffer = {}
         empty_detail_panel(true)
         //
-        for (var i = 0, field; field = doc.fields[i]; i++) {
+        for (var i = 0, field; field = get_type(topic).fields[i]; i++) {
             // field name
             this.render_field_name(field)
             // field value
-            var html = trigger_hook("render_form_field", field, doc, related_topics(field))[0]
+            var html = trigger_hook("render_form_field", field, topic, related_topics(field))[0]
             if (html != undefined) {
                 $("#detail-panel").append($("<div>").addClass("field-value").append(html))
-                trigger_hook("post_render_form_field", field, doc)
+                trigger_hook("post_render_form_field", field, topic)
             } else {
                 alert("ERROR at PlainDocument.render_form: field \"" + field.id + "\" not handled by any plugin.\n" +
                     "field model=" + JSON.stringify(field.model) + "\nfield view=" + JSON.stringify(field.view))
@@ -114,7 +114,7 @@ PlainDocument.prototype = {
 
         function related_topics(field) {
             if (field.model.type == "relation") {
-                var topics = PlainDocument.prototype.get_related_topics(doc._id, field)
+                var topics = PlainDocument.prototype.get_related_topics(topic.id, field)
                 // buffer current topic selection to compare it at submit time
                 PlainDocument.prototype.topic_buffer[field.id] = topics
                 //
@@ -153,7 +153,7 @@ PlainDocument.prototype = {
     },
 
     relate: function(event) {
-        canvas.begin_relation(current_doc._id, event)
+        canvas.begin_relation(current_doc.id, event)
     },
 
     /* Helper */
@@ -190,14 +190,14 @@ PlainDocument.prototype = {
         //
         trigger_hook("pre_submit_form", current_doc)
         //
-        for (var i = 0, field; field = current_doc.fields[i]; i++) {
+        for (var i = 0, field; field = get_type(current_doc).fields[i]; i++) {
             var content = trigger_hook("get_field_content", field, current_doc)[0]
             // Note: undefined content is an error (means: field type not handled by any plugin).
             // null is a valid hook result (means: plugin prevents the field from being updated).
             // typeof is required because null==undefined !
             if (typeof(content) != "undefined") {
                 if (content != null) {
-                    field.content = content
+                    current_doc.properties[field.id] = content
                 }
             } else {
                 alert("ERROR at PlainDocument.update_document: field \"" + field.id + "\" not handled by any plugin.\n" +
@@ -205,9 +205,9 @@ PlainDocument.prototype = {
             }
         }
         // update DB
-        save_document(current_doc)
+        update_document_in_db(current_doc)
         // update GUI
-        var topic_id = current_doc._id
+        var topic_id = current_doc.id
         var label = topic_label(current_doc)
         canvas.set_topic_label(topic_id, label)
         canvas.refresh()
@@ -223,7 +223,7 @@ PlainDocument.prototype = {
     /* Attachments */
 
     attach_file: function() {
-        $("#attachment_form").attr("action", db.uri + current_doc._id)
+        $("#attachment_form").attr("action", db.uri + current_doc.id)
         $("#attachment_form_rev").attr("value", current_doc._rev)
         $("#attachment_dialog").dialog("open")
     },
@@ -262,7 +262,7 @@ PlainDocument.prototype = {
         }
         // assertion
         if (this.id.substr(0, 6) != "field_") {
-            alert("ERROR at PlainDocument.autocomplete: document " + current_doc._id + "\n" +
+            alert("ERROR at PlainDocument.autocomplete: document " + current_doc.id + "\n" +
                 "has unexpected element id (" + this.id + ").\n" +
                 "It is expected to begin with \"field_\"")
             return

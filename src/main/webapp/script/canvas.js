@@ -318,9 +318,9 @@ function Canvas() {
             //
             var ct = topic_by_position(event)
             if (ct) {
-                var rel = create_relation("Relation", current_doc._id, ct.id)
-                canvas.add_relation(rel._id, rel.rel_doc_ids[0], rel.rel_doc_ids[1])
-                select_topic(current_doc._id)
+                var rel = create_relation("Relation", current_doc.id, ct.id)
+                canvas.add_relation(rel.id, rel.rel_doc_ids[0], rel.rel_doc_ids[1])
+                select_topic(current_doc.id)
             } else {
                 draw()
             }

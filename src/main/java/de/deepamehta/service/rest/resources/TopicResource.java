@@ -32,24 +32,39 @@ public class TopicResource {
     @POST
     public JSONObject createTopic(JSONObject topic) {
         try {
-            System.out.println("### TopicResource.createTopic invoked");
-            String type = topic.getString("type");
+            String type = topic.getString("type_id");
             Map properties = asMap(topic.getJSONObject("properties"));
-            return EmbeddedService.SERVICE.createTopic(type, properties).toJSON();
+            Topic t = EmbeddedService.SERVICE.createTopic(type, properties);
+            JSONObject response = new JSONObject();
+            response.put("topic_id", t.id);
+            return response;
         } catch (JSONException je) {
-            System.out.println("### ERROR while parsing JSON: " + je);
+            je.printStackTrace();
             return null;
         }
     }
 
     @PUT
-    @Path("/topic/{id}")
-    public void setTopicProperties(@PathParam("id") long id, Map properties) {
+    @Path("/{id}")
+    public void setTopicProperties(@PathParam("id") long id, JSONObject properties) {
         System.out.println("### TopicResource.setTopicProperties invoked");
-        EmbeddedService.SERVICE.setTopicProperties(id, properties);
+        EmbeddedService.SERVICE.setTopicProperties(id, asMap(properties));
     }
 
     // Helper
+
+    /* Map getMap(JSONObject o, String key) {
+        try {
+            if (o.has(key)) {
+                return asMap(o.getJSONObject(key));
+            } else {
+                return null;
+            }
+        } catch (JSONException je) {
+            je.printStackTrace();
+            return null;
+        }
+    } */
 
     Map<String, String> asMap(JSONObject o) {
         try {
@@ -61,7 +76,7 @@ public class TopicResource {
             }
             return map;
         } catch (JSONException je) {
-            System.out.println("### ERROR: " + je);
+            je.printStackTrace();
             return null;
         }
     }
