@@ -33,6 +33,8 @@ public class EmbeddedService {
         this.storage = new Neo4jStorage("/Users/jri/var/db/deepamehta-db-neo4j");
     }
 
+    // *** Service Methods (called by REST servlet) ***
+
     public void setServletContext(ServletContext servletContext) {
         System.out.println("### EmbeddedService: reveive servlet context");
         this.servletContext = servletContext;
@@ -40,27 +42,31 @@ public class EmbeddedService {
         init();
     }
 
-    public Topic createTopic(String type_id, Map properties) {
-        return storage.createTopic(type_id, properties);
+    public Topic createTopic(String typeId, Map properties) {
+        return storage.createTopic(typeId, properties);
     }
 
     public void setTopicProperties(long id, Map properties) {
         storage.setTopicProperties(id, properties);
     }
 
-    public Association createAssociation(long src_topic_id, long dst_topic_id, String type_id, Map properties) {
-        return storage.createAssociation(src_topic_id, dst_topic_id, type_id, properties);
+    public Association createAssociation(long srcTopicId, long dstTopicId, String typeId, Map properties) {
+        return storage.createAssociation(srcTopicId, dstTopicId, typeId, properties);
     }
 
-    public void createTopicType(Map properties, List field_definitions) {
-        storage.createTopicType(properties, field_definitions);
+    public void createTopicType(Map properties, List fieldDefinitions) {
+        storage.createTopicType(properties, fieldDefinitions);
+    }
+
+    public boolean topicTypeExists(String typeId) {
+        return storage.topicTypeExists(typeId);
     }
 
     public void shutdown() {
         storage.shutdown();
     }
 
-    // --- Private ---
+    // *** Private Helpers ****
 
     private void init() {
         try {
@@ -94,22 +100,28 @@ public class EmbeddedService {
 
     private void createType(JSONObject type) throws JSONException {
         //
+        String typeId = type.getString("type_id");
+        if (topicTypeExists(typeId)) {
+            System.out.println("### EmbeddedService: no need to create topic type \"" + typeId + "\" (already exists)");
+            return;
+        }
+        //
         Map properties = new HashMap();
-        properties.put("type_id",             type.getString("type_id"));
+        properties.put("type_id",             typeId);
         properties.put("type_icon_src",       type.getJSONObject("view").getString("icon_src"));
         properties.put("type_implementation", type.getString("implementation"));
         //
-        List field_definitions = new ArrayList();
-        JSONArray field_defs = type.getJSONArray("fields");
-        for (int i = 0; i < field_defs.length(); i++) {
-            Map field_definition = new HashMap();
-            JSONObject field_def = field_defs.getJSONObject(i);
-            field_definition.put("prop_id",       field_def.getString("id"));
-            field_definition.put("prop_datatype", field_def.getJSONObject("model").getString("type"));
-            field_definition.put("prop_editor",   field_def.getJSONObject("view").getString("editor"));
-            field_definitions.add(field_definition);
+        List fieldDefinitions = new ArrayList();
+        JSONArray fieldDefs = type.getJSONArray("fields");
+        for (int i = 0; i < fieldDefs.length(); i++) {
+            Map fieldDefinition = new HashMap();
+            JSONObject fieldDef = fieldDefs.getJSONObject(i);
+            fieldDefinition.put("prop_id",       fieldDef.getString("id"));
+            fieldDefinition.put("prop_datatype", fieldDef.getJSONObject("model").getString("type"));
+            fieldDefinition.put("prop_editor",   fieldDef.getJSONObject("view").getString("editor"));
+            fieldDefinitions.add(fieldDefinition);
         }
         //
-        createTopicType(properties, field_definitions);
+        createTopicType(properties, fieldDefinitions);
     }
 }

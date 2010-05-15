@@ -29,7 +29,7 @@ function DeepaMehtaService(uri) {
             success: function(data, textStatus, xhr) {
                 alert("AJAX SUCCESS\nserver status: " + textStatus +
                     "\nXHR status: " + xhr.status + " " + xhr.statusText +
-                    "\nresponse data:\n" + JSON.stringify(data))
+                    "\nresponse data: " + JSON.stringify(data))
                 responseData = data
             },
             error: function(xhr, textStatus, exception) {

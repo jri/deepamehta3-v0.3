@@ -18,7 +18,9 @@ public interface Storage {
 
     public Association createAssociation(long srcTopicId, long dstTopicId, String typeId, Map properties);
 
-    public void createTopicType(Map properties, List<Map> fieldDefinitions);
+    public void createTopicType(Map<String, String> properties, List<Map> fieldDefinitions);
+
+    public boolean topicTypeExists(String typeId);
 
     public void shutdown();
 }
