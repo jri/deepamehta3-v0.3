@@ -318,8 +318,8 @@ function Canvas() {
             //
             var ct = topic_by_position(event)
             if (ct) {
-                var rel = create_relation("Relation", current_doc.id, ct.id)
-                canvas.add_relation(rel.id, rel.rel_doc_ids[0], rel.rel_doc_ids[1])
+                var rel = create_relation("RELATION", current_doc.id, ct.id)
+                canvas.add_relation(rel.id, rel.src_topic_id, rel.dst_topic_id)
                 select_topic(current_doc.id)
             } else {
                 draw()

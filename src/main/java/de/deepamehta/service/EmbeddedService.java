@@ -1,5 +1,7 @@
 package de.deepamehta.service;
 
+import de.deepamehta.core.Topic;
+import de.deepamehta.core.Relation;
 import de.deepamehta.storage.Storage;
 import de.deepamehta.storage.neo4j.Neo4jStorage;
 
@@ -41,6 +43,9 @@ public class EmbeddedService {
         //
         init();
     }
+
+    // --- Topics ---
+
     public Topic getTopic(long id) {
         return storage.getTopic(id);
     }
@@ -57,9 +62,13 @@ public class EmbeddedService {
         storage.setTopicProperties(id, properties);
     }
 
-    public Association createAssociation(long srcTopicId, long dstTopicId, String typeId, Map properties) {
-        return storage.createAssociation(srcTopicId, dstTopicId, typeId, properties);
+    // --- Relations ---
+
+    public Relation createRelation(String typeId, long srcTopicId, long dstTopicId, Map properties) {
+        return storage.createRelation(typeId, srcTopicId, dstTopicId, properties);
     }
+
+    // --- Types ---
 
     public void createTopicType(Map properties, List fieldDefinitions) {
         storage.createTopicType(properties, fieldDefinitions);
@@ -68,6 +77,8 @@ public class EmbeddedService {
     public boolean topicTypeExists(String typeId) {
         return storage.topicTypeExists(typeId);
     }
+
+    // --- Misc ---
 
     public void shutdown() {
         storage.shutdown();

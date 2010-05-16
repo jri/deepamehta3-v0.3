@@ -46,7 +46,8 @@ public class ServletFilter implements Filter {
             //
             chain.doFilter(request, response);
         } catch (Throwable e) {
-            System.out.println("### ERROR while logging HTTP request: " + e);
+            System.out.println("### ERROR while logging HTTP request:");
+            e.printStackTrace();
         }
     }
 

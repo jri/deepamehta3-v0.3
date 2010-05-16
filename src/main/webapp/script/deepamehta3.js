@@ -1,5 +1,5 @@
 // Settings
-var DB_NAME = "/deepamehta-server-0.1-SNAPSHOT/rest/"
+var SERVICE_URI = "/deepamehta-server-0.1-SNAPSHOT/rest"
 var SEARCH_FIELD_WIDTH = 16    // in chars
 var GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
 
@@ -8,7 +8,7 @@ var LOG_PLUGIN_LOADING = false
 var LOG_IMAGE_LOADING = false
 var LOG_AJAX_REQUESTS = true
 
-var db = new DeepaMehtaService(DB_NAME)
+var db = new DeepaMehtaService(SERVICE_URI)
 var ui = new UIHelper()
 
 var current_doc         // topic document being displayed, or null if no one is currently displayed (a CouchDB document)
@@ -205,7 +205,7 @@ function special_selected(menu_item) {
 /**
  * Reveals a document and optionally relate it to the current document.
  *
- * @param   do_relate   Optional (boolean): if true a relation of type "Auxiliary" is created between
+ * @param   do_relate   Optional (boolean): if true a relation of type "NAV_HELPER" is created between
  *                      the document and the current document. If not specified false is assumed.
  */
 function reveal_document(doc_id, do_relate) {
@@ -218,9 +218,9 @@ function reveal_document(doc_id, do_relate) {
     if (do_relate) {
         var relation = get_relation_doc(current_doc.id, doc_id)
         if (!relation) {
-            relation = create_relation("Auxiliary", current_doc.id, doc_id)
+            relation = create_relation("NAV_HELPER", current_doc.id, doc_id)
         }
-        canvas.add_relation(relation.id, relation.rel_doc_ids[0], relation.rel_doc_ids[1])
+        canvas.add_relation(relation.id, relation.src_topic_id, relation.dst_topic_id)
     }
     // reveal document
     show_document(doc_id)
@@ -292,22 +292,22 @@ function create_topic_from_menu() {
 }
 
 /**
- * Creates a topic document and stores it in the DB.
+ * Creates a topic and stores it in the DB.
  *
  * @param   type_id         The type ID, e.g. "Note".
- * @param   properties      Optional: contents to override the default content (object, key: field ID, value: content).
+ * @param   properties      Optional: topic properties (object, key: field ID, value: content).
  *
  * @return  The topic as stored in the DB.
  */
 function create_topic(type_id, properties) {
     var topic = create_raw_topic(type_id, properties)
-    var topic_id = create_topic_in_db(topic)
+    var topic_id = db.create_topic(topic)
     topic.id = topic_id
     return topic
 }
 
 /**
- * Creates a topic in memory. Low-level method.
+ * Creates a topic in memory.
  *
  * @return  The topic.
  */
@@ -315,72 +315,6 @@ function create_raw_topic(type_id, properties) {
     return {
         type_id: type_id,
         properties: properties || {}
-    }
-}
-
-/**
- * @param   an object with "type" and "properties" attributes.
- *
- * @return  the ID of the created topic.
- */
-function create_topic_in_db(topic) {
-    try {
-        // trigger hook
-        trigger_hook("pre_create", topic)
-        //
-        // update DB
-        var topic_id = db.create_topic(topic)
-        //
-        // trigger hook
-        trigger_hook("post_create", topic)
-        //
-        return topic_id
-    } catch (e) {
-        alert("ERROR at create_topic_in_db: " + JSON.stringify(e).replace(/\\n/g, "\n"))
-    }
-}
-
-function update_document_in_db(doc) {
-    try {
-        // trigger hook
-        trigger_hook("pre_update", doc)
-        //
-        // update DB
-        db.set_topic_properties(doc)
-        //
-        // trigger hook
-        trigger_hook("post_update", doc)
-    } catch (e) {
-        alert("ERROR at update_document_in_db: " + JSON.stringify(e).replace(/\\n/g, "\n"))
-    }
-}
-
-function save_document(doc) {
-    alert("save_document: " + JSON.stringify(doc))
-    try {
-        // trigger hook
-        if (doc.id) {
-            trigger_hook("pre_update", doc)
-            var update = true
-        } else {
-            trigger_hook("pre_create", doc)
-        }
-        //
-        // update DB
-        if (update) {
-            db.set_topic_properties(doc)
-        } else {
-            db.create_topic(doc)
-        }
-        //
-        // trigger hook
-        if (update) {
-            trigger_hook("post_update", doc)
-        } else {
-            trigger_hook("post_create", doc)
-        }
-    } catch (e) {
-        alert("Error while saving: " + JSON.stringify(e).replace(/\\n/g, "\n"))
     }
 }
 
@@ -481,25 +415,30 @@ function remove_document(delete_from_db) {
 /**
  * Creates a relation document and stores it in the DB.
  *
- * @param   rel_type            The relation type, e.g. "Relation", "Auxiliary".
- * @param   extra_attributes    Optional: proprietary attributes to be added to the relation (object).
+ * @param   type_id             The relation type, e.g. "RELATION", "NAV_HELPER".
+ * @param   properties          Optional: relation properties (object, key: field ID, value: content).
  *
- * @return  The relation document as stored in the DB.
+ * @return  The relation as stored in the DB.
  */
-function create_relation(rel_type, doc1_id, doc2_id, extra_attributes) {
-    var relation = {
-        type: "Relation",
-        rel_type: rel_type,
-        rel_doc_ids: [doc1_id, doc2_id]
-    }
-    // add extra attributes
-    for (var attr_name in extra_attributes) {
-        relation[attr_name] = extra_attributes[attr_name]
-    }
-    //
-    save_document(relation)
-    //
+function create_relation(type_id, src_topic_id, dst_topic_id, properties) {
+    var relation = create_raw_relation(type_id, src_topic_id, dst_topic_id, properties)
+    var relation_id = db.create_relation(relation)
+    relation.id = relation_id
     return relation
+}
+
+/**
+ * Creates a relation in memory.
+ *
+ * @return  The relation.
+ */
+function create_raw_relation(type_id, src_topic_id, dst_topic_id, properties) {
+    return {
+        type_id: type_id,
+        src_topic_id: src_topic_id,
+        dst_topic_id: dst_topic_id,
+        properties: properties || {}
+    }
 }
 
 /**
@@ -547,7 +486,7 @@ function get_relation_doc(doc1_id, doc2_id, rel_type) {
 }
 
 /**
- * Returns the IDs of all relations of the document. Auxiliary relations are NOT included.
+ * Returns the IDs of all relations of the document. NAV_HELPER relations are NOT included.
  *
  * @return  Array of relation IDs.
  */

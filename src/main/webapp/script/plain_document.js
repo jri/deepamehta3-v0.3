@@ -205,7 +205,7 @@ PlainDocument.prototype = {
             }
         }
         // update DB
-        update_document_in_db(current_doc)
+        db.set_topic_properties(current_doc)
         // update GUI
         var topic_id = current_doc.id
         var label = topic_label(current_doc)

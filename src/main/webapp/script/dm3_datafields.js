@@ -124,7 +124,7 @@ function dm3_datafields() {
                         )
                         if (checkbox.checked) {
                             if (!was_checked_before) {
-                                create_relation("Relation", doc.id, checkbox.id)
+                                create_relation("RELATION", doc.id, checkbox.id)
                             }
                         } else {
                             if (was_checked_before) {

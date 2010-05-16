@@ -1,27 +1,42 @@
-function DeepaMehtaService(uri) {
+function DeepaMehtaService(service_uri) {
+
+    // *** Topics ***
 
     this.get_topic = function(topic_id) {
-        return request("GET", uri + "topic/" + topic_id)
+        return request("GET", "/topic/" + topic_id)
     }
 
     this.get_related_topics = function(topic_id, exclude_rel_types) {
         var query_string = ""
         if (exclude_rel_types) {
-            for (var i = 0; i < exclude_rel_types.length; i++) {
-                exclude_rel_types[i] = "exclude=" + exclude_rel_types[i]
-            }
-            query_string = "?" + exclude_rel_types.join("&")
+            query_string = "?" + param_list(exclude_rel_types, "exclude")
         }
-        return request("GET", uri + "topic/" + topic_id + "/relationships" + query_string)
+        return request("GET", "/topic/" + topic_id + "/related_topics" + query_string)
     }
 
     this.create_topic = function(topic) {
-        var response = request("POST", uri + "topic", topic)
+        var response = request("POST", "/topic", topic)
         return response.topic_id
     }
 
     this.set_topic_properties = function(topic) {
-        request("PUT", uri + "topic/" + topic.id, topic.properties)
+        request("PUT", "/topic/" + topic.id, topic.properties)
+    }
+
+    // *** Relations ***
+
+    this.create_relation = function(relation) {
+        var response = request("POST", "/relation", relation)
+        return response.relation_id
+    }
+
+    // *** Private Helpers ***
+
+    function param_list(value_array, param_name) {
+        for (var i = 0; i < value_array.length; i++) {
+            value_array[i] = param_name + "=" + value_array[i]
+        }
+        return value_array.join("&")
     }
 
     function request(method, uri, data) {
@@ -29,7 +44,7 @@ function DeepaMehtaService(uri) {
         if (LOG_AJAX_REQUESTS) log(method + " " + uri + "\n..... " + JSON.stringify(data))
         $.ajax({
             type: method,
-            url: uri,
+            url: service_uri + uri,
             contentType: "application/json",
             data: JSON.stringify(data),
             processData: false,

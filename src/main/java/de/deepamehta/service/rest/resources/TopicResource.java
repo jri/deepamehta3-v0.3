@@ -1,7 +1,8 @@
 package de.deepamehta.service.rest.resources;
 
+import de.deepamehta.core.Topic;
+import de.deepamehta.core.JSONHelper;
 import de.deepamehta.service.EmbeddedService;
-import de.deepamehta.service.Topic;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -38,7 +39,7 @@ public class TopicResource {
     }
 
     @GET
-    @Path("/{id}/relationships")
+    @Path("/{id}/related_topics")
     public JSONArray getRelatedTopics(@PathParam("id") long id, @QueryParam("exclude") List excludeRelTypes)
                                                                                         throws JSONException {
         System.out.println("### getRelatedTopics(): id=" + id + " exclude=" + excludeRelTypes.toString() +
@@ -47,55 +48,22 @@ public class TopicResource {
     }
 
     @POST
-    public JSONObject createTopic(JSONObject topic) {
-        try {
-            String type = topic.getString("type_id");
-            Map properties = jsonToMap(topic.getJSONObject("properties"));
-            Topic t = EmbeddedService.SERVICE.createTopic(type, properties);
-            JSONObject response = new JSONObject();
-            response.put("topic_id", t.id);
-            return response;
-        } catch (JSONException je) {
-            je.printStackTrace();
-            return null;
-        }
+    public JSONObject createTopic(JSONObject topic) throws JSONException {
+        String type = topic.getString("type_id");
+        Map properties = JSONHelper.toMap(topic.getJSONObject("properties"));
+        Topic t = EmbeddedService.SERVICE.createTopic(type, properties);
+        JSONObject response = new JSONObject();
+        response.put("topic_id", t.id);
+        return response;
     }
 
     @PUT
     @Path("/{id}")
-    public void setTopicProperties(@PathParam("id") long id, JSONObject properties) {
-        EmbeddedService.SERVICE.setTopicProperties(id, jsonToMap(properties));
+    public void setTopicProperties(@PathParam("id") long id, JSONObject properties) throws JSONException {
+        EmbeddedService.SERVICE.setTopicProperties(id, JSONHelper.toMap(properties));
     }
 
     // *** Private Helpers ***
-
-    /* Map getMap(JSONObject o, String key) {
-        try {
-            if (o.has(key)) {
-                return asMap(o.getJSONObject(key));
-            } else {
-                return null;
-            }
-        } catch (JSONException je) {
-            je.printStackTrace();
-            return null;
-        }
-    } */
-
-    private Map<String, String> jsonToMap(JSONObject o) {
-        try {
-            Map<String, String> map = new HashMap<String, String>();
-            Iterator i = o.keys();
-            while (i.hasNext()) {
-                String key = (String) i.next();
-                map.put(key, o.getString(key));
-            }
-            return map;
-        } catch (JSONException je) {
-            je.printStackTrace();
-            return null;
-        }
-    }
 
     private JSONArray listToJson(List<Topic> topics) throws JSONException {
         JSONArray array = new JSONArray();

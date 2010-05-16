@@ -1,7 +1,7 @@
 package de.deepamehta.storage;
 
-import de.deepamehta.service.Topic;
-import de.deepamehta.service.Association;
+import de.deepamehta.core.Topic;
+import de.deepamehta.core.Relation;
 
 import java.util.Map;
 import java.util.List;
@@ -9,6 +9,8 @@ import java.util.List;
 
 
 public interface Storage {
+
+    // --- Topics ---
 
     public Topic getTopic(long id);
 
@@ -18,11 +20,17 @@ public interface Storage {
 
     public void setTopicProperties(long id, Map properties);
 
-    public Association createAssociation(long srcTopicId, long dstTopicId, String typeId, Map properties);
+    // --- Relations ---
+
+    public Relation createRelation(String typeId, long srcTopicId, long dstTopicId, Map properties);
+
+    // --- Types ---
 
     public void createTopicType(Map<String, String> properties, List<Map> fieldDefinitions);
 
     public boolean topicTypeExists(String typeId);
+
+    // --- Misc ---
 
     public void shutdown();
 }

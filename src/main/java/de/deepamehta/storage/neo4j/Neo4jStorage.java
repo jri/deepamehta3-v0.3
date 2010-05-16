@@ -1,12 +1,13 @@
 package de.deepamehta.storage.neo4j;
 
+import de.deepamehta.core.Topic;
+import de.deepamehta.core.Relation;
 import de.deepamehta.storage.Storage;
-import de.deepamehta.service.Topic;
-import de.deepamehta.service.Association;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
@@ -42,7 +43,15 @@ public class Neo4jStorage implements Storage {
         index = new LuceneIndexService(graphDb);
     }
 
+
+
+    // ******************************
     // *** Storage implementation ***
+    // ******************************
+
+
+
+    // --- Topics ---
 
     @Override
     public Topic getTopic(long id) {
@@ -53,7 +62,7 @@ public class Neo4jStorage implements Storage {
             System.out.println("### Neo4j: getting node " + id);
             Node node = graphDb.getNodeById(id);
             typeId = (String) getNodeType(node).getProperty("type_id");
-            properties = getNodeProperties(node);
+            properties = getProperties(node);
             //
             tx.success();   
         } catch (Throwable e) {
@@ -96,7 +105,7 @@ public class Neo4jStorage implements Storage {
             System.out.println("### Neo4j: creating node, ID=" + node.getId());
             //
             setNodeType(node, typeId);
-            setNodeProperties(node, properties);
+            setProperties(node, properties);
             //
             tx.success();
         } catch (Throwable e) {
@@ -113,7 +122,7 @@ public class Neo4jStorage implements Storage {
         try {
             System.out.println("### Neo4j: setting properties of node " + id + ": " + properties.toString());
             Node node = graphDb.getNodeById(id);
-            setNodeProperties(node, properties);
+            setProperties(node, properties);
             //
             tx.success();
         } catch (Throwable e) {
@@ -123,10 +132,30 @@ public class Neo4jStorage implements Storage {
         }
     }
 
+    // --- Relations ---
+
     @Override
-    public Association createAssociation(long src_topicId, long dst_topicId, String typeId, Map properties) {
-        return null;
+    public Relation createRelation(String typeId, long srcTopicId, long dstTopicId, Map properties) {
+        Relationship relationship = null;
+        Transaction tx = graphDb.beginTx();
+        try {
+            System.out.println("### Neo4j: creating relation from node " + srcTopicId + " to " + dstTopicId);
+            Node srcNode = graphDb.getNodeById(srcTopicId);
+            Node dstNode = graphDb.getNodeById(dstTopicId);
+            relationship = srcNode.createRelationshipTo(dstNode, RelType.valueOf(typeId));
+            //
+            setProperties(relationship, properties);
+            //
+            tx.success();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            tx.finish();
+            return new Relation(relationship.getId(), typeId, srcTopicId, dstTopicId, properties);
+        }
     }
+
+    // --- Types ---
 
     @Override
     public void createTopicType(Map<String, String> properties, List<Map> fieldDefinitions) {
@@ -135,13 +164,13 @@ public class Neo4jStorage implements Storage {
             Node type = graphDb.createNode();
             String typeId = properties.get("type_id");
             System.out.println("### Neo4j: creating topic type \"" + typeId + "\", ID=" + type.getId());
-            setNodeProperties(type, properties);
+            setProperties(type, properties);
             index.index(type, "type_id", typeId);
             graphDb.getReferenceNode().createRelationshipTo(type, RelType.TOPIC_TYPE);
             //
             for (Map fieldDefinition : fieldDefinitions) {
                 Node fieldDef = graphDb.createNode();
-                setNodeProperties(fieldDef, fieldDefinition);
+                setProperties(fieldDef, fieldDefinition);
                 type.createRelationshipTo(fieldDef, RelType.DATA_FIELD);
             }
             //
@@ -168,6 +197,8 @@ public class Neo4jStorage implements Storage {
         }
     }
 
+    // --- Misc ---
+
     @Override
     public void shutdown() {
         System.out.println("### Neo4j: shutting down storage and indexer");
@@ -175,21 +206,27 @@ public class Neo4jStorage implements Storage {
         index.shutdown();
     }
 
+
+
+    // ***********************
     // *** Private Helpers ***
+    // ***********************
+
+
 
     // --- Properties ---
 
-    private Map getNodeProperties(Node node) {
+    private Map getProperties(PropertyContainer container) {
         Map properties = new HashMap();
-        for (String key : node.getPropertyKeys()) {
-            properties.put(key, node.getProperty(key));
+        for (String key : container.getPropertyKeys()) {
+            properties.put(key, container.getProperty(key));
         }
         return properties;
     }
 
-    private void setNodeProperties(Node node, Map<String, String> properties) {
+    private void setProperties(PropertyContainer container, Map<String, String> properties) {
         for (String key : properties.keySet()) {
-            node.setProperty(key, properties.get(key));
+            container.setProperty(key, properties.get(key));
         }
     }
 
