@@ -1,24 +1,32 @@
 function DeepaMehtaService(uri) {
 
-    this.createTopic = function(topic) {
+    this.get_topic = function(topic_id) {
+        return request("GET", uri + "topic/" + topic_id)
+    }
+
+    this.get_related_topics = function(topic_id, exclude_rel_types) {
+        var query_string = ""
+        if (exclude_rel_types) {
+            for (var i = 0; i < exclude_rel_types.length; i++) {
+                exclude_rel_types[i] = "exclude=" + exclude_rel_types[i]
+            }
+            query_string = "?" + exclude_rel_types.join("&")
+        }
+        return request("GET", uri + "topic/" + topic_id + "/relationships" + query_string)
+    }
+
+    this.create_topic = function(topic) {
         var response = request("POST", uri + "topic", topic)
         return response.topic_id
     }
 
-    this.setTopicProperties = function(topic) {
+    this.set_topic_properties = function(topic) {
         request("PUT", uri + "topic/" + topic.id, topic.properties)
     }
 
-    /* function properties(doc) {
-        var properties = {}
-        for (var i = 0, field; field = doc.fields[i]; i++) {
-            properties[field.id] = field.content
-        }
-        return properties
-    } */
-
     function request(method, uri, data) {
         var responseData
+        if (LOG_AJAX_REQUESTS) log(method + " " + uri + "\n..... " + JSON.stringify(data))
         $.ajax({
             type: method,
             url: uri,
@@ -27,15 +35,13 @@ function DeepaMehtaService(uri) {
             processData: false,
             async: false,
             success: function(data, textStatus, xhr) {
-                alert("AJAX SUCCESS\nserver status: " + textStatus +
-                    "\nXHR status: " + xhr.status + " " + xhr.statusText +
-                    "\nresponse data: " + JSON.stringify(data))
+                if (LOG_AJAX_REQUESTS) log("..... " + xhr.status + " " + xhr.statusText +
+                    "\n..... " + JSON.stringify(data))
                 responseData = data
             },
             error: function(xhr, textStatus, exception) {
-                alert("AJAX ERROR\nserver status: " + textStatus +
-                    "\nXHR status: " + xhr.status + " " + xhr.statusText +
-                    "\nexception: " + JSON.stringify(exception))
+                if (LOG_AJAX_REQUESTS) log("..... " + xhr.status + " " + xhr.statusText +
+                    "\n..... exception: " + JSON.stringify(exception))
             }
         })
         return responseData

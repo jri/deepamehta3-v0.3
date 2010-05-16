@@ -18,13 +18,13 @@ function dm3_datafields() {
             switch (field.view.editor) {
             case "single line":
             case "multi line":
-                return render_text(field.content)
+                return render_text(doc.properties[field.id])
             default:
                 alert("render_field_content: unexpected field editor (" + field.view.editor + ")")
             }
             break
         case "date":
-            return format_date(field.content)
+            return format_date(doc.properties[field.id])
         case "relation":
             switch (field.view.editor) {
             case "checkboxes":
@@ -47,7 +47,7 @@ function dm3_datafields() {
         function render_text_field(field) {
             switch (field.view.editor) {
             case "single line":
-                var input = $("<input>").attr({type: "text", id: "field_" + field.id, value: field.content, size: DEFAULT_FIELD_WIDTH})
+                var input = $("<input>").attr({type: "text", id: "field_" + field.id, value: doc.properties[field.id], size: DEFAULT_FIELD_WIDTH})
                 if (field.view.autocomplete_indexes) {
                     input.keyup(PlainDocument.prototype.autocomplete)
                     input.blur(PlainDocument.prototype.lost_focus)
@@ -56,19 +56,19 @@ function dm3_datafields() {
                 return input
             case "multi line":
                 var lines = field.view.lines || DEFAULT_AREA_HEIGHT
-                return $("<textarea>").attr({id: "field_" + field.id, rows: lines, cols: DEFAULT_FIELD_WIDTH}).text(field.content)
+                return $("<textarea>").attr({id: "field_" + field.id, rows: lines, cols: DEFAULT_FIELD_WIDTH}).text(doc.properties[field.id])
             default:
                 alert("render_text_field: unexpected field editor (" + field.view.editor + ")")
             }
         }
 
         function render_date_field(field) {
-            var input = $("<input>").attr({type: "hidden", id: "field_" + field.id, value: field.content})
+            var input = $("<input>").attr({type: "hidden", id: "field_" + field.id, value: doc.properties[field.id]})
             input.change(function() {
                 $("span", $(this).parent()).text(format_date(this.value))
             })
             var date_div = $("<div>")
-            date_div.append($("<span>").css("margin-right", "1em").text(format_date(field.content)))
+            date_div.append($("<span>").css("margin-right", "1em").text(format_date(doc.properties[field.id])))
             date_div.append(input)
             input.datepicker({firstDay: 1, showAnim: "fadeIn", showOtherMonths: true, showOn: "button",
                 buttonImage: "images/calendar.gif", buttonImageOnly: true, buttonText: "Choose Date"})

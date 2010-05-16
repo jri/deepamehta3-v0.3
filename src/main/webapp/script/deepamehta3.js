@@ -4,8 +4,9 @@ var SEARCH_FIELD_WIDTH = 16    // in chars
 var GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
 
 var OPEN_LOG_WINDOW = true
-var LOG_PLUGIN_LOADING = true
+var LOG_PLUGIN_LOADING = false
 var LOG_IMAGE_LOADING = false
+var LOG_AJAX_REQUESTS = true
 
 var db = new DeepaMehtaService(DB_NAME)
 var ui = new UIHelper()
@@ -245,7 +246,7 @@ function show_document(doc_id) {
         }
     }
     // fetch document
-    var doc = db.open(doc_id)
+    var doc = db.get_topic(doc_id)
     //
     if (doc == null) {
         return false
@@ -323,13 +324,12 @@ function create_raw_topic(type_id, properties) {
  * @return  the ID of the created topic.
  */
 function create_topic_in_db(topic) {
-    alert("create_topic_in_db: " + JSON.stringify(topic))
     try {
         // trigger hook
         trigger_hook("pre_create", topic)
         //
         // update DB
-        var topic_id = db.createTopic(topic)
+        var topic_id = db.create_topic(topic)
         //
         // trigger hook
         trigger_hook("post_create", topic)
@@ -341,13 +341,12 @@ function create_topic_in_db(topic) {
 }
 
 function update_document_in_db(doc) {
-    alert("update_document_in_db: " + JSON.stringify(doc))
     try {
         // trigger hook
         trigger_hook("pre_update", doc)
         //
         // update DB
-        db.setTopicProperties(doc)
+        db.set_topic_properties(doc)
         //
         // trigger hook
         trigger_hook("post_update", doc)
@@ -369,9 +368,9 @@ function save_document(doc) {
         //
         // update DB
         if (update) {
-            db.setTopicProperties(doc)
+            db.set_topic_properties(doc)
         } else {
-            db.createTopic(doc)
+            db.create_topic(doc)
         }
         //
         // trigger hook
@@ -544,7 +543,7 @@ function get_relation_doc(doc1_id, doc2_id, rel_type) {
         alert("get_relation_doc: there are " + rows.length + " relations between the two docs (1 is expected)\n" +
             "doc1=" + doc1_id + "\ndoc2=" + doc2_id + "\n(rel_type=" + rel_type + ")")
     }
-    return db.open(rows[0].id)
+    return db.get_topic(rows[0].id)
 }
 
 /**
@@ -567,7 +566,7 @@ function related_doc_ids(doc_id) {
  */
 function delete_relation(rel_id) {
     // update DB
-    db.deleteDoc(db.open(rel_id))
+    db.deleteDoc(db.get_topic(rel_id))
     // update GUI
     canvas.remove_relation(rel_id)
 }
@@ -583,7 +582,7 @@ function remove_relations(doc, delete_from_db) {
     for (var i = 0, row; row = rows[i]; i++) {
         // update DB
         if (delete_from_db) {
-            var relation = db.open(row.id)
+            var relation = db.get_topic(row.id)
             if (relation) {
                 db.deleteDoc(relation)
             } else {
@@ -733,7 +732,7 @@ function call_relation_function(function_name) {
 // --- DB ---
 
 function document_exists(doc_id) {
-    return db.open(doc_id) != null
+    return db.get_topic(doc_id) != null
 }
 
 // --- GUI ---
@@ -926,7 +925,7 @@ function get_type(topic) {
 }
 
 function get_field(doc, field_id) {
-    for (var i = 0, field; field = doc.fields[i]; i++) {
+    for (var i = 0, field; field = get_type(doc).fields[i]; i++) {
         if (field.id == field_id) {
             return field
         }
@@ -934,7 +933,7 @@ function get_field(doc, field_id) {
 }
 
 function get_field_index(doc, field_id) {
-    for (var i = 0, field; field = doc.fields[i]; i++) {
+    for (var i = 0, field; field = get_type(doc).fields[i]; i++) {
         if (field.id == field_id) {
             return i
         }

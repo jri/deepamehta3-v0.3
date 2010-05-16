@@ -41,6 +41,13 @@ public class EmbeddedService {
         //
         init();
     }
+    public Topic getTopic(long id) {
+        return storage.getTopic(id);
+    }
+
+    public List<Topic> getRelatedTopics(long topicId, List<String> excludeRelTypes) {
+        return storage.getRelatedTopics(topicId, excludeRelTypes);
+    }
 
     public Topic createTopic(String typeId, Map properties) {
         return storage.createTopic(typeId, properties);

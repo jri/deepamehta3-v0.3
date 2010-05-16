@@ -24,18 +24,18 @@ function dm3_tinymce() {
 
 
 
-    this.render_field_content = function(field) {
+    this.render_field_content = function(field, doc) {
         if (field.model.type == "html") {
-            return field.content
+            return doc.properties[field.id]
         }
     }
 
-    this.render_form_field = function(field) {
+    this.render_form_field = function(field, doc) {
         if (field.model.type == "html") {
             var lines = field.view.lines || DEFAULT_AREA_HEIGHT
             var textarea = $("<textarea>")
             textarea.attr({id: "field_" + field.id, rows: lines, cols: DEFAULT_FIELD_WIDTH})
-            textarea.text(field.content)
+            textarea.text(doc.properties[field.id])
             return textarea
         }
     }
@@ -57,7 +57,7 @@ function dm3_tinymce() {
     }
 
     this.post_submit_form = function(doc) {
-        for (var i = 0, field; field = doc.fields[i]; i++) {
+        for (var i = 0, field; field = get_type(doc).fields[i]; i++) {
             if (field.model.type == "html") {
                 if (!tinyMCE.execCommand("mceRemoveControl", false, "field_" + field.id)) {
                     alert("mceRemoveControl not executed")

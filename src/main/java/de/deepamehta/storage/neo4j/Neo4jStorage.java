@@ -18,10 +18,11 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
 
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 
 
@@ -31,7 +32,8 @@ public class Neo4jStorage implements Storage {
     private final IndexService index;
 
     private enum RelType implements RelationshipType {
-        TOPIC_TYPE, DATA_FIELD, INSTANCE
+        TOPIC_TYPE, DATA_FIELD, INSTANCE,
+        RELATION, NAV_HELPER
     }
 
     public Neo4jStorage(String dbPath) {
@@ -42,6 +44,7 @@ public class Neo4jStorage implements Storage {
 
     // *** Storage implementation ***
 
+    @Override
     public Topic getTopic(long id) {
         Map properties = null;
         String typeId = null;
@@ -61,6 +64,30 @@ public class Neo4jStorage implements Storage {
         }
     }
 
+    @Override
+    public List<Topic> getRelatedTopics(long topicId, List<String> excludeRelTypes) {
+        List relTopics = new ArrayList();
+        Transaction tx = graphDb.beginTx();
+        try {
+            System.out.println("### Neo4j: getting related nodes of node " + topicId);
+            Node node = graphDb.getNodeById(topicId);
+            for (Relationship rel : node.getRelationships()) {
+                if (!excludeRelTypes.contains(rel.getType().name())) {
+                    Node relNode = rel.getOtherNode(node);
+                    relTopics.add(new Topic(relNode.getId(), null, null));  // ### topic type and properties not provided
+                }
+            }
+            //
+            tx.success();   
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            tx.finish();
+            return relTopics;
+        }
+    }
+
+    @Override
     public Topic createTopic(String typeId, Map properties) {
         Node node = null;
         Transaction tx = graphDb.beginTx();
@@ -80,6 +107,7 @@ public class Neo4jStorage implements Storage {
         }
     }
 
+    @Override
     public void setTopicProperties(long id, Map properties) {
         Transaction tx = graphDb.beginTx();
         try {
@@ -95,10 +123,12 @@ public class Neo4jStorage implements Storage {
         }
     }
 
+    @Override
     public Association createAssociation(long src_topicId, long dst_topicId, String typeId, Map properties) {
         return null;
     }
 
+    @Override
     public void createTopicType(Map<String, String> properties, List<Map> fieldDefinitions) {
         Transaction tx = graphDb.beginTx();
         try {
@@ -123,6 +153,7 @@ public class Neo4jStorage implements Storage {
         }
     }
 
+    @Override
     public boolean topicTypeExists(String typeId) {
         boolean exists = false;
         Transaction tx = graphDb.beginTx();
@@ -137,6 +168,7 @@ public class Neo4jStorage implements Storage {
         }
     }
 
+    @Override
     public void shutdown() {
         System.out.println("### Neo4j: shutting down storage and indexer");
         graphDb.shutdown();

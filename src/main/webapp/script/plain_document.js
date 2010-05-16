@@ -37,7 +37,7 @@ PlainDocument.prototype = {
         render_buttons()
 
         function render_fields() {
-            for (var i = 0, field; field = doc.fields[i]; i++) {
+            for (var i = 0, field; field = get_type(doc).fields[i]; i++) {
                 // field name
                 PlainDocument.prototype.render_field_name(field)
                 // field value
@@ -72,7 +72,7 @@ PlainDocument.prototype = {
         }
 
         function render_relations() {
-            var topics = get_topics(related_doc_ids(doc.id))
+            var topics = db.get_related_topics(doc.id, ["NAV_HELPER"])
             // don't render topics already rendered via "defined relations"
             substract(topics, PlainDocument.prototype.defined_relation_topics, function(topic, drt) {
                 return topic.id == drt.id

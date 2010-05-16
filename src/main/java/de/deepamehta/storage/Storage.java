@@ -12,7 +12,9 @@ public interface Storage {
 
     public Topic getTopic(long id);
 
-    public Topic createTopic(String type_id, Map properties);
+    public List<Topic> getRelatedTopics(long topicId, List<String> excludeRelTypes);
+
+    public Topic createTopic(String typeId, Map properties);
 
     public void setTopicProperties(long id, Map properties);
 
