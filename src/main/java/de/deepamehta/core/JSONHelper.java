@@ -22,14 +22,4 @@ public class JSONHelper {
         }
         return map;
     }
-
-    public static JSONObject fromMap(Map<String, Object> map) throws JSONException {
-        JSONObject o = new JSONObject();
-        if (map != null) {
-            for (String key : map.keySet()) {
-                o.put(key, map.get(key));
-            }
-        }
-        return o;
-    }
 }

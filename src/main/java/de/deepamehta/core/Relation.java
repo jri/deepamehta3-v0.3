@@ -29,7 +29,7 @@ public class Relation {
         o.put("type_id", this.typeId);
         o.put("src_topic_id", this.srcTopicId);
         o.put("dst_topic_id", this.dstTopicId);
-        o.put("properties", JSONHelper.fromMap(this.properties));
+        o.put("properties", this.properties);
         return o;
     }
 }

@@ -11,14 +11,12 @@ import org.codehaus.jettison.json.JSONObject;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.POST;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -61,6 +59,15 @@ public class TopicResource {
     @Path("/{id}")
     public void setTopicProperties(@PathParam("id") long id, JSONObject properties) throws JSONException {
         EmbeddedService.SERVICE.setTopicProperties(id, JSONHelper.toMap(properties));
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public JSONObject deleteTopic(@PathParam("id") long id) throws JSONException {
+        List deletedRelIds = EmbeddedService.SERVICE.deleteTopic(id);
+        JSONObject response = new JSONObject();
+        response.put("deleted_relations", deletedRelIds);
+        return response;
     }
 
     // *** Private Helpers ***

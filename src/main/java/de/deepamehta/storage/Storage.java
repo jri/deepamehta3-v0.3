@@ -20,13 +20,17 @@ public interface Storage {
 
     public void setTopicProperties(long id, Map properties);
 
+    public List deleteTopic(long id);
+
     // --- Relations ---
 
     public Relation createRelation(String typeId, long srcTopicId, long dstTopicId, Map properties);
 
+    public void deleteRelation(long id);
+
     // --- Types ---
 
-    public void createTopicType(Map<String, String> properties, List<Map> fieldDefinitions);
+    public void createTopicType(Map<String, Object> properties, List<Map> fieldDefinitions);
 
     public boolean topicTypeExists(String typeId);
 

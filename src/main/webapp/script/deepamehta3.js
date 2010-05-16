@@ -8,7 +8,7 @@ var LOG_PLUGIN_LOADING = false
 var LOG_IMAGE_LOADING = false
 var LOG_AJAX_REQUESTS = true
 
-var db = new DeepaMehtaService(SERVICE_URI)
+var dms = new DeepaMehtaService(SERVICE_URI)
 var ui = new UIHelper()
 
 var current_doc         // topic document being displayed, or null if no one is currently displayed (a CouchDB document)
@@ -83,7 +83,7 @@ $(document).ready(function() {
 
 // --- CouchDB API extensions ---
 
-db.openAttachment = function(docId, attachment_name) {
+dms.openAttachment = function(docId, attachment_name) {
     this.last_req = this.request("GET", this.uri + encodeURIComponent(docId) + "/" + attachment_name)
     if (this.last_req.status == 404)
         return null
@@ -91,7 +91,7 @@ db.openAttachment = function(docId, attachment_name) {
     return this.last_req.responseText
 }
 
-db.openBinaryAttachment = function(docId, attachment_name) {
+dms.openBinaryAttachment = function(docId, attachment_name) {
     this.last_req = request("GET", this.uri + encodeURIComponent(docId) + "/" + attachment_name)
     if (this.last_req.status == 404)
         return null
@@ -113,7 +113,7 @@ db.openBinaryAttachment = function(docId, attachment_name) {
 }
 
 // FIXME: doesn't work. Binary data gets corrupted while PUT.
-/* db.saveBinaryAttachmentAJAX = function(doc, attachment_name, attachment_data) {
+/* dms.saveBinaryAttachmentAJAX = function(doc, attachment_name, attachment_data) {
     var result = $.ajax({
         async: false,
         contentType: mime_type(attachment_name),
@@ -129,7 +129,7 @@ db.openBinaryAttachment = function(docId, attachment_name) {
 
 // FIXME: doesn't work. Binary data gets corrupted while PUT.
 // xhr.sendAsBinary() is probably the solution, but exists only in Firefox 3.
-/* db.saveBinaryAttachment = function(doc, attachment_name, attachment_data) {
+/* dms.saveBinaryAttachment = function(doc, attachment_name, attachment_data) {
     var url = this.uri + encodeURIComponent(doc.id) + "/" + attachment_name + "?rev=" + doc._rev
     var binary_data = to_binary(attachment_data)
     var headers = {
@@ -246,7 +246,7 @@ function show_document(doc_id) {
         }
     }
     // fetch document
-    var doc = db.get_topic(doc_id)
+    var doc = dms.get_topic(doc_id)
     //
     if (doc == null) {
         return false
@@ -301,7 +301,7 @@ function create_topic_from_menu() {
  */
 function create_topic(type_id, properties) {
     var topic = create_raw_topic(type_id, properties)
-    var topic_id = db.create_topic(topic)
+    var topic_id = dms.create_topic(topic)
     topic.id = topic_id
     return topic
 }
@@ -327,7 +327,7 @@ function create_raw_topic(type_id, properties) {
  * @return  Array of Topic objects.
  */
 function get_topics(doc_ids, type_filter) {
-    var rows = db.view("deepamehta3/topics", null, doc_ids).rows
+    var rows = dms.view("deepamehta3/topics", null, doc_ids).rows
     //
     if (type_filter) {
         filter(rows, function(row) {
@@ -351,7 +351,7 @@ function get_topics(doc_ids, type_filter) {
  * @return  Array of Topic objects.
  */
 function get_topics_by_type(type_filter) {
-    var rows = db.view("deepamehta3/by_type", {key: type_filter}).rows
+    var rows = dms.view("deepamehta3/by_type", {key: type_filter}).rows
     //
     var topics = []
     for (var i = 0, row; row = rows[i]; i++) {
@@ -373,7 +373,7 @@ function get_related_topics(doc_id, include_auxiliary) {
     } else {
         var options = {key: [doc_id, 0]}
     }
-    return db.view("deepamehta3/related_topics", options).rows
+    return dms.view("deepamehta3/related_topics", options).rows
 }
 
 /**
@@ -382,25 +382,26 @@ function get_related_topics(doc_id, include_auxiliary) {
  * @param   delete_from_db  If true, the document and relations are deleted permanently.
  *                          If false, the document and relations are just removed from the view (canvas).
  */
-function remove_document(delete_from_db) {
-    // 1) delete relations
-    remove_relations(current_doc, delete_from_db)
-    // 2) delete document
+function remove_topic(topic_id, delete_from_db) {
     // update DB
     if (delete_from_db) {
-        db.deleteDoc(current_doc)
+        var relation_ids = dms.delete_topic(topic_id)
     }
-    // update model
-    var tmp_doc = current_doc
-    current_doc = null
     // update GUI
-    canvas.remove_topic(tmp_doc.id, true)
-    show_document()
-    // trigger hooks
-    if (delete_from_db) {
-        trigger_hook("post_delete", tmp_doc)
+    remove_relations_from_canvas(relation_ids)
+    canvas.remove_topic(topic_id, true)           // refresh=true
+    if (topic_id == current_doc.id) {
+        current_doc = null
+        show_document()
     } else {
-        trigger_hook("post_hide_topic_from_canvas", tmp_doc.id)
+        alert("WARNING: removed topic which was not selected\n" +
+            "(removed=" + topic_id + " selected=" + current_doc.id + ")")
+    }
+
+    function remove_relations_from_canvas(relation_ids) {
+        for (var i = 0; i < relation_ids.length; i++) {
+            canvas.remove_relation(relation_ids[i])
+        }
     }
 }
 
@@ -422,7 +423,7 @@ function remove_document(delete_from_db) {
  */
 function create_relation(type_id, src_topic_id, dst_topic_id, properties) {
     var relation = create_raw_relation(type_id, src_topic_id, dst_topic_id, properties)
-    var relation_id = db.create_relation(relation)
+    var relation_id = dms.create_relation(relation)
     relation.id = relation_id
     return relation
 }
@@ -449,7 +450,7 @@ function create_raw_relation(type_id, src_topic_id, dst_topic_id, properties) {
  * @return  Array of Relation objects
  */
 function get_relations(rel_ids) {
-    var rows = db.view("deepamehta3/relations", null, rel_ids).rows
+    var rows = dms.view("deepamehta3/relations", null, rel_ids).rows
     //
     var relations = []
     for (var i = 0, row; row = rows[i]; i++) {
@@ -473,7 +474,7 @@ function get_relation_doc(doc1_id, doc2_id, rel_type) {
         var options = {startkey: [doc1_id, doc2_id], endkey: [doc1_id, doc2_id, {}]}
     }
     //
-    var rows = db.view("deepamehta3/relation_undirected", options).rows
+    var rows = dms.view("deepamehta3/relation_undirected", options).rows
     //
     if (rows.length == 0) {
         return
@@ -482,7 +483,7 @@ function get_relation_doc(doc1_id, doc2_id, rel_type) {
         alert("get_relation_doc: there are " + rows.length + " relations between the two docs (1 is expected)\n" +
             "doc1=" + doc1_id + "\ndoc2=" + doc2_id + "\n(rel_type=" + rel_type + ")")
     }
-    return db.get_topic(rows[0].id)
+    return dms.get_topic(rows[0].id)
 }
 
 /**
@@ -505,40 +506,9 @@ function related_doc_ids(doc_id) {
  */
 function delete_relation(rel_id) {
     // update DB
-    db.deleteDoc(db.get_topic(rel_id))
+    dms.delete_relation(rel_id)
     // update GUI
     canvas.remove_relation(rel_id)
-}
-
-/**
- * Removes all relations the topic (doc) is involved in.
- *
- * @param   delete_from_db  If true, the relations are deleted permanently.
- *                          If false, the relations are just removed from the view (canvas).
- */
-function remove_relations(doc, delete_from_db) {
-    var rows = get_related_topics(doc.id, true)
-    for (var i = 0, row; row = rows[i]; i++) {
-        // update DB
-        if (delete_from_db) {
-            var relation = db.get_topic(row.id)
-            if (relation) {
-                db.deleteDoc(relation)
-            } else {
-                // Note: this happens, but is no problem, if the current topicmap is deleted
-                // (the topicmap contains itself in this case).
-                var text = "ERROR at remove_relations: \"" + row.value.rel_type + "\" relation (" + row.id +
-                    ") of topic \"" + topic_label(doc) + "\" (" + doc.id + ") not found in DB."
-                log("### " + text)
-                // FIXME: the core should not be aware of the DM3 Topicmaps plugin.
-                if (doc.topic_type != "Topicmap") {
-                    alert(text)
-                }
-            }
-        }
-        // update GUI
-        canvas.remove_relation(row.id)
-    }
 }
 
 
@@ -671,7 +641,7 @@ function call_relation_function(function_name) {
 // --- DB ---
 
 function document_exists(doc_id) {
-    return db.get_topic(doc_id) != null
+    return dms.get_topic(doc_id) != null
 }
 
 // --- GUI ---

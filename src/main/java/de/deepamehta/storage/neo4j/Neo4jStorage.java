@@ -132,6 +132,28 @@ public class Neo4jStorage implements Storage {
         }
     }
 
+    @Override
+    public List deleteTopic(long id) {
+        List deletedRelIds = new ArrayList();
+        Transaction tx = graphDb.beginTx();
+        try {
+            System.out.println("### Neo4j: deleting node " + id);
+            Node node = graphDb.getNodeById(id);
+            for (Relationship rel : node.getRelationships()) {
+                deletedRelIds.add(rel.getId());
+                rel.delete();
+            }
+            node.delete();
+            //
+            tx.success();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            tx.finish();
+            return deletedRelIds;
+        }
+    }
+
     // --- Relations ---
 
     @Override
@@ -139,7 +161,7 @@ public class Neo4jStorage implements Storage {
         Relationship relationship = null;
         Transaction tx = graphDb.beginTx();
         try {
-            System.out.println("### Neo4j: creating relation from node " + srcTopicId + " to " + dstTopicId);
+            System.out.println("### Neo4j: creating relationship from node " + srcTopicId + " to " + dstTopicId);
             Node srcNode = graphDb.getNodeById(srcTopicId);
             Node dstNode = graphDb.getNodeById(dstTopicId);
             relationship = srcNode.createRelationshipTo(dstNode, RelType.valueOf(typeId));
@@ -155,14 +177,29 @@ public class Neo4jStorage implements Storage {
         }
     }
 
+    @Override
+    public void deleteRelation(long id) {
+        Transaction tx = graphDb.beginTx();
+        try {
+            System.out.println("### Neo4j: deleting relationship " + id);
+            graphDb.getRelationshipById(id).delete();
+            //
+            tx.success();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            tx.finish();
+        }
+    }
+
     // --- Types ---
 
     @Override
-    public void createTopicType(Map<String, String> properties, List<Map> fieldDefinitions) {
+    public void createTopicType(Map<String, Object> properties, List<Map> fieldDefinitions) {
         Transaction tx = graphDb.beginTx();
         try {
             Node type = graphDb.createNode();
-            String typeId = properties.get("type_id");
+            Object typeId = properties.get("type_id");
             System.out.println("### Neo4j: creating topic type \"" + typeId + "\", ID=" + type.getId());
             setProperties(type, properties);
             index.index(type, "type_id", typeId);
@@ -224,7 +261,7 @@ public class Neo4jStorage implements Storage {
         return properties;
     }
 
-    private void setProperties(PropertyContainer container, Map<String, String> properties) {
+    private void setProperties(PropertyContainer container, Map<String, Object> properties) {
         for (String key : properties.keySet()) {
             container.setProperty(key, properties.get(key));
         }

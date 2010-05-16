@@ -23,11 +23,20 @@ function DeepaMehtaService(service_uri) {
         request("PUT", "/topic/" + topic.id, topic.properties)
     }
 
+    this.delete_topic = function(id) {
+        var response = request("DELETE", "/topic/" + id)
+        return response.deleted_relations
+    }
+
     // *** Relations ***
 
     this.create_relation = function(relation) {
         var response = request("POST", "/relation", relation)
         return response.relation_id
+    }
+
+    this.delete_relation = function(id) {
+        request("DELETE", "/relation/" + id)
     }
 
     // *** Private Helpers ***
@@ -40,8 +49,14 @@ function DeepaMehtaService(service_uri) {
     }
 
     function request(method, uri, data) {
-        var responseData
+        var status              // "success" if request was successful
+        var responseCode        // HTTP response code, e.g. 304
+        var responseMessage     // HTTP response message, e.g. "Not Modified"
+        var responseData        // in case of successful request: the response data (response body)
+        var exception           // in case of unsuccessful request: possibly an exception
+        //
         if (LOG_AJAX_REQUESTS) log(method + " " + uri + "\n..... " + JSON.stringify(data))
+        //
         $.ajax({
             type: method,
             url: service_uri + uri,
@@ -54,11 +69,21 @@ function DeepaMehtaService(service_uri) {
                     "\n..... " + JSON.stringify(data))
                 responseData = data
             },
-            error: function(xhr, textStatus, exception) {
+            error: function(xhr, textStatus, ex) {
                 if (LOG_AJAX_REQUESTS) log("..... " + xhr.status + " " + xhr.statusText +
                     "\n..... exception: " + JSON.stringify(exception))
+                exception = ex
+            },
+            complete: function(xhr, textStatus) {
+                status = textStatus
+                responseCode = xhr.status
+                responseMessage = xhr.statusText
             }
         })
-        return responseData
+        if (status == "success") {
+            return responseData
+        } else {
+            throw "AJAX request failed: " + responseCode + " " + responseMessage + " (exception: " + exception + ")"
+        }
     }
 }

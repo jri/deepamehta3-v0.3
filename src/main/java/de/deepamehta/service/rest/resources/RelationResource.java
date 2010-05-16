@@ -12,14 +12,12 @@ import org.codehaus.jettison.json.JSONObject;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.POST;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -46,5 +44,11 @@ public class RelationResource {
         JSONObject response = new JSONObject();
         response.put("relation_id", rel.id);
         return response;
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public void deleteRelation(@PathParam("id") long id) {
+        EmbeddedService.SERVICE.deleteRelation(id);
     }
 }

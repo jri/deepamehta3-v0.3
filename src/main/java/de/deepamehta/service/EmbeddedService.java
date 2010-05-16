@@ -62,10 +62,18 @@ public class EmbeddedService {
         storage.setTopicProperties(id, properties);
     }
 
+    public List deleteTopic(long id) {
+        return storage.deleteTopic(id);
+    }
+
     // --- Relations ---
 
     public Relation createRelation(String typeId, long srcTopicId, long dstTopicId, Map properties) {
         return storage.createRelation(typeId, srcTopicId, dstTopicId, properties);
+    }
+
+    public void deleteRelation(long id) {
+        storage.deleteRelation(id);
     }
 
     // --- Types ---

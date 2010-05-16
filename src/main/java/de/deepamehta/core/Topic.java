@@ -23,7 +23,7 @@ public class Topic {
         JSONObject o = new JSONObject();
         o.put("id", this.id);
         o.put("type_id", this.typeId);
-        o.put("properties", JSONHelper.fromMap(this.properties));
+        o.put("properties", this.properties);
         return o;
     }
 }

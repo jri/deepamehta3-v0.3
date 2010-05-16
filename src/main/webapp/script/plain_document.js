@@ -64,7 +64,7 @@ PlainDocument.prototype = {
                 PlainDocument.prototype.render_field_name("Attachments")
                 var field_value = $("<div>").addClass("field-value")
                 for (var attach in doc._attachments) {
-                    var a = $("<a>").attr("href", db.uri + doc.id + "/" + attach).text(attach)
+                    var a = $("<a>").attr("href", dms.uri + doc.id + "/" + attach).text(attach)
                     field_value.append(a).append("<br>")
                 }
                 $("#detail-panel").append(field_value)
@@ -72,7 +72,7 @@ PlainDocument.prototype = {
         }
 
         function render_relations() {
-            var topics = db.get_related_topics(doc.id, ["NAV_HELPER"])
+            var topics = dms.get_related_topics(doc.id, ["NAV_HELPER"])
             // don't render topics already rendered via "defined relations"
             substract(topics, PlainDocument.prototype.defined_relation_topics, function(topic, drt) {
                 return topic.id == drt.id
@@ -149,7 +149,7 @@ PlainDocument.prototype = {
     /* Context Menu Commands */
 
     hide: function() {
-        remove_document(false)
+        remove_topic(current_doc.id, false)
     },
 
     relate: function(event) {
@@ -205,7 +205,7 @@ PlainDocument.prototype = {
             }
         }
         // update DB
-        db.set_topic_properties(current_doc)
+        dms.set_topic_properties(current_doc)
         // update GUI
         var topic_id = current_doc.id
         var label = topic_label(current_doc)
@@ -223,7 +223,7 @@ PlainDocument.prototype = {
     /* Attachments */
 
     attach_file: function() {
-        $("#attachment_form").attr("action", db.uri + current_doc.id)
+        $("#attachment_form").attr("action", dms.uri + current_doc.id)
         $("#attachment_form_rev").attr("value", current_doc._rev)
         $("#attachment_dialog").dialog("open")
     },
@@ -241,7 +241,7 @@ PlainDocument.prototype = {
 
     do_delete: function() {
         $("#delete_dialog").dialog("close")
-        remove_document(true)
+        remove_topic(current_doc.id, true)
     },
 
 
@@ -278,7 +278,7 @@ PlainDocument.prototype = {
             if (searchterm) {
                 // --- trigger search for each fulltext index ---
                 for (var i = 0, index; index = field.view.autocomplete_indexes[i]; i++) {
-                    var result = db.fulltext_search(index, searchterm + "*")
+                    var result = dms.fulltext_search(index, searchterm + "*")
                     //
                     if (result.rows.length && !autocomplete_items.length) {
                         PlainDocument.prototype.show_autocomplete_list(this)

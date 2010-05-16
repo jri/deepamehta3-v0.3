@@ -39,6 +39,6 @@ SearchResult.prototype = {
     /* Context Menu Commands */
 
     remove: function() {
-        remove_document(true)
+        remove_topic(current_doc.id, true)
     }
 }
