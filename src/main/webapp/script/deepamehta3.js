@@ -377,29 +377,23 @@ function get_related_topics(doc_id, include_auxiliary) {
 }
 
 /**
- * Deletes a topic (including its relations) from the DB and from the view (canvas).
+ * Deletes a topic (including its relations) from the DB and from the GUI.
  */
 function delete_topic(topic_id) {
     // update DB
-    var relation_ids = dms.delete_topic(topic_id)
+    dms.delete_topic(topic_id)
     // update GUI
-    for (var i = 0; i < relation_ids.length; i++) {
-        canvas.remove_relation(relation_ids[i])
-    }
-    remove_topic_from_canvas(topic_id)
+    hide_topic(topic_id)
 }
 
 /**
- * Hides a topic (including its relations) from the view (canvas).
+ * Hides a topic (including its relations) from the GUI (canvas & detail panel).
  */
 function hide_topic(topic_id) {
-    // update GUI
+    // canvas
     canvas.remove_all_relations_of_topic(topic_id)
-    remove_topic_from_canvas(topic_id)
-}
-
-function remove_topic_from_canvas(topic_id) {
     canvas.remove_topic(topic_id, true)           // refresh=true
+    // detail panel
     if (topic_id == current_doc.id) {
         current_doc = null
         show_document()
@@ -727,7 +721,7 @@ function render_topics(topics, render_function) {
     for (var i = 0, topic; topic = topics[i]; i++) {
         // icon
         var icon_td = $("<td>").addClass("topic-icon").addClass(i == topics.length - 1 ? "last-topic" : undefined)
-        icon_td.append(render_topic_anchor(topic, type_icon_tag(topic.type, "type-icon")))
+        icon_td.append(render_topic_anchor(topic, type_icon_tag(topic.type_id, "type-icon")))
         // label
         var topic_td = $("<td>").addClass("topic-label").addClass(i == topics.length - 1 ? "last-topic" : undefined)
         topic_td.append(render_function(topic))

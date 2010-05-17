@@ -1,6 +1,7 @@
 package de.deepamehta.service;
 
 import de.deepamehta.core.Topic;
+import de.deepamehta.core.TopicType;
 import de.deepamehta.core.Relation;
 import de.deepamehta.storage.Storage;
 import de.deepamehta.storage.neo4j.Neo4jStorage;
@@ -16,10 +17,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.Map;
 
 
 
@@ -27,15 +28,23 @@ public class EmbeddedService {
 
     public static final EmbeddedService SERVICE = new EmbeddedService();
 
+    private Map<String, TopicType> topicTypes = new HashMap();
+
     private final Storage storage;
     private ServletContext servletContext;
 
     private EmbeddedService() {
         System.out.println("### EmbeddedService: constructing");
-        this.storage = new Neo4jStorage("/Users/jri/var/db/deepamehta-db-neo4j");
+        this.storage = new Neo4jStorage("/Users/jri/var/db/deepamehta-db-neo4j", topicTypes);
     }
 
+
+
+    // ************************************************
     // *** Service Methods (called by REST servlet) ***
+    // ************************************************
+
+
 
     public void setServletContext(ServletContext servletContext) {
         System.out.println("### EmbeddedService: reveive servlet context");
@@ -78,8 +87,17 @@ public class EmbeddedService {
 
     // --- Types ---
 
-    public void createTopicType(Map properties, List fieldDefinitions) {
-        storage.createTopicType(properties, fieldDefinitions);
+    public void createTopicType(Map properties, List dataFields) {
+        TopicType topicType = new TopicType(properties, dataFields);
+        String typeId = topicType.getProperty("type_id");
+        // store in DB
+        if (!topicTypeExists(typeId)) {
+            storage.createTopicType(properties, dataFields);
+        } else {
+            System.out.println("### EmbeddedService: no need to create topic type \"" + typeId + "\" (already exists)");
+        }
+        // cache in memory
+        topicTypes.put(typeId, topicType);
     }
 
     public boolean topicTypeExists(String typeId) {
@@ -92,7 +110,13 @@ public class EmbeddedService {
         storage.shutdown();
     }
 
+
+
+    // ************************
     // *** Private Helpers ****
+    // ************************
+
+
 
     private void init() {
         try {
@@ -126,28 +150,28 @@ public class EmbeddedService {
 
     private void createType(JSONObject type) throws JSONException {
         //
-        String typeId = type.getString("type_id");
-        if (topicTypeExists(typeId)) {
-            System.out.println("### EmbeddedService: no need to create topic type \"" + typeId + "\" (already exists)");
-            return;
-        }
-        //
+        JSONObject view = type.getJSONObject("view");
         Map properties = new HashMap();
-        properties.put("type_id",             typeId);
-        properties.put("type_icon_src",       type.getJSONObject("view").getString("icon_src"));
+        properties.put("type_id", type.getString("type_id"));
+        properties.put("type_icon_src", view.getString("icon_src"));
+        if (view.has("label_field")) {
+            properties.put("type_label_field", view.getString("label_field"));
+        }
         properties.put("type_implementation", type.getString("implementation"));
         //
-        List fieldDefinitions = new ArrayList();
+        List dataFields = new ArrayList();
         JSONArray fieldDefs = type.getJSONArray("fields");
         for (int i = 0; i < fieldDefs.length(); i++) {
-            Map fieldDefinition = new HashMap();
+            Map dataField = new HashMap();
             JSONObject fieldDef = fieldDefs.getJSONObject(i);
-            fieldDefinition.put("prop_id",       fieldDef.getString("id"));
-            fieldDefinition.put("prop_datatype", fieldDef.getJSONObject("model").getString("type"));
-            fieldDefinition.put("prop_editor",   fieldDef.getJSONObject("view").getString("editor"));
-            fieldDefinitions.add(fieldDefinition);
+            dataField.put("field_id",       fieldDef.getString("id"));
+            dataField.put("field_datatype", fieldDef.getJSONObject("model").getString("type"));
+            if (fieldDef.has("view")) {
+                dataField.put("field_editor",   fieldDef.getJSONObject("view").getString("editor"));
+            }
+            dataFields.add(dataField);
         }
         //
-        createTopicType(properties, fieldDefinitions);
+        createTopicType(properties, dataFields);
     }
 }

@@ -1,6 +1,7 @@
 package de.deepamehta.storage.neo4j;
 
 import de.deepamehta.core.Topic;
+import de.deepamehta.core.TopicType;
 import de.deepamehta.core.Relation;
 import de.deepamehta.storage.Storage;
 
@@ -31,22 +32,24 @@ public class Neo4jStorage implements Storage {
 
     private final GraphDatabaseService graphDb;
     private final IndexService index;
+    Map<String, TopicType> topicTypes;
 
     private enum RelType implements RelationshipType {
         TOPIC_TYPE, DATA_FIELD, INSTANCE,
         RELATION, NAV_HELPER
     }
 
-    public Neo4jStorage(String dbPath) {
+    public Neo4jStorage(String dbPath, Map topicTypes) {
         System.out.println("### Neo4j: creating storage and indexer");
         graphDb = new EmbeddedGraphDatabase(dbPath);
         index = new LuceneIndexService(graphDb);
+        this.topicTypes = topicTypes;
     }
 
 
 
     // ******************************
-    // *** Storage implementation ***
+    // *** Storage Implementation ***
     // ******************************
 
 
@@ -61,7 +64,7 @@ public class Neo4jStorage implements Storage {
         try {
             System.out.println("### Neo4j: getting node " + id);
             Node node = graphDb.getNodeById(id);
-            typeId = (String) getNodeType(node).getProperty("type_id");
+            typeId = getTypeId(node);
             properties = getProperties(node);
             //
             tx.success();   
@@ -69,7 +72,7 @@ public class Neo4jStorage implements Storage {
             e.printStackTrace();
         } finally {
             tx.finish();
-            return new Topic(id, typeId, properties);
+            return new Topic(id, typeId, null, properties);     // FIXME: label remains uninitialized
         }
     }
 
@@ -83,7 +86,7 @@ public class Neo4jStorage implements Storage {
             for (Relationship rel : node.getRelationships()) {
                 if (!excludeRelTypes.contains(rel.getType().name())) {
                     Node relNode = rel.getOtherNode(node);
-                    relTopics.add(new Topic(relNode.getId(), null, null));  // ### topic type and properties not provided
+                    relTopics.add(buildTopic(relNode));
                 }
             }
             //
@@ -112,7 +115,7 @@ public class Neo4jStorage implements Storage {
             e.printStackTrace();
         } finally {
             tx.finish();
-            return new Topic(node.getId(), typeId, properties);
+            return new Topic(node.getId(), typeId, null, properties);  // FIXME: label remains uninitialized
         }
     }
 
@@ -195,7 +198,7 @@ public class Neo4jStorage implements Storage {
     // --- Types ---
 
     @Override
-    public void createTopicType(Map<String, Object> properties, List<Map> fieldDefinitions) {
+    public void createTopicType(Map<String, Object> properties, List<Map> dataFields) {
         Transaction tx = graphDb.beginTx();
         try {
             Node type = graphDb.createNode();
@@ -205,10 +208,10 @@ public class Neo4jStorage implements Storage {
             index.index(type, "type_id", typeId);
             graphDb.getReferenceNode().createRelationshipTo(type, RelType.TOPIC_TYPE);
             //
-            for (Map fieldDefinition : fieldDefinitions) {
-                Node fieldDef = graphDb.createNode();
-                setProperties(fieldDef, fieldDefinition);
-                type.createRelationshipTo(fieldDef, RelType.DATA_FIELD);
+            for (Map dataField : dataFields) {
+                Node dataFieldNode = graphDb.createNode();
+                setProperties(dataFieldNode, dataField);
+                type.createRelationshipTo(dataFieldNode, RelType.DATA_FIELD);
             }
             //
             tx.success();
@@ -251,6 +254,33 @@ public class Neo4jStorage implements Storage {
 
 
 
+    // --- Topics ---
+
+    private Topic buildTopic(Node node) {
+        String typeId = getTypeId(node);
+        // label
+        String label;
+        TopicType topicType = topicTypes.get(typeId);
+        String typeLabelField = topicType.getProperty("type_label_field");
+        if (typeLabelField != null) {
+            throw new RuntimeException("not yet implemented");
+        } else {
+            String fieldId = topicType.getDataField(0).get("field_id");
+            label = (String) node.getProperty(fieldId);
+        }
+        //
+        return new Topic(node.getId(), typeId, label, null);    // FIXME: properties remain uninitialized
+    }
+
+    private String getTypeId(Node node) {
+        //
+        if (node.getProperty("type_id", null) != null) {        // FIXME: recognize a type by incoming TOPIC_TYPE relation
+            return "Topic Type";
+        }
+        //
+        return (String) getNodeType(node).getProperty("type_id");
+    }
+
     // --- Properties ---
 
     private Map getProperties(PropertyContainer container) {
@@ -278,6 +308,7 @@ public class Neo4jStorage implements Storage {
             StopEvaluator.DEPTH_ONE, ReturnableEvaluator.ALL_BUT_START_NODE,
             RelType.INSTANCE, Direction.INCOMING);
         Iterator<Node> i = traverser.iterator();
+        assert i.hasNext() : node;
         Node type = i.next();
         assert !i.hasNext() : node;
         return type;

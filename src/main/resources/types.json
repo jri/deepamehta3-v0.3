@@ -9,5 +9,17 @@
             icon_src: "images/pencil.png"
         },
         implementation: "PlainDocument"
+    },
+	{
+		type_id: "Topic Type",
+        fields: [
+            {id: "type_id", model: {type: "text"}, view: {editor: "single line", label: "Type ID"}, content: ""},
+            {id: "Icon",    model: {type: "relation", related_type: "Icon"}, view: {editor: "iconpicker"}},
+            {id: "Fields",  model: {type: "field-definition"}}
+        ],
+        view: {
+            icon_src: "vendor/dm3-typeeditor/images/drawer.png"
+        },
+        implementation: "PlainDocument"
     }
 ]

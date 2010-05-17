@@ -30,7 +30,7 @@ public interface Storage {
 
     // --- Types ---
 
-    public void createTopicType(Map<String, Object> properties, List<Map> fieldDefinitions);
+    public void createTopicType(Map<String, Object> properties, List<Map> dataFields);
 
     public boolean topicTypeExists(String typeId);
 

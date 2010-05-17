@@ -92,7 +92,7 @@ function Canvas() {
         var i = topic_index(id)
         // assertion
         if (i == -1) {
-            throw "remove_topic: document not found on canvas (" + id + ")"
+            throw "remove_topic: topic not on canvas (" + id + ")"
         }
         // update model
         var ct = canvas_topics[i]
@@ -112,8 +112,9 @@ function Canvas() {
      */
     this.remove_relation = function(id, refresh_canvas) {
         var i = assoc_index(id)
+        // assertion
         if (i == -1) {
-            return
+            throw "remove_relation: relation not on canvas (" + id + ")"
         }
         // update model
         var ca = canvas_assocs[i]
