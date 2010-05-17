@@ -13,8 +13,8 @@ function Canvas() {
     var LABEL_MAX_WIDTH = "10em"
 
     // Model
-    var canvas_topics
-    var canvas_assocs
+    var canvas_topics               // topics displayed on canvas (array of CanvasTopic)
+    var canvas_assocs               // relations displayed on canvas (array of CanvasAssoc)
     var trans_x, trans_y            // canvas translation
     var highlight_topic_id
     
@@ -128,6 +128,13 @@ function Canvas() {
         }
         // trigger hook
         trigger_hook("post_remove_relation_from_canvas", ca)
+    }
+
+    this.remove_all_relations_of_topic = function(topic_id) {
+        var assoc_ids = assoc_ids_of_topic(topic_id)
+        for (var i = 0; i < assoc_ids.length; i++) {
+            this.remove_relation(assoc_ids[i])
+        }
     }
 
     this.set_topic_label = function(id, label) {
@@ -454,17 +461,17 @@ function Canvas() {
 
     // Accessor methods
 
-    function topic_index(doc_id) {
+    function topic_index(topic_id) {
         for (var i = 0, ct; ct = canvas_topics[i]; i++) {
-            if (ct.id == doc_id) {
+            if (ct.id == topic_id) {
                 return i
             }
         }
         return -1
     }
 
-    function topic_exists(doc_id) {
-        return topic_index(doc_id) >= 0
+    function topic_exists(topic_id) {
+        return topic_index(topic_id) >= 0
     }
 
     function assoc_index(assoc_id) {
@@ -476,16 +483,22 @@ function Canvas() {
         return -1
     }
 
-    function assoc_exists(id) {
-        for (var i = 0, ca; ca = canvas_assocs[i]; i++) {
-            if (ca.id == id) {
-                return true
-            }
-        }
+    function assoc_exists(assoc_id) {
+        return assoc_index(assoc_id) >= 0
     }
 
-    function topic_by_id(doc_id) {
-        return canvas_topics[topic_index(doc_id)]
+    function topic_by_id(topic_id) {
+        return canvas_topics[topic_index(topic_id)]
+    }
+
+    function assoc_ids_of_topic(topic_id) {
+        var assoc_ids = []
+        for (var i = 0, ca; ca = canvas_assocs[i]; i++) {
+            if (ca.doc1_id == topic_id || ca.doc2_id == topic_id) {
+                assoc_ids.push(ca.id)
+            }
+        }
+        return assoc_ids
     }
 
     function topic_by_position(event) {

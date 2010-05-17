@@ -149,7 +149,7 @@ PlainDocument.prototype = {
     /* Context Menu Commands */
 
     hide: function() {
-        remove_topic(current_doc.id, false)
+        hide_topic(current_doc.id)
     },
 
     relate: function(event) {
@@ -241,7 +241,7 @@ PlainDocument.prototype = {
 
     do_delete: function() {
         $("#delete_dialog").dialog("close")
-        remove_topic(current_doc.id, true)
+        delete_topic(current_doc.id)
     },
 
 

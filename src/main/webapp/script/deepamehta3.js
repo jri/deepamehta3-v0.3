@@ -377,18 +377,28 @@ function get_related_topics(doc_id, include_auxiliary) {
 }
 
 /**
- * Removes the current document and all its relations.
- *
- * @param   delete_from_db  If true, the document and relations are deleted permanently.
- *                          If false, the document and relations are just removed from the view (canvas).
+ * Deletes a topic (including its relations) from the DB and from the view (canvas).
  */
-function remove_topic(topic_id, delete_from_db) {
+function delete_topic(topic_id) {
     // update DB
-    if (delete_from_db) {
-        var relation_ids = dms.delete_topic(topic_id)
-    }
+    var relation_ids = dms.delete_topic(topic_id)
     // update GUI
-    remove_relations_from_canvas(relation_ids)
+    for (var i = 0; i < relation_ids.length; i++) {
+        canvas.remove_relation(relation_ids[i])
+    }
+    remove_topic_from_canvas(topic_id)
+}
+
+/**
+ * Hides a topic (including its relations) from the view (canvas).
+ */
+function hide_topic(topic_id) {
+    // update GUI
+    canvas.remove_all_relations_of_topic(topic_id)
+    remove_topic_from_canvas(topic_id)
+}
+
+function remove_topic_from_canvas(topic_id) {
     canvas.remove_topic(topic_id, true)           // refresh=true
     if (topic_id == current_doc.id) {
         current_doc = null
@@ -396,12 +406,6 @@ function remove_topic(topic_id, delete_from_db) {
     } else {
         alert("WARNING: removed topic which was not selected\n" +
             "(removed=" + topic_id + " selected=" + current_doc.id + ")")
-    }
-
-    function remove_relations_from_canvas(relation_ids) {
-        for (var i = 0; i < relation_ids.length; i++) {
-            canvas.remove_relation(relation_ids[i])
-        }
     }
 }
 
