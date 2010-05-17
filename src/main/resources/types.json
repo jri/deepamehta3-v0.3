@@ -10,6 +10,16 @@
         },
         implementation: "PlainDocument"
     },
+    {
+        type_id: "Search Result",
+        fields: [
+            {id: "Search Term", model: {type: "text"}, view: {editor: "single line"}, content: ""},
+        ],
+        view: {
+            icon_src: "images/bucket.png"
+        },
+        implementation: "PlainDocument"
+    },
 	{
 		type_id: "Topic Type",
         fields: [
@@ -18,7 +28,7 @@
             {id: "Fields",  model: {type: "field-definition"}}
         ],
         view: {
-            icon_src: "vendor/dm3-typeeditor/images/drawer.png"
+            icon_src: "images/drawer.png"
         },
         implementation: "PlainDocument"
     }

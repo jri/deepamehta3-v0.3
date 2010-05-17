@@ -17,8 +17,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.index.IndexHits;
 import org.neo4j.index.IndexService;
 import org.neo4j.index.lucene.LuceneIndexService;
+import org.neo4j.index.lucene.LuceneFulltextQueryIndexService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,17 +34,19 @@ public class Neo4jStorage implements Storage {
 
     private final GraphDatabaseService graphDb;
     private final IndexService index;
+    private final LuceneFulltextQueryIndexService fulltextIndex;
     Map<String, TopicType> topicTypes;
 
     private enum RelType implements RelationshipType {
         TOPIC_TYPE, DATA_FIELD, INSTANCE,
-        RELATION, NAV_HELPER
+        RELATION, SEARCH_RESULT
     }
 
     public Neo4jStorage(String dbPath, Map topicTypes) {
         System.out.println("  # Neo4j: creating storage and indexer");
         graphDb = new EmbeddedGraphDatabase(dbPath);
         index = new LuceneIndexService(graphDb);
+        fulltextIndex = new LuceneFulltextQueryIndexService(graphDb);
         this.topicTypes = topicTypes;
     }
 
@@ -96,6 +100,26 @@ public class Neo4jStorage implements Storage {
         } finally {
             tx.finish();
             return relTopics;
+        }
+    }
+
+    @Override
+    public List<Topic> searchTopics(String searchTerm) {
+        List result = new ArrayList();
+        Transaction tx = graphDb.beginTx();
+        try {
+            IndexHits<Node> hits = fulltextIndex.getNodes("default", searchTerm + "*"); // FIXME: do more itelligent manipulation on the search term
+            System.out.println("  # Neo4j: searching \"" + searchTerm + "\" => " + hits.size() + " nodes found");
+            for (Node node : hits) {
+                result.add(new Topic(node.getId(), null, null, null));  // FIXME: type, label, and properties remain uninitialized
+            }
+            //
+            tx.success();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            tx.finish();
+            return result;
         }
     }
 
@@ -205,7 +229,11 @@ public class Neo4jStorage implements Storage {
             e.printStackTrace();
         } finally {
             tx.finish();
-            return new Relation(relationship.getId(), typeId, srcTopicId, dstTopicId, properties);
+            if (relationship != null) {
+                return new Relation(relationship.getId(), typeId, srcTopicId, dstTopicId, properties);
+            }
+            System.out.println("  # Neo4j: ERROR: relationship type \"" + typeId + "\" not declared");
+            return null;
         }
     }
 
@@ -321,8 +349,16 @@ public class Neo4jStorage implements Storage {
     }
 
     private void setProperties(PropertyContainer container, Map<String, Object> properties) {
+        if (properties == null) {
+            throw new NullPointerException("setProperties() called with properties=null");
+        }
         for (String key : properties.keySet()) {
-            container.setProperty(key, properties.get(key));
+            Object value = properties.get(key);
+            container.setProperty(key, value);
+            // fulltext index
+            if (container instanceof Node) {
+                fulltextIndex.index((Node) container, "default", value);
+            }
         }
     }
 
@@ -345,7 +381,7 @@ public class Neo4jStorage implements Storage {
 
     private void setNodeType(Node node, String typeId) {
         Node type = getNodeType(typeId);
-        assert type != null : typeId;
+        assert type != null : "Topic type \"" + typeId + "\" not found in DB";
         type.createRelationshipTo(node, RelType.INSTANCE);
     }
 }

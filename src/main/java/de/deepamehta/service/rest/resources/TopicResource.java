@@ -45,6 +45,12 @@ public class TopicResource {
         return listToJson(EmbeddedService.SERVICE.getRelatedTopics(id, excludeRelTypes));
     }
 
+    @GET
+    public JSONObject searchTopics(@QueryParam("search") String searchTerm) throws JSONException {
+        System.out.println("  # TopicResource.searchTopics(): searchTerm=" + searchTerm);
+        return EmbeddedService.SERVICE.searchTopics(searchTerm).toJSON();
+    }
+
     @POST
     public JSONObject createTopic(JSONObject topic) throws JSONException {
         String type = topic.getString("type_id");

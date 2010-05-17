@@ -10,4 +10,13 @@ function dm3_types() {
         },
         implementation: "PlainDocument"
     })
+    add_topic_type("Search Result", {
+        fields: [
+            {id: "Search Term", model: {type: "text"}, view: {editor: "single line"}, content: ""},
+        ],
+        view: {
+            icon_src: "images/bucket.png"
+        },
+        implementation: "PlainDocument"
+    })
 }

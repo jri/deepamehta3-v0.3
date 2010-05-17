@@ -16,6 +16,8 @@ public interface Storage {
 
     public List<Topic> getRelatedTopics(long topicId, List<String> excludeRelTypes);
 
+    public List<Topic> searchTopics(String searchTerm);
+
     public Topic createTopic(String typeId, Map properties);
 
     public void setTopicProperties(long id, Map properties);

@@ -63,6 +63,20 @@ public class EmbeddedService {
         return storage.getRelatedTopics(topicId, excludeRelTypes);
     }
 
+    public Topic searchTopics(String searchTerm) {
+        List<Topic> searchResult = storage.searchTopics(searchTerm);
+        // create result topic (a bucket)
+        Map properties = new HashMap();
+        properties.put("Search Term", searchTerm);
+        Topic resultTopic = createTopic("Search Result", properties);
+        // associate result topics
+        for (Topic topic : searchResult) {
+            createRelation("SEARCH_RESULT", resultTopic.id, topic.id, new HashMap());
+        }
+        //
+        return resultTopic;
+    }
+
     public Topic createTopic(String typeId, Map properties) {
         return storage.createTopic(typeId, properties);
     }

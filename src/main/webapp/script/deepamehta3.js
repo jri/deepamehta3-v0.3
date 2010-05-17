@@ -188,7 +188,6 @@ function search() {
         var searchmode = ui.menu_item("searchmode_select").label
         var result_doc = trigger_hook("search", searchmode)[0]
         //
-        save_document(result_doc)
         show_document(result_doc.id)
         add_topic_to_canvas(current_doc)
     } catch (e) {
@@ -205,7 +204,7 @@ function special_selected(menu_item) {
 /**
  * Reveals a document and optionally relate it to the current document.
  *
- * @param   do_relate   Optional (boolean): if true a relation of type "NAV_HELPER" is created between
+ * @param   do_relate   Optional (boolean): if true a relation of type "SEARCH_RESULT" is created between
  *                      the document and the current document. If not specified false is assumed.
  */
 function reveal_topic(topic_id, do_relate) {
@@ -218,8 +217,8 @@ function reveal_topic(topic_id, do_relate) {
     if (do_relate) {
         var relation = dms.get_relation(current_doc.id, topic_id)
         if (!relation) {
-            alert("reveal_topic(): create NAV_HELPER relation")
-            relation = create_relation("NAV_HELPER", current_doc.id, topic_id)
+            alert("reveal_topic(): create SEARCH_RESULT relation")
+            relation = create_relation("SEARCH_RESULT", current_doc.id, topic_id)
         }
         canvas.add_relation(relation.id, relation.src_topic_id, relation.dst_topic_id)
     }
@@ -415,7 +414,7 @@ function hide_topic(topic_id) {
 /**
  * Creates a relation document and stores it in the DB.
  *
- * @param   type_id             The relation type, e.g. "RELATION", "NAV_HELPER".
+ * @param   type_id             The relation type, e.g. "RELATION", "SEARCH_RESULT".
  * @param   properties          Optional: relation properties (object, key: field ID, value: content).
  *
  * @return  The created relation.
@@ -486,7 +485,7 @@ function get_relation_doc(doc1_id, doc2_id, rel_type) {
 }
 
 /**
- * Returns the IDs of all relations of the document. NAV_HELPER relations are NOT included.
+ * Returns the IDs of all relations of the document. SEARCH_RESULT relations are NOT included.
  *
  * @return  Array of relation IDs.
  */

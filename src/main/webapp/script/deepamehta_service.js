@@ -14,6 +14,12 @@ function DeepaMehtaService(service_uri) {
         return request("GET", "/topic/" + topic_id + "/related_topics" + query_string)
     }
 
+    // FIXME: this service call should be provided by the dm3_fulltext plugin
+    this.fulltext_search = function(index, text) {
+        var query_string = "?search=" + text
+        return request("GET", "/topic" + query_string)
+    }
+
     this.create_topic = function(topic) {
         var response = request("POST", "/topic", topic)
         return response.topic_id

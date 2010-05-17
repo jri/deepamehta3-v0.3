@@ -72,7 +72,7 @@ PlainDocument.prototype = {
         }
 
         function render_relations() {
-            var topics = dms.get_related_topics(doc.id, ["NAV_HELPER"])
+            var topics = dms.get_related_topics(doc.id, [])
             // don't render topics already rendered via "defined relations"
             substract(topics, PlainDocument.prototype.defined_relation_topics, function(topic, drt) {
                 return topic.id == drt.id
