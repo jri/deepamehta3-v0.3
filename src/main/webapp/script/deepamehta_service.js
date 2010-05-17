@@ -30,6 +30,11 @@ function DeepaMehtaService(service_uri) {
 
     // *** Relations ***
 
+    this.get_relation = function(topic1_id, topic2_id) {
+        var query_string = "?src=" + topic1_id + "&dst=" + topic2_id
+        return request("GET", "/relation" + query_string)
+    }
+
     this.create_relation = function(relation) {
         var response = request("POST", "/relation", relation)
         return response.relation_id

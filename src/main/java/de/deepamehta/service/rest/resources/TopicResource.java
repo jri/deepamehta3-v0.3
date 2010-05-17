@@ -40,7 +40,7 @@ public class TopicResource {
     @Path("/{id}/related_topics")
     public JSONArray getRelatedTopics(@PathParam("id") long id, @QueryParam("exclude") List excludeRelTypes)
                                                                                         throws JSONException {
-        System.out.println("### getRelatedTopics(): id=" + id + " exclude=" + excludeRelTypes.toString() +
+        System.out.println("  # TopicResource.getRelatedTopics(): id=" + id + " exclude=" + excludeRelTypes.toString() +
             " (" + excludeRelTypes.size() + " items)");
         return listToJson(EmbeddedService.SERVICE.getRelatedTopics(id, excludeRelTypes));
     }

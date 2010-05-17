@@ -77,6 +77,15 @@ public class EmbeddedService {
 
     // --- Relations ---
 
+    /**
+     * Returns the relation between the two topics (regardless of type and direction).
+     * If no such relation exists null is returned.
+     * If more than one relation exists, only the first one is returned.
+     */
+    public Relation getRelation(long srcTopicId, long dstTopicId) {
+        return storage.getRelation(srcTopicId, dstTopicId);
+    }
+
     public Relation createRelation(String typeId, long srcTopicId, long dstTopicId, Map properties) {
         return storage.createRelation(typeId, srcTopicId, dstTopicId, properties);
     }
@@ -94,7 +103,7 @@ public class EmbeddedService {
         if (!topicTypeExists(typeId)) {
             storage.createTopicType(properties, dataFields);
         } else {
-            System.out.println("### EmbeddedService: no need to create topic type \"" + typeId + "\" (already exists)");
+            System.out.println("  # EmbeddedService: no need to create topic type \"" + typeId + "\" (already exists)");
         }
         // cache in memory
         topicTypes.put(typeId, topicType);

@@ -24,6 +24,8 @@ public interface Storage {
 
     // --- Relations ---
 
+    public Relation getRelation(long srcTopicId, long dstTopicId);
+
     public Relation createRelation(String typeId, long srcTopicId, long dstTopicId, Map properties);
 
     public void deleteRelation(long id);

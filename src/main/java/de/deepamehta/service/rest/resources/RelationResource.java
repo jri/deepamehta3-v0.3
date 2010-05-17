@@ -31,6 +31,19 @@ import java.util.Map;
 // @Produces("application/json")
 public class RelationResource {
 
+    @GET
+    public JSONObject getRelation(@QueryParam("src") long srcTopicId, @QueryParam("dst") long dstTopicId)
+                                                                                        throws JSONException {
+        System.out.println("  # RelationResource.getRelation(): srcTopicId=" + srcTopicId + " dstTopicId=" + dstTopicId);
+        //
+        Relation rel = EmbeddedService.SERVICE.getRelation(srcTopicId, dstTopicId);
+        //
+        if (rel != null) {
+            return rel.toJSON();
+        }
+        return null;
+    }
+
     @POST
     public JSONObject createRelation(JSONObject relation) throws JSONException{
         //

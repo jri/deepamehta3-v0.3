@@ -24,8 +24,10 @@ public class ServletFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) {
         try {
             HttpServletRequest r = (HttpServletRequest) request;
-            System.out.println("### " + r.getMethod() + " " + r.getRequestURI() + " " + r.getQueryString());
-            // header
+            String queryString = r.getQueryString();
+            queryString = queryString != null ? "&" + queryString : "";
+            System.out.println("### " + r.getMethod() + " " + r.getRequestURI() + queryString);
+            /* header
             // Enumeration e1 = r.getHeaderNames();
             for (String headerName : Arrays.asList("content-type", "accept")) {
                 // String headerName = (String) e1.nextElement();
@@ -34,7 +36,7 @@ public class ServletFilter implements Filter {
                     String header = (String) e2.nextElement();
                     System.out.println("  # " + headerName + ": " + header);
                 }
-            }
+            } */
             //
             /* body
             System.out.println("  #");

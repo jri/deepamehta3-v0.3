@@ -208,24 +208,25 @@ function special_selected(menu_item) {
  * @param   do_relate   Optional (boolean): if true a relation of type "NAV_HELPER" is created between
  *                      the document and the current document. If not specified false is assumed.
  */
-function reveal_document(doc_id, do_relate) {
+function reveal_topic(topic_id, do_relate) {
     // error check
-    if (!document_exists(doc_id)) {
-        alert("Document " + doc_id + " doesn't exist. Possibly it has been deleted.")
+    if (!document_exists(topic_id)) {
+        alert("Document " + topic_id + " doesn't exist. Possibly it has been deleted.")
         return
     }
     // create relation
     if (do_relate) {
-        var relation = get_relation_doc(current_doc.id, doc_id)
+        var relation = dms.get_relation(current_doc.id, topic_id)
         if (!relation) {
-            relation = create_relation("NAV_HELPER", current_doc.id, doc_id)
+            alert("reveal_topic(): create NAV_HELPER relation")
+            relation = create_relation("NAV_HELPER", current_doc.id, topic_id)
         }
         canvas.add_relation(relation.id, relation.src_topic_id, relation.dst_topic_id)
     }
     // reveal document
-    show_document(doc_id)
+    show_document(topic_id)
     add_topic_to_canvas(current_doc)
-    canvas.focus_topic(doc_id)
+    canvas.focus_topic(topic_id)
 }
 
 /**
@@ -417,7 +418,7 @@ function hide_topic(topic_id) {
  * @param   type_id             The relation type, e.g. "RELATION", "NAV_HELPER".
  * @param   properties          Optional: relation properties (object, key: field ID, value: content).
  *
- * @return  The relation as stored in the DB.
+ * @return  The created relation.
  */
 function create_relation(type_id, src_topic_id, dst_topic_id, properties) {
     var relation = create_raw_relation(type_id, src_topic_id, dst_topic_id, properties)
@@ -743,7 +744,7 @@ function render_topic(topic) {
  */
 function render_topic_anchor(topic, anchor_content) {
     return $("<a>").attr({href: ""}).append(anchor_content).click(function() {
-        reveal_document(topic.id, true)
+        reveal_topic(topic.id, true)
         return false
     })
 }
