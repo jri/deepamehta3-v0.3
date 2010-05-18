@@ -30,8 +30,7 @@ function DeepaMehtaService(service_uri) {
     }
 
     this.delete_topic = function(id) {
-        var response = request("DELETE", "/topic/" + id)
-        return response.deleted_relations
+        request("DELETE", "/topic/" + id)
     }
 
     // *** Relations ***

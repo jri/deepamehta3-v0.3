@@ -69,11 +69,8 @@ public class TopicResource {
 
     @DELETE
     @Path("/{id}")
-    public JSONObject deleteTopic(@PathParam("id") long id) throws JSONException {
-        List deletedRelIds = EmbeddedService.SERVICE.deleteTopic(id);
-        JSONObject response = new JSONObject();
-        response.put("deleted_relations", deletedRelIds);
-        return response;
+    public void deleteTopic(@PathParam("id") long id) throws JSONException {
+        EmbeddedService.SERVICE.deleteTopic(id);
     }
 
     // *** Private Helpers ***

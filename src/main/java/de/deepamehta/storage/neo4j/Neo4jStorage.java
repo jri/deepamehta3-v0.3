@@ -13,7 +13,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
 import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -35,6 +34,7 @@ public class Neo4jStorage implements Storage {
     private final GraphDatabaseService graphDb;
     private final IndexService index;
     private final LuceneFulltextQueryIndexService fulltextIndex;
+    //
     Map<String, TopicType> topicTypes;
 
     private enum RelType implements RelationshipType {
@@ -62,151 +62,82 @@ public class Neo4jStorage implements Storage {
 
     @Override
     public Topic getTopic(long id) {
-        Map properties = null;
-        String typeId = null;
-        Transaction tx = graphDb.beginTx();
-        try {
-            System.out.println("  # Neo4j: getting node " + id);
-            Node node = graphDb.getNodeById(id);
-            typeId = getTypeId(node);
-            properties = getProperties(node);
-            //
-            tx.success();   
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-            return new Topic(id, typeId, null, properties);     // FIXME: label remains uninitialized
-        }
+        System.out.println("  # Neo4j: getting node " + id);
+        Node node = graphDb.getNodeById(id);
+        return new Topic(id, getTypeId(node), null, getProperties(node));     // FIXME: label remains uninitialized
     }
 
     @Override
     public List<Topic> getRelatedTopics(long topicId, List<String> excludeRelTypes) {
-        List relTopics = new ArrayList();
-        Transaction tx = graphDb.beginTx();
-        try {
-            System.out.println("  # Neo4j: getting related nodes of node " + topicId);
-            Node node = graphDb.getNodeById(topicId);
-            for (Relationship rel : node.getRelationships()) {
-                if (!excludeRelTypes.contains(rel.getType().name())) {
-                    Node relNode = rel.getOtherNode(node);
-                    relTopics.add(buildTopic(relNode));
-                }
+        System.out.println("  # Neo4j: getting related nodes of node " + topicId);
+        List topics = new ArrayList();
+        Node node = graphDb.getNodeById(topicId);
+        for (Relationship rel : node.getRelationships()) {
+            if (!excludeRelTypes.contains(rel.getType().name())) {
+                Node relNode = rel.getOtherNode(node);
+                topics.add(buildTopic(relNode));
             }
-            //
-            tx.success();   
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-            return relTopics;
         }
+        return topics;
     }
 
     @Override
     public List<Topic> searchTopics(String searchTerm) {
+        IndexHits<Node> hits = fulltextIndex.getNodes("default", searchTerm + "*"); // FIXME: do more itelligent manipulation on the search term
+        System.out.println("  # Neo4j: searching \"" + searchTerm + "\" => " + hits.size() + " nodes found");
         List result = new ArrayList();
-        Transaction tx = graphDb.beginTx();
-        try {
-            IndexHits<Node> hits = fulltextIndex.getNodes("default", searchTerm + "*"); // FIXME: do more itelligent manipulation on the search term
-            System.out.println("  # Neo4j: searching \"" + searchTerm + "\" => " + hits.size() + " nodes found");
-            for (Node node : hits) {
-                result.add(new Topic(node.getId(), null, null, null));  // FIXME: type, label, and properties remain uninitialized
-            }
-            //
-            tx.success();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-            return result;
+        for (Node node : hits) {
+            result.add(new Topic(node.getId(), null, null, null));  // FIXME: type, label, and properties remain uninitialized
         }
+        return result;
     }
 
     @Override
     public Topic createTopic(String typeId, Map properties) {
-        Node node = null;
-        Transaction tx = graphDb.beginTx();
-        try {
-            node = graphDb.createNode();
-            System.out.println("  # Neo4j: creating node, ID=" + node.getId());
-            //
-            setNodeType(node, typeId);
-            setProperties(node, properties);
-            //
-            tx.success();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-            return new Topic(node.getId(), typeId, null, properties);  // FIXME: label remains uninitialized
-        }
+        Node node = graphDb.createNode();
+        System.out.println("  # Neo4j: creating node, ID=" + node.getId());
+        setNodeType(node, typeId);
+        setProperties(node, properties);
+        return new Topic(node.getId(), typeId, null, properties);  // FIXME: label remains uninitialized
     }
 
     @Override
     public void setTopicProperties(long id, Map properties) {
-        Transaction tx = graphDb.beginTx();
-        try {
-            System.out.println("  # Neo4j: setting properties of node " + id + ": " + properties.toString());
-            Node node = graphDb.getNodeById(id);
-            setProperties(node, properties);
-            //
-            tx.success();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-        }
+        System.out.println("  # Neo4j: setting properties of node " + id + ": " + properties.toString());
+        Node node = graphDb.getNodeById(id);
+        setProperties(node, properties);
     }
 
     @Override
-    public List deleteTopic(long id) {
-        List deletedRelIds = new ArrayList();
-        Transaction tx = graphDb.beginTx();
-        try {
-            System.out.println("  # Neo4j: deleting node " + id);
-            Node node = graphDb.getNodeById(id);
-            for (Relationship rel : node.getRelationships()) {
-                deletedRelIds.add(rel.getId());
-                rel.delete();
-            }
-            node.delete();
-            //
-            tx.success();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-            return deletedRelIds;
+    public void deleteTopic(long id) {
+        System.out.println("  # Neo4j: deleting node " + id);
+        Node node = graphDb.getNodeById(id);
+        // delete relationships
+        for (Relationship rel : node.getRelationships()) {
+            rel.delete();
         }
+        //
+        node.delete();
     }
 
     // --- Relations ---
 
     @Override
     public Relation getRelation(long srcTopicId, long dstTopicId) {
+        System.out.println("  # Neo4j: getting relationship between nodes " + srcTopicId + " and " + dstTopicId);
         Relationship relationship = null;
-        Transaction tx = graphDb.beginTx();
-        try {
-            System.out.println("  # Neo4j: getting relationship between nodes " + srcTopicId + " to " + dstTopicId);
-            Node node = graphDb.getNodeById(srcTopicId);
-            for (Relationship rel : node.getRelationships()) {
-                Node relNode = rel.getOtherNode(node);
-                if (relNode.getId() == dstTopicId) {
-                    relationship = rel;
-                    break;
-                }
+        Node node = graphDb.getNodeById(srcTopicId);
+        for (Relationship rel : node.getRelationships()) {
+            Node relNode = rel.getOtherNode(node);
+            if (relNode.getId() == dstTopicId) {
+                relationship = rel;
+                break;
             }
-            //
-            tx.success();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-            if (relationship != null) {
-                System.out.println("  # Neo4j: => relationship found (ID=" + relationship.getId() + ")");
-                return new Relation(relationship.getId(), null, srcTopicId, dstTopicId, null);  // FIXME: typeId and properties remain uninitialized
-            }
+        }
+        if (relationship != null) {
+            System.out.println("  # Neo4j: => relationship found (ID=" + relationship.getId() + ")");
+            return new Relation(relationship.getId(), null, srcTopicId, dstTopicId, null);  // FIXME: typeId and properties remain uninitialized
+        } else {
             System.out.println("  # Neo4j: => no such relationship");
             return null;
         }
@@ -214,93 +145,56 @@ public class Neo4jStorage implements Storage {
 
     @Override
     public Relation createRelation(String typeId, long srcTopicId, long dstTopicId, Map properties) {
-        Relationship relationship = null;
-        Transaction tx = graphDb.beginTx();
-        try {
-            System.out.println("  # Neo4j: creating relationship from node " + srcTopicId + " to " + dstTopicId);
-            Node srcNode = graphDb.getNodeById(srcTopicId);
-            Node dstNode = graphDb.getNodeById(dstTopicId);
-            relationship = srcNode.createRelationshipTo(dstNode, RelType.valueOf(typeId));
-            //
-            setProperties(relationship, properties);
-            //
-            tx.success();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-            if (relationship != null) {
-                return new Relation(relationship.getId(), typeId, srcTopicId, dstTopicId, properties);
-            }
-            System.out.println("  # Neo4j: ERROR: relationship type \"" + typeId + "\" not declared");
-            return null;
-        }
+        System.out.println("  # Neo4j: creating \"" + typeId + "\" relationship from node " + srcTopicId + " to " + dstTopicId);
+        Node srcNode = graphDb.getNodeById(srcTopicId);
+        Node dstNode = graphDb.getNodeById(dstTopicId);
+        Relationship relationship = srcNode.createRelationshipTo(dstNode, RelType.valueOf(typeId));
+        setProperties(relationship, properties);
+        return new Relation(relationship.getId(), typeId, srcTopicId, dstTopicId, properties);
     }
 
     @Override
     public void deleteRelation(long id) {
-        Transaction tx = graphDb.beginTx();
-        try {
-            System.out.println("  # Neo4j: deleting relationship " + id);
-            graphDb.getRelationshipById(id).delete();
-            //
-            tx.success();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-        }
+        System.out.println("  # Neo4j: deleting relationship " + id);
+        graphDb.getRelationshipById(id).delete();
     }
 
     // --- Types ---
 
     @Override
     public void createTopicType(Map<String, Object> properties, List<Map> dataFields) {
-        Transaction tx = graphDb.beginTx();
-        try {
-            Node type = graphDb.createNode();
-            Object typeId = properties.get("type_id");
-            System.out.println("  # Neo4j: creating topic type \"" + typeId + "\", ID=" + type.getId());
-            setProperties(type, properties);
-            index.index(type, "type_id", typeId);
-            graphDb.getReferenceNode().createRelationshipTo(type, RelType.TOPIC_TYPE);
-            //
-            for (Map dataField : dataFields) {
-                Node dataFieldNode = graphDb.createNode();
-                setProperties(dataFieldNode, dataField);
-                type.createRelationshipTo(dataFieldNode, RelType.DATA_FIELD);
-            }
-            //
-            tx.success();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
+        Node type = graphDb.createNode();
+        Object typeId = properties.get("type_id");
+        System.out.println("  # Neo4j: creating topic type \"" + typeId + "\", ID=" + type.getId());
+        setProperties(type, properties);
+        index.index(type, "type_id", typeId);
+        graphDb.getReferenceNode().createRelationshipTo(type, RelType.TOPIC_TYPE);
+        //
+        for (Map dataField : dataFields) {
+            Node dataFieldNode = graphDb.createNode();
+            setProperties(dataFieldNode, dataField);
+            type.createRelationshipTo(dataFieldNode, RelType.DATA_FIELD);
         }
     }
 
     @Override
     public boolean topicTypeExists(String typeId) {
-        boolean exists = false;
-        Transaction tx = graphDb.beginTx();
-        try {
-            exists = getNodeType(typeId) != null;
-            tx.success();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            tx.finish();
-            return exists;
-        }
+        return getNodeType(typeId) != null;
     }
 
     // --- Misc ---
 
     @Override
+    public de.deepamehta.storage.Transaction beginTx() {
+        return new Neo4jTransaction(graphDb);
+    }
+
+    @Override
     public void shutdown() {
-        System.out.println("  # Neo4j: shutting down storage and indexer");
+        System.out.println("  # Neo4j: shutting down DB and indexing services");
         graphDb.shutdown();
         index.shutdown();
+        fulltextIndex.shutdown();
     }
 
 

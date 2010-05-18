@@ -22,7 +22,7 @@ public interface Storage {
 
     public void setTopicProperties(long id, Map properties);
 
-    public List deleteTopic(long id);
+    public void deleteTopic(long id);
 
     // --- Relations ---
 
@@ -39,6 +39,8 @@ public interface Storage {
     public boolean topicTypeExists(String typeId);
 
     // --- Misc ---
+
+    public Transaction beginTx();
 
     public void shutdown();
 }
