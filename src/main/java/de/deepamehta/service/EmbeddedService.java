@@ -7,11 +7,22 @@ import de.deepamehta.storage.Storage;
 import de.deepamehta.storage.Transaction;
 import de.deepamehta.storage.neo4j.Neo4jStorage;
 
+import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.http.HttpContext;
+import org.osgi.service.http.HttpService;
+import org.osgi.service.http.NamespaceException;
+import org.osgi.util.tracker.ServiceTracker;
+
+import com.sun.jersey.spi.container.servlet.ServletContainer;
+
 import org.codehaus.jettison.json.JSONObject;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -19,24 +30,71 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 
 import java.util.ArrayList;
+import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 
 
-public class EmbeddedService {
+public class EmbeddedService implements BundleActivator {
 
-    public static final EmbeddedService SERVICE = new EmbeddedService();
+    public static EmbeddedService SERVICE;
 
     private Map<String, TopicType> topicTypes = new HashMap();
 
-    private final Storage storage;
+    private Storage storage;
     private ServletContext servletContext;
 
-    private EmbeddedService() {
-        System.out.println("### EmbeddedService: constructing");
-        this.storage = new Neo4jStorage("/Users/jri/var/db/deepamehta-db-neo4j", topicTypes);
+    private ServiceTracker tracker;
+    private HttpService httpService = null;
+    private BundleContext context;
+    private Logger logger = Logger.getLogger(getClass().getName());
+
+
+
+    // **************************************
+    // *** BundleActivator Implementation ***
+    // **************************************
+
+
+
+    public synchronized void start(BundleContext context) {
+        logger.info("Starting DeepaMehta bundle");
+        //
+        this.context = context;
+        this.tracker = new ServiceTracker(context, HttpService.class.getName(), null) {
+
+            @Override
+            public Object addingService(ServiceReference serviceRef) {
+                logger.info("Adding HTTP service");
+                httpService = (HttpService) super.addingService(serviceRef);
+                registerServlet();
+                return httpService;
+            }
+
+            @Override
+            public void removedService(ServiceReference ref, Object service) {
+                if (httpService == service) {
+                    unregisterServlet();
+                    httpService = null;
+                }
+                super.removedService(ref, service);
+            }
+        };
+        tracker.open();
+        //
+        openDB();
+        //
+        SERVICE = this;
+    }
+
+    public synchronized void stop(BundleContext context) {
+        logger.info("Stopping DeepaMehta bundle");
+        tracker.close();
+        closeDB();
     }
 
 
@@ -47,8 +105,38 @@ public class EmbeddedService {
 
 
 
+    private void registerServlet() {
+        try {
+            Dictionary initParams = new Hashtable();
+            // initParams.put("com.sun.jersey.config.property.packages", "de.deepamehta.service.rest.resources");
+            initParams.put("javax.ws.rs.Application", "de.deepamehta.service.rest.RestService");
+            //
+        	/* BundleProxyClassLoader bundleProxyClassLoader = new BundleProxyClassLoader(context.getBundle());
+        	ClassLoader original = Thread.currentThread().getContextClassLoader();
+        	Thread.currentThread().setContextClassLoader(bundleProxyClassLoader); */
+        	//
+        	try {
+                logger.info("Registering REST resources");
+                httpService.registerServlet("/rest", new ServletContainer(), initParams, null);
+                logger.info("REST recources registered!");
+                httpService.registerResources("/", "/site", null);
+            } finally {
+        	    // Thread.currentThread().setContextClassLoader(original);
+            }
+        } catch (Throwable ie) {
+            throw new RuntimeException(ie);
+        }
+    }
+
+    private void unregisterServlet() {
+        if (this.httpService != null) {
+            logger.info("Unregistering REST resources");
+            httpService.unregister("/rest");
+        }
+    }
+
     public void setServletContext(ServletContext servletContext) {
-        System.out.println("### EmbeddedService: reveive servlet context");
+        logger.info("### EmbeddedService: reveive servlet context");
         this.servletContext = servletContext;
         //
         init();
@@ -203,7 +291,7 @@ public class EmbeddedService {
             if (!topicTypeExists(typeId)) {
                 storage.createTopicType(properties, dataFields);
             } else {
-                System.out.println("  # EmbeddedService: no need to create topic type \"" + typeId + "\" (already exists)");
+                logger.info("No need to create topic type \"" + typeId + "\" (already exists)");
             }
             // cache in memory
             topicTypes.put(typeId, topicType);
@@ -221,12 +309,6 @@ public class EmbeddedService {
         return storage.topicTypeExists(typeId);
     }
 
-    // --- Misc ---
-
-    public void shutdown() {
-        storage.shutdown();
-    }
-
 
 
     // ************************
@@ -234,6 +316,18 @@ public class EmbeddedService {
     // ************************
 
 
+
+    // --- DB ---
+
+    private void openDB() {
+        storage = new Neo4jStorage("/Users/jri/var/db/deepamehta-db-neo4j", topicTypes);
+    }
+
+    private void closeDB() {
+        storage.shutdown();
+    }
+
+    //
 
     private void init() {
         try {

@@ -2,12 +2,11 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <name>DeepaMehta Server</name>
+    <name>DeepaMehta</name>
     <groupId>de.deepamehta</groupId>
-    <artifactId>deepamehta-server</artifactId>
-    <version>0.1-SNAPSHOT</version>
-    <packaging>war</packaging>
-
+    <artifactId>deepamehta</artifactId>
+    <version>0.4-SNAPSHOT</version>
+    <packaging>bundle</packaging>
 
     <repositories>
         <repository>
@@ -22,6 +21,11 @@
     </repositories>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.framework</artifactId>
+            <version>2.0.5</version>
+        </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
@@ -61,13 +65,26 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Export-Package>de.deepamehta.service.*</Export-Package>
+                        <Private-Package>de.deepamehta.*</Private-Package>
+                        <Import-Package>*,javax.ws.rs.ext</Import-Package>
+                        <Bundle-Activator>de.deepamehta.service.EmbeddedService</Bundle-Activator>
+                    </instructions>
+                </configuration>
+            </plugin>
+            <!-- <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <version>2.1-beta-1</version>
                 <configuration>
                     <outputDirectory>/usr/local/apache-tomcat-6.0.26/webapps</outputDirectory>
                 </configuration>
-            </plugin>
+            </plugin> -->
         </plugins>
     </build>
 

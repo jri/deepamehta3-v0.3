@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 
 
@@ -29,6 +30,8 @@ import java.util.Map;
 // @Consumes("application/json")
 // @Produces("application/json")
 public class TopicResource {
+
+    private Logger logger = Logger.getLogger(getClass().getName());
 
     @GET
     @Path("/{id}")
@@ -40,14 +43,14 @@ public class TopicResource {
     @Path("/{id}/related_topics")
     public JSONArray getRelatedTopics(@PathParam("id") long id, @QueryParam("exclude") List excludeRelTypes)
                                                                                         throws JSONException {
-        System.out.println("  # TopicResource.getRelatedTopics(): id=" + id + " exclude=" + excludeRelTypes.toString() +
+        logger.info("id=" + id + " exclude=" + excludeRelTypes.toString() +
             " (" + excludeRelTypes.size() + " items)");
         return listToJson(EmbeddedService.SERVICE.getRelatedTopics(id, excludeRelTypes));
     }
 
     @GET
     public JSONObject searchTopics(@QueryParam("search") String searchTerm) throws JSONException {
-        System.out.println("  # TopicResource.searchTopics(): searchTerm=" + searchTerm);
+        logger.info("searchTerm=" + searchTerm);
         return EmbeddedService.SERVICE.searchTopics(searchTerm).toJSON();
     }
 

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 
 
@@ -31,10 +32,12 @@ import java.util.Map;
 // @Produces("application/json")
 public class RelationResource {
 
+    private Logger logger = Logger.getLogger(getClass().getName());
+
     @GET
     public JSONObject getRelation(@QueryParam("src") long srcTopicId, @QueryParam("dst") long dstTopicId)
                                                                                         throws JSONException {
-        System.out.println("  # RelationResource.getRelation(): srcTopicId=" + srcTopicId + " dstTopicId=" + dstTopicId);
+        logger.info("srcTopicId=" + srcTopicId + " dstTopicId=" + dstTopicId);
         //
         Relation rel = EmbeddedService.SERVICE.getRelation(srcTopicId, dstTopicId);
         //

@@ -1,5 +1,5 @@
 // Settings
-var SERVICE_URI = "/deepamehta-server-0.1-SNAPSHOT/rest"
+var SERVICE_URI = "/rest"
 var SEARCH_FIELD_WIDTH = 16    // in chars
 var GENERIC_TOPIC_ICON_SRC = "images/gray-dot.png"
 
